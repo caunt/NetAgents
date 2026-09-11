@@ -1,0 +1,14 @@
+<Project>
+  <Target Name="ValidateNetAgentsConsumerPolicy" BeforeTargets="CoreCompile" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Error Code="NETAGENTS0014" Condition="'$(Nullable)' != 'enable'"
+           Text="NetAgents.Analyzers requires Nullable=enable. Remove the conflicting project setting." />
+    <Error Code="NETAGENTS0014" Condition="'$(TreatWarningsAsErrors)' != 'true'"
+           Text="NetAgents.Analyzers requires TreatWarningsAsErrors=true. Remove the conflicting project setting." />
+    <Error Code="NETAGENTS0014" Condition="'$(EnableNETAnalyzers)' != 'true' or '$(EnforceCodeStyleInBuild)' != 'true' or '$(RunAnalyzersDuringBuild)' == 'false' or '$(RunAnalyzers)' == 'false'"
+           Text="NetAgents.Analyzers requires compiler, style, and build analyzers to remain enabled." />
+    <Error Code="NETAGENTS0014" Condition="'$(AnalysisMode)' != 'All' or '$(AnalysisLevel)' != 'latest'"
+           Text="NetAgents.Analyzers requires AnalysisMode=All and AnalysisLevel=latest." />
+    <Error Code="NETAGENTS0014" Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(NoWarn);$(WarningsNotAsErrors)', '(?i)NETAGENTS'))"
+           Text="NetAgents.Analyzers diagnostics cannot be suppressed through NoWarn or WarningsNotAsErrors." />
+  </Target>
+</Project>

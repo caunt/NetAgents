@@ -1,0 +1,19 @@
+<Project>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="MSBuildProjectDirectory" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsNetAgentsAnalyzerProject)' != 'true' and '$(NetAgentsAnalyzerAssemblyPath)' == ''">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src/NetAgents.Analyzers/NetAgents.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all"
+                      Condition="'$(MSBuildProjectName)' != 'NetAgents.Analyzers.Tests'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(NetAgentsAnalyzerAssemblyPath)' != ''">
+    <Analyzer Include="$(NetAgentsAnalyzerAssemblyPath)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

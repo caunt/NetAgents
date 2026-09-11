@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsRoslynAnalyzer>true</IsRoslynAnalyzer>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <PackageId>NetAgents.Analyzers</PackageId>
+    <Authors>caunt</Authors>
+    <Description>Build-blocking .NET engineering rules for strongly typed, descriptive, dependency-injected, asynchronous applications.</Description>
+    <PackageTags>roslyn;analyzers;dotnet;agents;formatting;boxing;naming</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/caunt/NetAgents</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/caunt/NetAgents.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="Packaging/NetAgents.Analyzers.targets" Pack="true" PackagePath="buildTransitive/NetAgents.Analyzers.targets" />
+    <None Include="Packaging/NetAgents.Analyzers.props" Pack="true" PackagePath="buildTransitive/NetAgents.Analyzers.props" />
+    <None Include="Configuration/NetAgents.globalconfig" Pack="true" PackagePath="buildTransitive/NetAgents.globalconfig" />
+    <EmbeddedResource Include="Configuration/NetAgents.globalconfig" LogicalName="NetAgents.Analyzers.Configuration.NetAgents.globalconfig" />
+    <None Include="Packaging/README.md" Pack="true" PackagePath="/README.md" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="/" />
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+</Project>

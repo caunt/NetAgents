@@ -1,0 +1,40 @@
+name: Publish analyzers
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-analyzers
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+  publish:
+    if: github.repository == 'caunt/NetAgents' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download validated package
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: nuget-package
+          path: artifacts/packages
+      - name: Exchange GitHub identity for a short-lived NuGet credential
+        id: nuget_login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+        with:
+          user: ${{ vars.NUGET_USER || 'caunt' }}
+      - name: Publish the analyzer package
+        env:
+          NUGET_API_KEY: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
+          PACKAGE_VERSION: ${{ needs.validate.outputs.package_version }}
+        run: dotnet nuget push "artifacts/packages/NetAgents.Analyzers.$PACKAGE_VERSION.nupkg" --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
