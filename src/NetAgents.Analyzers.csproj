@@ -19,8 +19,9 @@
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="CodeFixes/**/*.cs" />
+    <Compile Remove="CodeFixes/**/*.cs;BuildTasks/**/*.cs" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <ProjectReference Include="BuildTasks/NetAgents.BuildTasks.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" PrivateAssets="all" />
     <ProjectReference Include="CodeFixes/NetAgents.CodeFixes.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
     <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="Packaging/NetAgents.Analyzers.targets" Pack="true" PackagePath="buildTransitive/NetAgents.Analyzers.targets" />
@@ -28,4 +29,10 @@
     <None Include="../README.md" Pack="true" PackagePath="/README.md" />
     <None Include="../LICENSE" Pack="true" PackagePath="/" />
   </ItemGroup>
+  <Target Name="IncludeNetAgentsBuildTasks" BeforeTargets="_GetPackageFiles">
+    <ItemGroup>
+      <None Include="BuildTasks/bin/$(Configuration)/net10.0/*.dll;BuildTasks/bin/$(Configuration)/net10.0/*.deps.json"
+            Pack="true" PackagePath="tools/net10.0" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -70,7 +70,7 @@ internal static class ArgumentLayout
             return [new TextChange(list.Span, GetCompactText(list))];
 
         TextLine line = source.Lines.GetLineFromPosition(list.SpanStart);
-        string indentation = new(source.ToString(line.Span).TakeWhile(static character => character is ' ' or '\t').ToArray());
+        string indentation = new([.. source.ToString(line.Span).TakeWhile(static character => character is ' ' or '\t')]);
         TextLine firstLine = source.Lines[index: 0];
 
         string newline = firstLine.EndIncludingLineBreak > firstLine.End

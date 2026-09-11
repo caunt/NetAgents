@@ -56,7 +56,7 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
 
     private static async Task<Document> FixBraces(Document document, ImmutableArray<Diagnostic> diagnostics, bool fixAll, CancellationToken cancellationToken)
     {
-        ImmutableHashSet<TextSpan>? requestedSpans = diagnostics.Select(static diagnostic => diagnostic.Location.SourceSpan).ToImmutableHashSet();
+        ImmutableHashSet<TextSpan>? requestedSpans = [.. diagnostics.Select(static diagnostic => diagnostic.Location.SourceSpan)];
         bool hasChanges = true;
 
         while (hasChanges)
@@ -155,7 +155,7 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
 
         foreach (TextChange change in changes)
         {
-            if (change.Span.Start > position || change.Span.Start == position && !includeInsertions)
+            if (change.Span.Start > position || (change.Span.Start == position && !includeInsertions))
                 break;
 
             translated += (change.NewText?.Length ?? 0) - (System.Math.Min(position, change.Span.End) - change.Span.Start);

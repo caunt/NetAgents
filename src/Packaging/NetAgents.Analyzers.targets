@@ -2,6 +2,32 @@
   <PropertyGroup>
     <NetAgentsGlobalConfigurationPath Condition="'$(NetAgentsGlobalConfigurationPath)' == ''">$(MSBuildThisFileDirectory)NetAgents.globalconfig</NetAgentsGlobalConfigurationPath>
   </PropertyGroup>
+  <PropertyGroup>
+    <NetAgentsBuildTaskPath Condition="'$(NetAgentsBuildTaskPath)' == ''">$(MSBuildThisFileDirectory)../tools/net10.0/NetAgents.BuildTasks.dll</NetAgentsBuildTaskPath>
+  </PropertyGroup>
+  <UsingTask TaskName="NetAgents.BuildTasks.FormatProject" AssemblyFile="$(NetAgentsBuildTaskPath)" />
+  <Target Name="FormatNetAgentsConsumerSource" BeforeTargets="CoreCompile" DependsOnTargets="ValidateNetAgentsConsumerPolicy"
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(NetAgentsFormatOnBuild)' != 'false' and ('$(NetAgentsRepositoryBuild)' != 'true' or Exists('$(NetAgentsRepositoryTaskSource)'))">
+    <ItemGroup>
+      <NetAgentsFormattingAnalyzers Include="@(Analyzer)" />
+      <NetAgentsFormattingAnalyzers Include="$(NetAgentsCodeFixAssemblyPath)"
+                                    Condition="'$(NetAgentsRepositoryBuild)' == 'true' and Exists('$(NetAgentsCodeFixAssemblyPath)')" />
+    </ItemGroup>
+    <NetAgents.BuildTasks.FormatProject ProjectPath="$(MSBuildProjectFullPath)"
+                                       AssemblyName="$(AssemblyName)"
+                                       RootNamespace="$(RootNamespace)"
+                                       LanguageVersion="$(LangVersion)"
+                                       DefineConstants="$(DefineConstants)"
+                                       AllowUnsafe="$(AllowUnsafeBlocks)"
+                                       OutputType="$(OutputType)"
+                                       SourceFiles="@(Compile)"
+                                       References="@(ReferencePathWithRefAssemblies)"
+                                       AnalyzerFiles="@(NetAgentsFormattingAnalyzers)"
+                                       AdditionalFiles="@(AdditionalFiles)"
+                                       ConfigurationFiles="@(EditorConfigFiles)"
+                                       CodeFixDirectory="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/codestyle/cs"
+                                       SdkAssemblyDirectory="$(MSBuildToolsPath)/DotnetTools/dotnet-format" />
+  </Target>
   <ItemGroup>
     <EditorConfigFiles Include="$(NetAgentsGlobalConfigurationPath)" />
   </ItemGroup>

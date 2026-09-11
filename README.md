@@ -4,7 +4,7 @@
 
 **Consistent C# standards, enforced on every build.**
 
-`NetAgents.Analyzers` keeps formatting, naming, and code quality consistent across your .NET projects.
+`NetAgents.Analyzers` keeps formatting, naming, and code quality consistent across your .NET projects. Builds automatically apply formatting and available code fixes before compilation.
 
 ## 📦 Install
 
@@ -32,11 +32,12 @@ Violations fail the build. Existing editor and project settings must agree with 
 ## 🛠️ Everyday use
 
 ```bash
-dotnet format
 dotnet build
 ```
 
-`dotnet format` applies supported fixes. `dotnet build` reports any remaining violations.
+The package runs a compiled Roslyn task directly inside MSBuild: no shell, `Exec`, child process, or `dotnet` lookup in `PATH`. Files with fixable issues are updated automatically; remaining violations fail the build.
+
+IDE quick fixes and `dotnet format` remain available. To check without rewriting source, use `dotnet build -p:NetAgentsFormatOnBuild=false`; all analyzers still run.
 
 ---
 

@@ -34,10 +34,7 @@ internal static class ControlFlowBraces
 
     private static bool CanRemove(BlockSyntax block, SourceText source)
     {
-        if (!HasSingleLineBody(block, source))
-            return false;
-
-        return block.Parent switch
+        return HasSingleLineBody(block, source) && block.Parent switch
         {
             IfStatementSyntax conditional => CanRemoveFromChain(conditional, source),
             ElseClauseSyntax { Parent: IfStatementSyntax conditional } => CanRemoveFromChain(conditional, source),
@@ -50,10 +47,7 @@ internal static class ControlFlowBraces
 
     private static bool RequiresBraces(StatementSyntax statement, SourceText source)
     {
-        if (statement.ContainsDiagnostics || statement.Parent is null || statement.Parent.ContainsDirectives)
-            return false;
-
-        return statement.Parent switch
+        return !statement.ContainsDiagnostics && statement.Parent is not null && !statement.Parent.ContainsDirectives && statement.Parent switch
         {
             IfStatementSyntax conditional => !CanRemoveFromChain(conditional, source),
             ElseClauseSyntax { Parent: IfStatementSyntax conditional } when statement is not IfStatementSyntax
@@ -110,10 +104,7 @@ internal static class ControlFlowBraces
             or LabeledStatementSyntax or EmptyStatementSyntax
             || statement.DescendantNodes().OfType<VariableDesignationSyntax>().Any();
 
-        if (requiresScope)
-            return false;
-
-        return IsSingleLine(statement, source) && !ExposesDanglingElse(block, statement);
+        return !requiresScope && IsSingleLine(statement, source) && !ExposesDanglingElse(block, statement);
     }
 
     private static bool CanRemoveFromChain(IfStatementSyntax conditional, SourceText source)

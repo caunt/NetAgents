@@ -61,7 +61,7 @@ internal static class CodeFixTestHarness
                 provider,
                 FixAllScope.Document,
                 action.EquivalenceKey,
-                provider.FixableDiagnosticIds.ToArray(),
+                [.. provider.FixableDiagnosticIds],
                 new CodeFixDiagnosticProvider(analyzer),
                 CancellationToken.None
             );

@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <NetAgentsFormatOnBuild Condition="'$(NetAgentsFormatOnBuild)' == ''">true</NetAgentsFormatOnBuild>
     <Nullable>enable</Nullable>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>

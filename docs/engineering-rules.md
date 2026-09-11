@@ -2,6 +2,12 @@
 
 The package enforces shared C# style, build settings, and engineering rules.
 
+Builds automatically apply the available source formatting and code fixes before compilation. A packaged task hosts Roslyn inside MSBuild using the current project's source files, references, language version, conditional symbols, analyzer configuration, and additional files. It does not launch a shell, `Exec` task, `dotnet format`, or any other child process. The task and its Roslyn dependencies ship with the package; standard C# code-fix providers come from the building SDK.
+
+The task applies supported project-wide fixes (or individual fixes when necessary) and repeats until stable. Generated files and design-time IDE builds are excluded. Unchanged source files keep their timestamps. Formatting of shared source directories is serialized to protect parallel and multi-target builds, and each target uses its own conditional symbols. Rules without a fix still fail compilation; fixes that add/remove documents or require project-system/UI operations are not applied automatically. Formatting also adds time to the build and can apply style changes beyond whitespace.
+
+`NetAgentsFormatOnBuild` defaults to `true`. Set it to `false` for diagnostic-only builds, including CI checks that must not rewrite sources; this does not weaken analyzer enforcement. This repository uses the same task, with an isolated copy of the locally built task to allow it to rebuild itself. On the first clean checkout, the task project must bootstrap before the formatter becomes available.
+
 ## Diagnostics
 
 Every custom diagnostic is an error and is marked non-configurable.

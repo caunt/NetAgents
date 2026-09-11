@@ -1,6 +1,7 @@
 <Project>
   <Import Project="$(MSBuildThisFileDirectory)src/Packaging/NetAgents.Analyzers.props" />
   <PropertyGroup>
+    <NetAgentsRepositoryBuild>true</NetAgentsRepositoryBuild>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>14.0</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>

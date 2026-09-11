@@ -92,10 +92,10 @@ internal static class StatementSpacing
             or WhileStatementSyntax or DoStatementSyntax or SwitchStatementSyntax or TryStatementSyntax
             or UsingStatementSyntax or ReturnStatementSyntax or ThrowStatementSyntax or BreakStatementSyntax
             or ContinueStatementSyntax or YieldStatementSyntax
-            || statement is LocalDeclarationStatementSyntax declaration
+            || (statement is LocalDeclarationStatementSyntax declaration
                 && (declaration.UsingKeyword.IsKind(SyntaxKind.UsingKeyword)
                     || source.Lines.GetLineFromPosition(declaration.SpanStart).LineNumber
-                        != source.Lines.GetLineFromPosition(declaration.Span.End).LineNumber);
+                        != source.Lines.GetLineFromPosition(declaration.Span.End).LineNumber));
     }
 
     private static bool HasBlankLine(StatementSyntax previous, StatementSyntax current, SourceText source, int previousLine, int currentLine)

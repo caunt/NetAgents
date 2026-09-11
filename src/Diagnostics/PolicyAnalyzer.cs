@@ -43,9 +43,8 @@ public abstract class PolicyAnalyzer(DiagnosticDescriptor rule) : DiagnosticAnal
         bool isMandatoryError = rule.DefaultSeverity == DiagnosticSeverity.Error && rule.IsEnabledByDefault
             && rule.CustomTags.Contains(WellKnownDiagnosticTags.NotConfigurable, StringComparer.Ordinal);
 
-        if (!isMandatoryError)
-            throw new ArgumentException(message: "Policy diagnostics must be enabled, non-configurable errors.", paramName: nameof(rule));
-
-        return rule;
+        return !isMandatoryError
+            ? throw new ArgumentException(message: "Policy diagnostics must be enabled, non-configurable errors.", paramName: nameof(rule))
+            : rule;
     }
 }

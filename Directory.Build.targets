@@ -70,5 +70,19 @@
     <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Build"
              Properties="NetAgentsSelfAnalysisBuild=true;VersionTimestamp=$(VersionTimestamp);IntermediateOutputPath=$(BaseIntermediateOutputPath)self-analysis/$(Configuration)/$(TargetFramework)/;OutputPath=$(MSBuildThisFileDirectory)artifacts/self-analysis/$(Configuration)/verified/" />
   </Target>
+  <PropertyGroup>
+    <NetAgentsRepositoryTaskSource>$(MSBuildThisFileDirectory)src/BuildTasks/bin/$(Configuration)/net10.0/NetAgents.BuildTasks.dll</NetAgentsRepositoryTaskSource>
+    <NetAgentsFormatterStamp>$([System.IO.File]::GetLastWriteTime('$(NetAgentsRepositoryTaskSource)').Ticks)</NetAgentsFormatterStamp>
+    <NetAgentsFormatterDirectory>$(MSBuildThisFileDirectory)artifacts/formatter/$(Configuration)/$(NetAgentsFormatterStamp)/</NetAgentsFormatterDirectory>
+    <NetAgentsBuildTaskPath>$(NetAgentsFormatterDirectory)NetAgents.BuildTasks.dll</NetAgentsBuildTaskPath>
+  </PropertyGroup>
+  <Target Name="PrepareNetAgentsRepositoryFormatter" BeforeTargets="FormatNetAgentsConsumerSource"
+          Condition="'$(DesignTimeBuild)' != 'true' and Exists('$(NetAgentsRepositoryTaskSource)')">
+    <ItemGroup>
+      <NetAgentsFormatterFiles Include="$(MSBuildThisFileDirectory)src/BuildTasks/bin/$(Configuration)/net10.0/*.dll;$(MSBuildThisFileDirectory)src/BuildTasks/bin/$(Configuration)/net10.0/*.deps.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NetAgentsFormatterFiles)" DestinationFolder="$(NetAgentsFormatterDirectory)"
+          Condition="!Exists('$(NetAgentsBuildTaskPath)')" />
+  </Target>
   <Import Project="$(MSBuildThisFileDirectory)src/Packaging/NetAgents.Analyzers.targets" />
 </Project>
