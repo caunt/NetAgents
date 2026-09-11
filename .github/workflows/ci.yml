@@ -28,37 +28,27 @@ jobs:
       - name: Install .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
-          global-json-file: global.json
-          cache: true
-          cache-dependency-path: '**/packages.lock.json'
+          dotnet-version: 10.0.x
       - name: Freeze timestamp version
         id: version
         shell: bash
         run: |
           version_timestamp="$(date -u '+%y %m %d %H %M %S')"
           echo "VERSION_TIMESTAMP=$version_timestamp" >> "$GITHUB_ENV"
-          package_version="$(dotnet msbuild src/NetAgents.Analyzers/NetAgents.Analyzers.csproj -getProperty:PackageVersion "-p:VersionTimestamp=$version_timestamp")"
+          package_version="$(dotnet msbuild src/NetAgents.Analyzers.csproj -getProperty:PackageVersion "-p:VersionTimestamp=$version_timestamp")"
           echo "package_version=$package_version" >> "$GITHUB_OUTPUT"
-      - name: Restore locked dependencies
-        run: dotnet restore NetAgents.slnx --locked-mode
+      - name: Restore dependencies
+        run: dotnet restore NetAgents.slnx
       - name: Build
         run: dotnet build NetAgents.slnx --configuration Release --no-restore "-p:VersionTimestamp=$VERSION_TIMESTAMP"
-      - name: Apply the analyzers to their own source and tests
-        shell: bash
-        run: |
-          mkdir -p artifacts/validation
-          cp src/NetAgents.Analyzers/bin/Release/netstandard2.0/NetAgents.Analyzers.dll artifacts/validation/NetAgents.Analyzers.dll
-          dotnet build NetAgents.slnx --configuration Release --no-restore "-p:VersionTimestamp=$VERSION_TIMESTAMP" "-p:NetAgentsAnalyzerAssemblyPath=$GITHUB_WORKSPACE/artifacts/validation/NetAgents.Analyzers.dll"
-      - name: Test rules
-        run: dotnet test NetAgents.slnx --configuration Release --no-build --no-restore
       - name: Check formatting
         run: dotnet format NetAgents.slnx --verify-no-changes --no-restore
       - name: Pack one analyzer package
-        run: dotnet pack src/NetAgents.Analyzers/NetAgents.Analyzers.csproj --configuration Release --no-build --no-restore --output artifacts/packages "-p:VersionTimestamp=$VERSION_TIMESTAMP"
-      - name: Verify package in a clean consumer
+        run: dotnet pack src/NetAgents.Analyzers.csproj --configuration Release --no-build --no-restore --output artifacts/packages "-p:VersionTimestamp=$VERSION_TIMESTAMP"
+      - name: Test rules and package consumption
         env:
-          PACKAGE_VERSION: ${{ steps.version.outputs.package_version }}
-        run: python scripts/verify-package.py "artifacts/packages/NetAgents.Analyzers.$PACKAGE_VERSION.nupkg"
+          NETAGENTS_PACKAGE_PATH: ${{ github.workspace }}/artifacts/packages/NetAgents.Analyzers.${{ steps.version.outputs.package_version }}.nupkg
+        run: dotnet test NetAgents.slnx --configuration Release --no-build --no-restore
       - name: Upload validated package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:

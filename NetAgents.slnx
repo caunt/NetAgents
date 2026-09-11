@@ -1,8 +1,8 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/NetAgents.Analyzers/NetAgents.Analyzers.csproj" />
+    <Project Path="src/NetAgents.Analyzers.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/NetAgents.Analyzers.Tests/NetAgents.Analyzers.Tests.csproj" />
+    <Project Path="tests/NetAgents.Analyzers.Tests.csproj" />
   </Folder>
 </Solution>

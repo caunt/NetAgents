@@ -396,6 +396,6 @@ dotnet_naming_style.s_camelcase.required_suffix =
 dotnet_naming_style.s_camelcase.word_separator =
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 
-[src/NetAgents.Analyzers/**/*.cs]
+[src/**/*.cs]
 # The analyzer targets netstandard2.0; this API is only available on newer runtimes.
 dotnet_diagnostic.CA1510.severity = none

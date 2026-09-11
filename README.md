@@ -69,18 +69,23 @@ assets are loaded; it cannot control a build system that excludes it.
 ## Development
 
 ```bash
-dotnet restore NetAgents.slnx --locked-mode
+dotnet restore NetAgents.slnx
 dotnet build NetAgents.slnx --configuration Release --no-restore
 dotnet test NetAgents.slnx --configuration Release --no-build --no-restore
 dotnet format NetAgents.slnx --verify-no-changes --no-restore
-dotnet pack src/NetAgents.Analyzers/NetAgents.Analyzers.csproj --configuration Release --output artifacts/packages
-python scripts/verify-package.py artifacts/packages/NetAgents.Analyzers.<version>.nupkg
+dotnet pack src/NetAgents.Analyzers.csproj --configuration Release --output artifacts/packages
 ```
 
-The package verification script creates a clean consumer with a private NuGet
-cache. It verifies the package layout, successful compilation, rejection of
-boxing and formatting defects, and rejection of configuration and suppression
-attempts. Unit tests cover individual analyzer behavior and generated-code
+Every normal build compiles the analyzer and then rebuilds it with that analyzer
+enabled. The test project also references it as an analyzer. Self-analysis is
+part of the build, with no separate workflow command needed.
+
+The .NET tests create a clean consumer with a private NuGet cache and verify
+package layout, successful compilation, rejection of boxing and formatting
+defects, and rejection of configuration and suppression attempts. Set
+`NETAGENTS_PACKAGE_PATH` to test a specific package artifact; otherwise the tests
+pack the current build. The publishing workflow tests the exact package it
+publishes. Tests also cover individual analyzer behavior and generated-code
 exclusions. Negative C# snippets in test strings intentionally violate policy.
 
 ## Publishing and versioning
@@ -101,8 +106,7 @@ Trusted publisher settings:
 | NuGet username | `caunt` by default, or repository variable `NUGET_USER` |
 | Package | `NetAgents.Analyzers` |
 
-Versioning matches [EgressPool](https://github.com/caunt/EgressPool):
-`year.month.day.bucket`, using a two-digit UTC year and
+Versions use `year.month.day.bucket`, with a two-digit UTC year and
 `bucket = 1000 + floor(secondsSinceMidnight * 9000 / 86400)`.
 For example, `26 09 11 12 00 00` produces `26.9.11.5500`.
 The implementation is in [build/Versioning.props](build/Versioning.props).

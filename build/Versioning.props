@@ -1,5 +1,5 @@
 <Project>
-  <!-- Match caunt/EgressPool: UTC year.month.day plus a 1000..9999 time-of-day bucket.
+  <!-- UTC year.month.day plus a 1000..9999 time-of-day bucket.
        A pipeline passes VersionTimestamp once so restore, build, test, and pack agree. -->
   <PropertyGroup>
     <VersionTimestamp Condition="'$(VersionTimestamp)' == ''">$([System.DateTimeOffset]::UtcNow.ToString('yy MM dd HH mm ss'))</VersionTimestamp>

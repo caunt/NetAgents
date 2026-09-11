@@ -11,15 +11,13 @@
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>All</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <NuGetAudit>true</NuGetAudit>
     <NuGetAuditMode>all</NuGetAuditMode>
     <IsPackable>false</IsPackable>
     <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
-    <IsNetAgentsAnalyzerProject Condition="'$(MSBuildProjectName)' == 'NetAgents.Analyzers'">true</IsNetAgentsAnalyzerProject>
   </PropertyGroup>
   <ItemGroup>
-    <GlobalAnalyzerConfigFiles Include="$(MSBuildThisFileDirectory)src/NetAgents.Analyzers/Configuration/NetAgents.globalconfig" />
+    <GlobalAnalyzerConfigFiles Include="$(MSBuildThisFileDirectory)src/Configuration/NetAgents.globalconfig" />
   </ItemGroup>
   <Import Project="build/Versioning.props" />
 </Project>

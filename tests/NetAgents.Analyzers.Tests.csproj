@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
-    <ProjectReference Include="../../src/NetAgents.Analyzers/NetAgents.Analyzers.csproj" />
+    <ProjectReference Include="../src/NetAgents.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 </Project>

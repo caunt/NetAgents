@@ -40,7 +40,7 @@ names does not require renaming framework APIs.
 ## Shared editor configuration
 
 The complete configuration is
-[`src/NetAgents.Analyzers/Configuration/NetAgents.globalconfig`](../src/NetAgents.Analyzers/Configuration/NetAgents.globalconfig).
+[`src/Configuration/NetAgents.globalconfig`](../src/Configuration/NetAgents.globalconfig).
 It preserves the original C# preferences: four-space indentation, explicit
 types, file-scoped namespaces, System imports first, the original brace and
 wrapping styles, and conventional interface, generic parameter, field, and

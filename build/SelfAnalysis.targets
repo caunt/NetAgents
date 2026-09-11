@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <NetAgentsSelfAnalysisAssemblyPath>$(MSBuildThisFileDirectory)../artifacts/self-analysis/$(Configuration)/NetAgents.Analyzers.dll</NetAgentsSelfAnalysisAssemblyPath>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(NetAgentsSelfAnalysisBuild)' == 'true'">
+    <Analyzer Include="$(NetAgentsSelfAnalysisAssemblyPath)" />
+  </ItemGroup>
+  <Target Name="AnalyzeNetAgentsSource" AfterTargets="Build"
+          Condition="'$(NetAgentsSelfAnalysisBuild)' != 'true' and '$(DesignTimeBuild)' != 'true'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(NetAgentsSelfAnalysisAssemblyPath)" />
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Rebuild"
+             Properties="NetAgentsSelfAnalysisBuild=true;VersionTimestamp=$(VersionTimestamp)" />
+  </Target>
+</Project>

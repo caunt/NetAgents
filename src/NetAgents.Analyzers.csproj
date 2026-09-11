@@ -26,8 +26,9 @@
     <None Include="Configuration/NetAgents.globalconfig" Pack="true" PackagePath="buildTransitive/NetAgents.globalconfig" />
     <EmbeddedResource Include="Configuration/NetAgents.globalconfig" LogicalName="NetAgents.Analyzers.Configuration.NetAgents.globalconfig" />
     <None Include="Packaging/README.md" Pack="true" PackagePath="/README.md" />
-    <None Include="../../LICENSE" Pack="true" PackagePath="/" />
+    <None Include="../LICENSE" Pack="true" PackagePath="/" />
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
   </ItemGroup>
+  <Import Project="../build/SelfAnalysis.targets" />
 </Project>
