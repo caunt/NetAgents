@@ -21,17 +21,13 @@ internal static class StatementSpacing
             StatementSyntax? previous = GetPreviousStatement(statement);
 
             if (previous is null || (!RequiresSeparation(previous, source) && !RequiresSeparation(statement, source)))
-            {
                 continue;
-            }
 
             int previousLine = source.Lines.GetLineFromPosition(previous.Span.End).LineNumber;
             int currentLine = source.Lines.GetLineFromPosition(statement.SpanStart).LineNumber;
 
             if (HasBlankLine(previous, statement, source, previousLine, currentLine))
-            {
                 continue;
-            }
 
             string lineEnding = GetLineEnding(source, previousLine);
             int insertionPosition = source.Lines.GetLineFromPosition(statement.FullSpan.Start).Start;
@@ -46,17 +42,13 @@ internal static class StatementSpacing
                 int whitespaceStart = statement.SpanStart;
 
                 while (whitespaceStart > previous.Span.End && source[whitespaceStart - 1] is ' ' or '\t')
-                {
                     whitespaceStart--;
-                }
 
                 TextLine line = source.Lines[currentLine];
                 int indentationEnd = line.Start;
 
                 while (indentationEnd < line.End && source[indentationEnd] is ' ' or '\t')
-                {
                     indentationEnd++;
-                }
 
                 string indentation = source.ToString(TextSpan.FromBounds(line.Start, indentationEnd));
                 change = new TextChange(TextSpan.FromBounds(whitespaceStart, statement.SpanStart), lineEnding + lineEnding + indentation);
@@ -77,9 +69,11 @@ internal static class StatementSpacing
             case SwitchSectionSyntax section:
                 return GetPreviousStatement(section.Statements, statement);
             case GlobalStatementSyntax global when global.Parent is CompilationUnitSyntax compilation:
-                int position = compilation.Members.IndexOf(global);
+                {
+                    int position = compilation.Members.IndexOf(global);
 
-                return position > 0 && compilation.Members[position - 1] is GlobalStatementSyntax previous ? previous.Statement : null;
+                    return position > 0 && compilation.Members[position - 1] is GlobalStatementSyntax previous ? previous.Statement : null;
+                }
             default:
                 return null;
         }
@@ -113,9 +107,7 @@ internal static class StatementSpacing
             if (source.ToString(line.Span).All(char.IsWhiteSpace)
                 && !IsInsideContentTrivia(previous.GetTrailingTrivia(), line.Start)
                 && !IsInsideContentTrivia(current.GetLeadingTrivia(), line.Start))
-            {
                 return true;
-            }
         }
 
         return false;
@@ -126,9 +118,7 @@ internal static class StatementSpacing
         foreach (SyntaxTrivia trivia in triviaList)
         {
             if (trivia.Span.Contains(position) && !trivia.IsKind(SyntaxKind.WhitespaceTrivia) && !trivia.IsKind(SyntaxKind.EndOfLineTrivia))
-            {
                 return true;
-            }
         }
 
         return false;
@@ -139,16 +129,12 @@ internal static class StatementSpacing
         TextLine line = source.Lines[preferredLine];
 
         if (line.EndIncludingLineBreak > line.End)
-        {
             return source.ToString(TextSpan.FromBounds(line.End, line.EndIncludingLineBreak));
-        }
 
         foreach (TextLine candidate in source.Lines)
         {
             if (candidate.EndIncludingLineBreak > candidate.End)
-            {
                 return source.ToString(TextSpan.FromBounds(candidate.End, candidate.EndIncludingLineBreak));
-            }
         }
 
         return "\n";

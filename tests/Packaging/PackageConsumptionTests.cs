@@ -86,7 +86,7 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspace.FullName, buildArguments);
 
             string spacingSource = ValidSource.Replace(oldValue: "return recipientName;",
-                newValue: "string greeting = recipientName;\n        if (string.IsNullOrEmpty(greeting))\n        {\n            return string.Empty;\n        }\n        return greeting;",
+                newValue: "string greeting = recipientName;\n        if (string.IsNullOrEmpty(greeting))\n            return string.Empty;\n        return greeting;",
                 StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, spacingSource);
@@ -101,6 +101,40 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspace.FullName, buildArguments);
             await RunDevelopmentKit(workspace.FullName, arguments:
                 ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0016", "--no-restore", "--verify-no-changes"]);
+
+            const string braceBody = """
+                if (string.IsNullOrEmpty(recipientName))
+                        {
+                            return string.Empty;
+                        }
+
+                        foreach (char character in recipientName)
+                        {
+                            if (char.IsWhiteSpace(character))
+                                return recipientName
+                                    .Trim();
+                        }
+
+                        return recipientName;
+                """;
+
+            string braceSource = ValidSource.Replace(oldValue: "return recipientName;", braceBody, StringComparison.Ordinal);
+            await File.WriteAllTextAsync(sourcePath, braceSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0017");
+            await RunDevelopmentKit(workspace.FullName, arguments:
+                ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0017", "--no-restore"]);
+
+            string expectedBraces = braceSource.Replace(oldValue: "        {\n            return string.Empty;\n        }",
+                newValue: "            return string.Empty;", StringComparison.Ordinal)
+                .Replace(oldValue: "            if (char.IsWhiteSpace(character))\n                return recipientName\n                    .Trim();",
+                    newValue: "            if (char.IsWhiteSpace(character))\n            {\n                return recipientName\n                    .Trim();\n            }",
+                    StringComparison.Ordinal);
+
+            Assert.Equal(expectedBraces, await File.ReadAllTextAsync(sourcePath));
+            await RunDevelopmentKit(workspace.FullName, buildArguments);
+            await RunDevelopmentKit(workspace.FullName, arguments: ["format", projectPath, "--no-restore", "--verify-no-changes"]);
+            await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0017\n" + braceSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0017");
 
             string lookupSource = ValidSource.Replace(oldValue: "return recipientName;",
                 newValue: "System.Collections.Generic.Dictionary<string, string> values = [];\n\n"
@@ -158,9 +192,11 @@ public sealed class PackageConsumptionTests
             string[] conflictingEditorSettings =
             [
                 "csharp_style_var_elsewhere = true:silent",
+                "csharp_prefer_braces = true:silent",
                 "insert_final_newline = false",
                 "dotnet_diagnostic.NETAGENTS0001.severity = none",
                 "dotnet_diagnostic.NETAGENTS0015.severity = none",
+                "dotnet_diagnostic.NETAGENTS0017.severity = none",
                 "dotnet_diagnostic.IDE0005.severity = none",
                 "dotnet_diagnostic.IDE0059.severity = none",
                 "dotnet_diagnostic.CS1591.severity = none",
@@ -244,9 +280,7 @@ public sealed class PackageConsumptionTests
         ];
 
         foreach (string requiredFile in requiredFiles)
-        {
             Assert.NotNull(package.GetEntry(requiredFile));
-        }
 
         Assert.Equal(expected: 2, actual: package.Entries.Count(static entry => entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal)));
 
@@ -316,6 +350,7 @@ public sealed class PackageConsumptionTests
                 "insert_final_newline" => "true",
                 "dotnet_naming_symbols.type_parameters.applicable_kinds" when preference.Value == "namespace" => "type_parameter",
                 "csharp_style_unused_value_assignment_preference" => preference.Value.Split(separator: ':').First() + ":error",
+                "csharp_prefer_braces" => "false:silent",
                 _ => preference.Value,
             };
 
@@ -329,9 +364,7 @@ public sealed class PackageConsumptionTests
 
         while (repositoryDirectory is not null
             && !File.Exists(Path.Combine(paths: [repositoryDirectory.FullName, "NetAgents.slnx"])))
-        {
             repositoryDirectory = repositoryDirectory.Parent;
-        }
 
         Assert.NotNull(repositoryDirectory);
 
@@ -364,9 +397,7 @@ public sealed class PackageConsumptionTests
         };
 
         foreach (string argument in arguments)
-        {
             process.StartInfo.ArgumentList.Add(argument);
-        }
 
         Assert.True(process.Start());
         Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();

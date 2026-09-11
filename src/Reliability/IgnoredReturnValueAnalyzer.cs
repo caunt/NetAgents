@@ -40,9 +40,7 @@ public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule)
         IOperation expression = ((IExpressionStatementOperation)context.Operation).Operation;
 
         if (ReturnsValue(expression))
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, expression.Syntax.GetLocation()));
-        }
     }
 
     private static void AnalyzeAssignment(OperationAnalysisContext context)
@@ -50,9 +48,7 @@ public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule)
         IAssignmentOperation assignment = (IAssignmentOperation)context.Operation;
 
         if (ContainsDiscard(assignment.Target))
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, assignment.Syntax.GetLocation()));
-        }
     }
 
     private static bool ContainsDiscard(IOperation target)

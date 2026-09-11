@@ -44,14 +44,10 @@ public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule)
         };
 
         while (condition is ParenthesizedExpressionSyntax parenthesizedExpression)
-        {
             condition = parenthesizedExpression.Expression;
-        }
 
         if (condition is not null && !condition.IsKind(SyntaxKind.TrueLiteralExpression))
-        {
             return;
-        }
 
         context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
     }

@@ -43,9 +43,7 @@ public sealed class SourceFileStructureAnalyzer() : PolicyAnalyzer(Rule)
     private static void AnalyzeDeclaration(SyntaxNodeAnalysisContext context)
     {
         if (context.Node.Ancestors().Any(static ancestor => ancestor is BaseTypeDeclarationSyntax))
-        {
             return;
-        }
 
         SyntaxToken identifier = context.Node is BaseTypeDeclarationSyntax typeDeclaration
             ? typeDeclaration.Identifier
@@ -58,8 +56,6 @@ public sealed class SourceFileStructureAnalyzer() : PolicyAnalyzer(Rule)
             .Count(static descendant => descendant is BaseTypeDeclarationSyntax or DelegateDeclarationSyntax);
 
         if (!string.Equals(fileName, identifier.ValueText, StringComparison.Ordinal) || declarationCount > 1)
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, identifier.GetLocation()));
-        }
     }
 }

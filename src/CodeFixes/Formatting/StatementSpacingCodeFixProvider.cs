@@ -47,9 +47,7 @@ public sealed class StatementSpacingCodeFixProvider : CodeFixProvider
         SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         if (root is null)
-        {
             return document;
-        }
 
         SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 

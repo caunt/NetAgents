@@ -55,24 +55,18 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
             string trimmedLine = line.Trim();
 
             if (trimmedLine.Length == 0 || trimmedLine.StartsWith(value: "#", StringComparison.Ordinal))
-            {
                 continue;
-            }
 
             int separatorIndex = trimmedLine.IndexOf(value: '=');
 
             if (separatorIndex < 0)
-            {
                 continue;
-            }
 
             string key = trimmedLine.Substring(startIndex: 0, length: separatorIndex).Trim();
             string value = trimmedLine.Substring(separatorIndex + 1).Trim();
 
             if (key is not "is_global" and not "global_level" && value.Length > 0)
-            {
                 options[key] = value;
-            }
         }
 
         return options.ToImmutable();

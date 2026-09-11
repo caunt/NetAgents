@@ -7,5 +7,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
     <Compile Include="../Formatting/StatementSpacing.cs" Link="Formatting/StatementSpacing.cs" />
+    <Compile Include="../Formatting/ControlFlowBraces.cs" Link="Formatting/ControlFlowBraces.cs" />
   </ItemGroup>
 </Project>

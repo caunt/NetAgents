@@ -19,3 +19,4 @@ NETAGENTS0012 | Concurrency | Error | Framework synchronization and blocking wai
 NETAGENTS0013 | Configuration | Error | Consumer overrides of the embedded policy
 NETAGENTS0015 | Reliability | Error | Ignored return values and discard assignments
 NETAGENTS0016 | Formatting | Error | Blank lines around control flow and multiline variable declarations
+NETAGENTS0017 | Formatting | Error | Braces for multiline bodies and consistent conditional chains

@@ -41,9 +41,7 @@ public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
     private static void AnalyzeDeclaration(SyntaxNodeAnalysisContext context)
     {
         if (context.SemanticModel.GetDeclaredSymbol(context.Node, context.CancellationToken) is not INamedTypeSymbol type)
-        {
             return;
-        }
 
         INamespaceSymbol containingNamespace = type.ContainingNamespace;
 
@@ -63,17 +61,13 @@ public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
         if (!context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue(
                 key: "build_property.MSBuildProjectDirectory", out string? projectDirectory)
             || string.IsNullOrWhiteSpace(projectDirectory))
-        {
             return;
-        }
 
         string root = Path.GetFullPath(projectDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         string sourceDirectory = Path.GetDirectoryName(Path.GetFullPath(context.Node.SyntaxTree.FilePath)) ?? root;
 
         if (!sourceDirectory.StartsWith(root + Path.DirectorySeparatorChar.ToString(), StringComparison.OrdinalIgnoreCase))
-        {
             return;
-        }
 
         string relativeDirectory = sourceDirectory.Substring(root.Length + 1);
 

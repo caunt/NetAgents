@@ -10,20 +10,20 @@ using NetAgents.Analyzers.Diagnostics;
 namespace NetAgents.Analyzers.Formatting;
 
 /// <summary>
-/// Separates control flow and multiline variable declarations from adjacent statements.
+/// Requires braces for multiline bodies and omits optional braces for single-line bodies.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class StatementSpacingAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class ControlFlowBracesAnalyzer() : PolicyAnalyzer(Rule)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
     /// </summary>
-    public const string RuleIdentifier = StatementSpacing.RuleIdentifier;
+    public const string RuleIdentifier = ControlFlowBraces.RuleIdentifier;
 
     private static readonly DiagnosticDescriptor Rule = new(
         RuleIdentifier,
-        title: "Statements require blank lines",
-        messageFormat: "Separate control-flow statements and multiline variable declarations from adjacent statements with a blank line",
+        title: "Braces must match the body layout",
+        messageFormat: "Use braces for multiline bodies and omit optional braces for single-line bodies, keeping conditional chains consistent",
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
@@ -32,14 +32,14 @@ public sealed class StatementSpacingAnalyzer() : PolicyAnalyzer(Rule)
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(AnalyzeSpacing, SyntaxKind.CompilationUnit);
+        context.RegisterSyntaxNodeAction(AnalyzeBraces, SyntaxKind.CompilationUnit);
     }
 
-    private static void AnalyzeSpacing(SyntaxNodeAnalysisContext context)
+    private static void AnalyzeBraces(SyntaxNodeAnalysisContext context)
     {
         SourceText source = context.Node.SyntaxTree.GetText(context.CancellationToken);
 
-        foreach (KeyValuePair<TextSpan, TextChange> change in StatementSpacing.GetChanges(context.Node, source))
+        foreach (KeyValuePair<TextSpan, SyntaxNode> change in ControlFlowBraces.GetChanges(context.Node, source))
             context.ReportDiagnostic(Diagnostic.Create(Rule, Location.Create(context.Node.SyntaxTree, change.Key)));
     }
 }

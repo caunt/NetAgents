@@ -24,6 +24,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0014 | Reject incompatible project settings. This diagnostic comes from the package's MSBuild target. |
 | NETAGENTS0015 | Require return values to be consumed. Reject ignored non-void calls, ignored awaited results, and assignments to `_`, including tuple deconstruction. This includes conditional calls, expression-bodied members, callbacks, and `for` clauses. |
 | NETAGENTS0016 | Require blank lines before and after control-flow statements and multiline local declarations when another statement is adjacent. Includes an automatic code fix and Fix all support. |
+| NETAGENTS0017 | Omit optional braces around one single-line body statement; require braces for multiline bodies and keep conditional chains consistent. Includes an automatic code fix and Fix all support. |
 
 Statement spacing covers `if`, loops, `switch`, `try`, `using` (including
 declarations), `return`, `throw`, `break`, `continue`, and `yield`. Multiline
@@ -36,6 +37,22 @@ Comments and existing line endings are preserved. Use the editor's
 
 ```bash
 dotnet format analyzers --diagnostics NETAGENTS0016
+```
+
+Brace style depends on the **body**, even when the condition or loop header
+spans several lines. This covers `if`/`else`, `for`, `foreach` (including
+`await foreach`), `while`, `do`, `using` (including `await using`), `fixed`, and
+`case`/`default` bodies. A case with multiple statements also requires a block.
+If any branch in an `if`/`else if`/`else` chain needs braces, every branch keeps
+or gains them. Required language blocks, scope-dependent blocks, directives,
+and braces protecting an `else` binding are preserved. Case wrapping preserves
+variables and local functions shared with other sections.
+
+Use **Fix body braces** or run the following to add missing braces and remove
+unnecessary ones:
+
+```bash
+dotnet format analyzers --diagnostics NETAGENTS0017
 ```
 
 Check, return, pass, or store and use every returned value. For example, use

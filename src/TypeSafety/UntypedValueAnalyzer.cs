@@ -44,48 +44,34 @@ public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule)
         ITypeSymbol? type = symbol as ITypeSymbol;
 
         if (context.Node is PredefinedTypeSyntax predefinedType && predefinedType.Keyword.IsKind(SyntaxKind.ObjectKeyword))
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
-        }
         else if (ContainsUntypedValue(type))
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
-        }
     }
 
     private static void AnalyzeValue(OperationAnalysisContext context)
     {
         if (!context.Operation.IsImplicit && ContainsUntypedValue(context.Operation.Type))
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, context.Operation.Syntax.GetLocation()));
-        }
     }
 
     private static bool ContainsUntypedValue(ITypeSymbol? type)
     {
         if (type is null)
-        {
             return false;
-        }
 
         if (type.SpecialType == SpecialType.System_Object || type.TypeKind == TypeKind.Dynamic)
-        {
             return true;
-        }
 
         if (type is IArrayTypeSymbol arrayType)
-        {
             return ContainsUntypedValue(arrayType.ElementType);
-        }
 
         if (type is INamedTypeSymbol namedType)
         {
             foreach (ITypeSymbol typeArgument in namedType.TypeArguments)
             {
                 if (ContainsUntypedValue(typeArgument))
-                {
                     return true;
-                }
             }
         }
 

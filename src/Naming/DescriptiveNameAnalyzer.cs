@@ -76,9 +76,7 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
         };
 
         if (identifier.IsMissing || identifier.ValueText.Length == 0)
-        {
             return;
-        }
 
         // Interface/override signatures can be owned by a framework or another assembly.
         ISymbol? symbol = context.SemanticModel.GetDeclaredSymbol(context.Node, context.CancellationToken);
@@ -87,17 +85,13 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
         { IsOverride: true }
             or IMethodSymbol { ExplicitInterfaceImplementations.Length: > 0 }
             or IPropertySymbol { ExplicitInterfaceImplementations.Length: > 0 })
-        {
             return;
-        }
 
         string name = identifier.ValueText.TrimStart(trimChars: ['_']);
 
         if ((context.Node is InterfaceDeclarationSyntax && name.StartsWith(value: "I", StringComparison.Ordinal))
             || (context.Node is TypeParameterSyntax && name.StartsWith(value: "T", StringComparison.Ordinal)))
-        {
             name = name.Substring(startIndex: 1);
-        }
 
         bool invalidName = name.Length < 2;
 
@@ -107,14 +101,10 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
 
             if (AbbreviatedWords.Contains(word)
                 || (word.Length > 1 && char.IsLetter(word[index: 0]) && word.All(static character => !char.IsLetter(character) || char.IsUpper(character))))
-            {
                 invalidName = true;
-            }
         }
 
         if (invalidName)
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, identifier.GetLocation()));
-        }
     }
 }

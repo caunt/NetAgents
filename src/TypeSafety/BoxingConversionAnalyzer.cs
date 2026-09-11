@@ -38,15 +38,11 @@ public sealed class BoxingConversionAnalyzer() : PolicyAnalyzer(Rule)
         IConversionOperation conversion = (IConversionOperation)context.Operation;
 
         if (conversion.Operand.Type is null || conversion.Type is null)
-        {
             return;
-        }
 
         CSharpCompilation compilation = (CSharpCompilation)context.Compilation;
 
         if (compilation.ClassifyConversion(conversion.Operand.Type, conversion.Type).IsBoxing)
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, conversion.Syntax.GetLocation()));
-        }
     }
 }

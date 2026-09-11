@@ -38,9 +38,7 @@ public sealed class EmptyCatchBlockAnalyzer() : PolicyAnalyzer(Rule)
         CatchClauseSyntax catchClause = (CatchClauseSyntax)context.Node;
 
         if (catchClause.Block.Statements.Count > 0)
-        {
             return;
-        }
 
         context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
     }

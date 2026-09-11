@@ -57,9 +57,7 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule)
         ISymbol? symbol = context.SemanticModel.GetSymbolInfo(context.Node, context.CancellationToken).Symbol;
 
         if (IsForbiddenType(symbol as INamedTypeSymbol))
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
-        }
     }
 
     private static void AnalyzeMember(OperationAnalysisContext context)
@@ -76,9 +74,7 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule)
         INamedTypeSymbol? containingType = member?.ContainingType;
 
         if (member is null || containingType is null)
-        {
             return;
-        }
 
         string containingNamespace = containingType.ContainingNamespace.ToDisplayString();
 
@@ -93,8 +89,6 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule)
             && containingType.Name.EndsWith(value: "Awaiter", StringComparison.Ordinal) && member.Name == "GetResult";
 
         if (IsForbiddenType(containingType) || isThreadSleep || isBlockingTask || isBlockingAwaiter)
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, context.Operation.Syntax.GetLocation()));
-        }
     }
 }

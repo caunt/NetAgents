@@ -22,9 +22,7 @@ public abstract class PolicyAnalyzer(DiagnosticDescriptor rule) : DiagnosticAnal
     public sealed override void Initialize(AnalysisContext context)
     {
         if (context is null)
-        {
             throw new ArgumentNullException(nameof(context));
-        }
 
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
@@ -40,15 +38,11 @@ public abstract class PolicyAnalyzer(DiagnosticDescriptor rule) : DiagnosticAnal
     private static DiagnosticDescriptor ValidateRule(DiagnosticDescriptor rule)
     {
         if (rule is null)
-        {
             throw new ArgumentNullException(nameof(rule));
-        }
 
         if (rule.DefaultSeverity != DiagnosticSeverity.Error || !rule.IsEnabledByDefault
             || !rule.CustomTags.Contains(WellKnownDiagnosticTags.NotConfigurable, StringComparer.Ordinal))
-        {
             throw new ArgumentException(message: "Policy diagnostics must be enabled, non-configurable errors.", paramName: nameof(rule));
-        }
 
         return rule;
     }

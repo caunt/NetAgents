@@ -42,39 +42,27 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
         ExpressionSyntax expression = argument.Expression;
 
         while (expression is ParenthesizedExpressionSyntax parenthesizedExpression)
-        {
             expression = parenthesizedExpression.Expression;
-        }
 
         if (expression is PrefixUnaryExpressionSyntax prefixExpression)
-        {
             expression = prefixExpression.Operand;
-        }
 
         if (argument.NameColon is not null || expression is not LiteralExpressionSyntax and not DefaultExpressionSyntax)
-        {
             return;
-        }
 
         IParameterSymbol? parameter = ResolveParameter(argument, context);
 
         if (parameter is not null)
-        {
             context.ReportDiagnostic(Diagnostic.Create(Rule, argument.GetLocation()));
-        }
     }
 
     private static IParameterSymbol? ResolveParameter(ArgumentSyntax argument, SyntaxNodeAnalysisContext context)
     {
         if (context.SemanticModel.GetOperation(argument, context.CancellationToken) is IArgumentOperation operation)
-        {
             return operation.Parameter;
-        }
 
         if (argument.Parent is not BaseArgumentListSyntax argumentList || argumentList.Parent is null)
-        {
             return null;
-        }
 
         ISymbol? invokedSymbol = context.SemanticModel.GetSymbolInfo(argumentList.Parent, context.CancellationToken).Symbol;
 
