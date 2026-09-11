@@ -25,7 +25,8 @@ public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule)
         category: "Concurrency",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

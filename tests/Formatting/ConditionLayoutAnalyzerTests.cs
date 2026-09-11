@@ -32,8 +32,11 @@ public sealed class ConditionLayoutAnalyzerTests
         Diagnostic[] diagnostics = await Analyze(statement);
 
         Assert.Equal(ConditionLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-        Assert.Contains(expectedSubstring: "separate variable declaration",
-            diagnostics[0].GetMessage(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        Assert.Contains(
+            expectedSubstring: "separate variable declaration",
+            diagnostics[0].GetMessage(System.Globalization.CultureInfo.InvariantCulture),
+            StringComparison.Ordinal
+        );
     }
 
     /// <summary>
@@ -99,7 +102,6 @@ public sealed class ConditionLayoutAnalyzerTests
 
     private static Task<Diagnostic[]> Analyze(string statement)
     {
-        return AnalyzerTestHarness.Analyze(new ConditionLayoutAnalyzer(),
-            $"public static class ExampleType {{ public static void Execute(int value) {{ {statement} }} }}");
+        return AnalyzerTestHarness.Analyze(new ConditionLayoutAnalyzer(), $"public static class ExampleType {{ public static void Execute(int value) {{ {statement} }} }}");
     }
 }

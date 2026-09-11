@@ -22,3 +22,4 @@ NETAGENTS0016 | Formatting | Error | Blank lines around control flow and multili
 NETAGENTS0017 | Formatting | Error | Braces for multiline bodies and consistent conditional chains
 NETAGENTS0018 | Structure | Error | At most sixteen authored C# files directly in each directory per project
 NETAGENTS0019 | Formatting | Error | Single-line conditions of at most 128 characters
+NETAGENTS0020 | Formatting | Error | Single-line argument and parameter lists up to 128 characters, otherwise one item per line

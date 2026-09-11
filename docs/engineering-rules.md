@@ -27,8 +27,19 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0017 | Omit optional braces around one single-line body statement; require braces for multiline bodies and keep conditional chains consistent. Includes an automatic code fix and Fix all support. |
 | NETAGENTS0018 | Allow at most 16 authored C# files directly in each directory per project. Organize larger directories into subdirectories with narrower responsibilities. |
 | NETAGENTS0019 | Require single-line conditions of at most 128 characters in `if`/`else if`, `while`, `do`, `for`, ternary expressions, catch filters, and switch `when` guards. Extract longer conditions into a separate variable declaration. |
+| NETAGENTS0020 | Keep argument and parameter lists on one line when their compact contents are at most 128 characters; otherwise put each item and the closing delimiter on separate lines. Includes an automatic fix and Fix All support. |
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
+
+Argument layout covers method and delegate calls, constructors (including target-typed `new`, `base`, and `this` initializers), attributes, element access, and declaration parameters for methods, constructors, primary constructors, records, delegates, operators, indexers, local functions, and anonymous functions. Generic type argument lists and collection initializers are not included. The shared 128-character limit counts the normalized single-line contents, including commas and spaces, but excludes delimiters, the method/type name, and indentation. A single item longer than the limit still gets its own line; this rule does not split literals or expressions.
+
+Multiline literals and comments that cannot safely fit on one line retain their contents and use expanded layout even below the limit. Lists containing preprocessor directives are left unchanged. Conditions still independently satisfy `NETAGENTS0019`; extract a call into a variable if its expanded arguments would make a condition multiline.
+
+Use **Fix argument and parameter layout** or run:
+
+```bash
+dotnet format analyzers --diagnostics NETAGENTS0020
+```
 
 Directory limits count each distinct `.cs` file included in the project once,
 including linked source files in their physical directories. Generated files

@@ -27,15 +27,22 @@ public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
         category: "Naming",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(AnalyzeDeclaration,
-            SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration, SyntaxKind.InterfaceDeclaration,
-            SyntaxKind.RecordDeclaration, SyntaxKind.RecordStructDeclaration, SyntaxKind.EnumDeclaration,
-            SyntaxKind.DelegateDeclaration);
+        context.RegisterSyntaxNodeAction(
+            AnalyzeDeclaration,
+            SyntaxKind.ClassDeclaration,
+            SyntaxKind.StructDeclaration,
+            SyntaxKind.InterfaceDeclaration,
+            SyntaxKind.RecordDeclaration,
+            SyntaxKind.RecordStructDeclaration,
+            SyntaxKind.EnumDeclaration,
+            SyntaxKind.DelegateDeclaration
+        );
     }
 
     private static void AnalyzeDeclaration(SyntaxNodeAnalysisContext context)
@@ -58,8 +65,7 @@ public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
         }
 
         // Only directories below the project root are source architecture, not checkout locations.
-        bool hasProjectDirectory = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue(
-            key: "build_property.MSBuildProjectDirectory", out string? projectDirectory);
+        bool hasProjectDirectory = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue(key: "build_property.MSBuildProjectDirectory", out string? projectDirectory);
 
         if (!hasProjectDirectory || string.IsNullOrWhiteSpace(projectDirectory))
             return;

@@ -26,6 +26,11 @@ internal static class CodeFixTestHarness
         return await Fix(source, new ControlFlowBracesAnalyzer(), new ControlFlowBracesCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
+    public static async Task<string> FixArguments(string source, bool fixAll)
+    {
+        return await Fix(source, new ArgumentLayoutAnalyzer(), new ArgumentLayoutCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     private static async Task<string> Fix(string source, DiagnosticAnalyzer analyzer, CodeFixProvider provider, bool fixAll)
     {
         using AdhocWorkspace workspace = new();
@@ -44,14 +49,22 @@ internal static class CodeFixTestHarness
 
         Assert.False(diagnostics.IsEmpty);
         List<CodeAction> actions = [];
-        await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostics[index: 0],
-            (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)).ConfigureAwait(continueOnCapturedContext: false);
+        await provider.RegisterCodeFixesAsync(
+            new CodeFixContext(document, diagnostics[index: 0], (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)
+        ).ConfigureAwait(continueOnCapturedContext: false);
         CodeAction action = Assert.Single(actions);
 
         if (fixAll)
         {
-            FixAllContext context = new(document, provider, FixAllScope.Document, action.EquivalenceKey,
-                provider.FixableDiagnosticIds.ToArray(), new CodeFixDiagnosticProvider(analyzer), CancellationToken.None);
+            FixAllContext context = new(
+                document,
+                provider,
+                FixAllScope.Document,
+                action.EquivalenceKey,
+                provider.FixableDiagnosticIds.ToArray(),
+                new CodeFixDiagnosticProvider(analyzer),
+                CancellationToken.None
+            );
 
             FixAllProvider? fixAllProvider = provider.GetFixAllProvider();
             Assert.NotNull(fixAllProvider);

@@ -30,29 +30,43 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
         category: "Naming",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
-    private static readonly Regex WordPattern = new(
-        pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+",
-        options: RegexOptions.CultureInvariant);
+    private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+", options: RegexOptions.CultureInvariant);
 
     private static readonly ImmutableHashSet<string> AbbreviatedWords = ImmutableHashSet.Create(
         StringComparer.OrdinalIgnoreCase,
         items: [        "api", "args", "async", "auth", "cfg", "config", "ctx", "db", "doc", "docs", "dto", "dsp",
         "env", "html", "http", "https", "id", "ids", "info", "init", "io", "ip", "json", "max", "min",
         "msg", "num", "opts", "param", "params", "prev", "proc", "ptr", "req", "res", "sdr", "sql",
-        "tcp", "temp", "tmp", "udp", "ui", "uri", "url", "utf", "utils", "var", "xml"]);
+        "tcp", "temp", "tmp", "udp", "ui", "uri", "url", "utf", "utils", "var", "xml"]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(AnalyzeDeclaration,
-            SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration, SyntaxKind.InterfaceDeclaration,
-            SyntaxKind.RecordDeclaration, SyntaxKind.RecordStructDeclaration, SyntaxKind.EnumDeclaration,
-            SyntaxKind.EnumMemberDeclaration, SyntaxKind.DelegateDeclaration, SyntaxKind.MethodDeclaration,
-            SyntaxKind.LocalFunctionStatement, SyntaxKind.PropertyDeclaration, SyntaxKind.EventDeclaration,
-            SyntaxKind.VariableDeclarator, SyntaxKind.Parameter, SyntaxKind.TypeParameter,
-            SyntaxKind.ForEachStatement, SyntaxKind.CatchDeclaration, SyntaxKind.SingleVariableDesignation);
+        context.RegisterSyntaxNodeAction(
+            AnalyzeDeclaration,
+            SyntaxKind.ClassDeclaration,
+            SyntaxKind.StructDeclaration,
+            SyntaxKind.InterfaceDeclaration,
+            SyntaxKind.RecordDeclaration,
+            SyntaxKind.RecordStructDeclaration,
+            SyntaxKind.EnumDeclaration,
+            SyntaxKind.EnumMemberDeclaration,
+            SyntaxKind.DelegateDeclaration,
+            SyntaxKind.MethodDeclaration,
+            SyntaxKind.LocalFunctionStatement,
+            SyntaxKind.PropertyDeclaration,
+            SyntaxKind.EventDeclaration,
+            SyntaxKind.VariableDeclarator,
+            SyntaxKind.Parameter,
+            SyntaxKind.TypeParameter,
+            SyntaxKind.ForEachStatement,
+            SyntaxKind.CatchDeclaration,
+            SyntaxKind.SingleVariableDesignation
+        );
     }
 
     private static void AnalyzeDeclaration(SyntaxNodeAnalysisContext context)

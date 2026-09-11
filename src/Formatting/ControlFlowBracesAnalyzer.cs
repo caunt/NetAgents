@@ -27,7 +27,8 @@ public sealed class ControlFlowBracesAnalyzer() : PolicyAnalyzer(Rule)
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

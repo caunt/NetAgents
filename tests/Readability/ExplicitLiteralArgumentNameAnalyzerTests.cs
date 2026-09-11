@@ -19,7 +19,9 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     public async Task ReportsUnnamedLiteralArguments(string invocation)
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new ExplicitLiteralArgumentNameAnalyzer(), $"public class ExampleType {{ public void Run() => {invocation}; private void Execute(int count) {{ }} }}");
+            new ExplicitLiteralArgumentNameAnalyzer(),
+            $"public class ExampleType {{ public void Run() => {invocation}; private void Execute(int count) {{ }} }}"
+        );
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier);
     }
@@ -31,7 +33,9 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     public async Task AllowsNamedArguments()
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new ExplicitLiteralArgumentNameAnalyzer(), source: "public class ExampleType { public void Run() => Execute(count: 42); private void Execute(int count) { } }");
+            new ExplicitLiteralArgumentNameAnalyzer(),
+            source: "public class ExampleType { public void Run() => Execute(count: 42); private void Execute(int count) { } }"
+        );
 
         Assert.Empty(diagnostics);
     }

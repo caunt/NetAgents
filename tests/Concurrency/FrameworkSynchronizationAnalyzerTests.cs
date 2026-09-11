@@ -21,8 +21,7 @@ public sealed class FrameworkSynchronizationAnalyzerTests
     [InlineData("using System.Threading.Tasks;", "public void Execute(Task operation) => operation.GetAwaiter().GetResult();")]
     public async Task ReportsDirectAliasedAndStaticSynchronization(string imports, string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new FrameworkSynchronizationAnalyzer(), $"{imports} public class ExampleType {{ {memberSource} }}");
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new FrameworkSynchronizationAnalyzer(), $"{imports} public class ExampleType {{ {memberSource} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == FrameworkSynchronizationAnalyzer.RuleIdentifier);
     }
@@ -34,7 +33,9 @@ public sealed class FrameworkSynchronizationAnalyzerTests
     public async Task AllowsAtomicsAndAsynchronousComposition()
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new FrameworkSynchronizationAnalyzer(), source: "public class ExampleType { private int count; public async System.Threading.Tasks.Task Execute() { System.Threading.Interlocked.Increment(ref count); await System.Threading.Tasks.Task.Delay(1); } }");
+            new FrameworkSynchronizationAnalyzer(),
+            source: "public class ExampleType { private int count; public async System.Threading.Tasks.Task Execute() { System.Threading.Interlocked.Increment(ref count); await System.Threading.Tasks.Task.Delay(1); } }"
+        );
 
         Assert.Empty(diagnostics);
     }

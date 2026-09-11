@@ -28,21 +28,23 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
         category: "Configuration",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
     private static readonly ImmutableDictionary<string, string> RequiredOptions = ReadRequiredOptions();
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterCompilationStartAction(static compilationContext =>
-            compilationContext.RegisterSyntaxTreeAction(treeContext => AnalyzeConfiguration(treeContext, compilationContext.Compilation)));
+        context.RegisterCompilationStartAction(
+            static compilationContext =>
+            compilationContext.RegisterSyntaxTreeAction(treeContext => AnalyzeConfiguration(treeContext, compilationContext.Compilation))
+        );
     }
 
     private static ImmutableDictionary<string, string> ReadRequiredOptions()
     {
-        using Stream configurationStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(
-            name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
+        using Stream configurationStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
             ?? throw new InvalidOperationException(message: "The embedded analyzer policy is missing.");
 
         using StreamReader reader = new(configurationStream);
@@ -85,8 +87,7 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
 
             if (isDiagnosticSeverity)
             {
-                string diagnosticIdentifier = requiredOption.Key.Substring(startIndex: 18,
-                    length: requiredOption.Key.Length - 18 - 9);
+                string diagnosticIdentifier = requiredOption.Key.Substring(startIndex: 18, length: requiredOption.Key.Length - 18 - 9);
 
                 ReportDiagnostic expectedSeverity = requiredOption.Value switch
                 {
@@ -114,8 +115,7 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
             if (!matches)
             {
                 string[] messageArguments = [requiredOption.Key, requiredOption.Value];
-                context.ReportDiagnostic(Diagnostic.Create(Rule,
-                    Location.Create(context.Tree, new TextSpan(start: 0, length: 0)), messageArgs: messageArguments));
+                context.ReportDiagnostic(Diagnostic.Create(Rule, Location.Create(context.Tree, new TextSpan(start: 0, length: 0)), messageArgs: messageArguments));
             }
         }
     }

@@ -25,16 +25,22 @@ public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule)
         category: "TypeSafety",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(AnalyzeTypeName,
-            SyntaxKind.PredefinedType, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
-        context.RegisterOperationAction(AnalyzeValue,
-            OperationKind.Invocation, OperationKind.PropertyReference, OperationKind.FieldReference,
-            OperationKind.Conversion, OperationKind.Await, OperationKind.ArrayElementReference);
+        context.RegisterSyntaxNodeAction(AnalyzeTypeName, SyntaxKind.PredefinedType, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
+        context.RegisterOperationAction(
+            AnalyzeValue,
+            OperationKind.Invocation,
+            OperationKind.PropertyReference,
+            OperationKind.FieldReference,
+            OperationKind.Conversion,
+            OperationKind.Await,
+            OperationKind.ArrayElementReference
+        );
     }
 
     private static void AnalyzeTypeName(SyntaxNodeAnalysisContext context)

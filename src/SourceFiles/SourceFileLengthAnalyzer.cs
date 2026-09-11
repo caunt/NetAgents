@@ -24,7 +24,8 @@ public sealed class SourceFileLengthAnalyzer() : PolicyAnalyzer(Rule)
         category: "Structure",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
@@ -35,9 +36,6 @@ public sealed class SourceFileLengthAnalyzer() : PolicyAnalyzer(Rule)
     private static void AnalyzeTree(SyntaxTreeAnalysisContext context)
     {
         if (context.Tree.GetText(context.CancellationToken).Lines.Count >= 1_000)
-        {
-            context.ReportDiagnostic(Diagnostic.Create(Rule,
-                Location.Create(context.Tree, new TextSpan(start: 0, length: 0))));
-        }
+            context.ReportDiagnostic(Diagnostic.Create(Rule, Location.Create(context.Tree, new TextSpan(start: 0, length: 0))));
     }
 }

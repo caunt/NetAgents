@@ -9,15 +9,16 @@ namespace NetAgents.Analyzers.Tests.Infrastructure;
 internal static class AnalyzerTestHarness
 {
     internal static readonly MetadataReference[] References = [.. Directory
-        .EnumerateFiles(Path.GetDirectoryName(typeof(string).Assembly.Location)
-            ?? throw new InvalidOperationException(message: "The runtime assembly directory is unavailable."), searchPattern: "*.dll")
+        .EnumerateFiles(
+            Path.GetDirectoryName(typeof(string).Assembly.Location)
+            ?? throw new InvalidOperationException(message: "The runtime assembly directory is unavailable."),
+            searchPattern: "*.dll"
+        )
         .Select(static assemblyPath => MetadataReference.CreateFromFile(assemblyPath))];
 
-    public static Task<Diagnostic[]> Analyze(DiagnosticAnalyzer analyzer, string source, string fileName = "ExampleType.cs",
-        bool allowUnsafeCode = false)
+    public static Task<Diagnostic[]> Analyze(DiagnosticAnalyzer analyzer, string source, string fileName = "ExampleType.cs", bool allowUnsafeCode = false)
     {
-        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source,
-            options: CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp14), path: fileName);
+        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, options: CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp14), path: fileName);
 
         return Analyze(analyzer, [syntaxTree], allowUnsafeCode);
     }
@@ -31,10 +32,12 @@ internal static class AnalyzerTestHarness
             Assert.Contains(WellKnownDiagnosticTags.NotConfigurable, descriptor.CustomTags);
         }
 
-        CSharpCompilation compilation = CSharpCompilation.Create(assemblyName: "AnalyzerTestAssembly",
-            syntaxTrees, references: References,
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: allowUnsafeCode));
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            assemblyName: "AnalyzerTestAssembly",
+            syntaxTrees,
+            references: References,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: allowUnsafeCode)
+        );
 
         Diagnostic[] compilerErrors = [.. compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)];
         Assert.Empty(compilerErrors);

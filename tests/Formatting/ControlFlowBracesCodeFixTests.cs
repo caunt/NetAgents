@@ -43,7 +43,11 @@ public sealed class ControlFlowBracesCodeFixTests
             """;
 
         string expected = source.Replace(oldValue: "        {\n", newValue: string.Empty, StringComparison.Ordinal)
-            .Replace(oldValue: "        }" + suffix + "\n", newValue: suffix.Length == 0 ? string.Empty : "        " + suffix.TrimStart() + "\n", StringComparison.Ordinal);
+            .Replace(
+                oldValue: "        }" + suffix + "\n",
+                newValue: suffix.Length == 0 ? string.Empty : "        " + suffix.TrimStart() + "\n",
+                StringComparison.Ordinal
+            );
 
         Assert.Equal(expected, await CodeFixTestHarness.FixBraces(source, fixAll: false));
     }
@@ -254,14 +258,17 @@ public sealed class ControlFlowBracesCodeFixTests
     [InlineData("\r\n")]
     public async Task PreservesCommentsAndLineEndings(string lineEnding)
     {
-        string source = string.Join(lineEnding, value:
+        string source = string.Join(
+            lineEnding,
+            value:
         [
             "public static class ExampleType", "{", "    public static void Execute(int count)", "    {",
             "        while (count > 0) // loop", "        { // opening", "            // body",
             "            count--; // decrement", "        } // closing", "",
             "        if (count < 0) // condition", "            // explanation",
             "            count = System.Math.Abs(", "                count); // result", "    }", "}",
-        ]);
+        ]
+        );
 
         string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
 

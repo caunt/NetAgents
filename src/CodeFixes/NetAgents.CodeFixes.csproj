@@ -6,6 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
+    <Compile Include="../Formatting/LayoutLimits.cs" Link="Formatting/LayoutLimits.cs" />
+    <Compile Include="../Formatting/ArgumentLayout.cs" Link="Formatting/ArgumentLayout.cs" />
     <Compile Include="../Formatting/StatementSpacing.cs" Link="Formatting/StatementSpacing.cs" />
     <Compile Include="../Formatting/ControlFlowBraces.cs" Link="Formatting/ControlFlowBraces.cs" />
   </ItemGroup>

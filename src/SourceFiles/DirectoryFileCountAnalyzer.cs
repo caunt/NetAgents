@@ -33,18 +33,21 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
         category: "Structure",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable, WellKnownDiagnosticTags.CompilationEnd]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable, WellKnownDiagnosticTags.CompilationEnd]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterCompilationStartAction(static compilationContext =>
+        context.RegisterCompilationStartAction(
+            static compilationContext =>
         {
             StringComparer pathComparer = Path.DirectorySeparatorChar == '\\' ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
             ConcurrentDictionary<string, SyntaxTree> files = new(pathComparer);
             compilationContext.RegisterSyntaxTreeAction(treeContext => CollectFile(treeContext, files));
             compilationContext.RegisterCompilationEndAction(endContext => AnalyzeDirectories(endContext, files, pathComparer));
-        });
+        }
+        );
     }
 
     private static void CollectFile(SyntaxTreeAnalysisContext context, ConcurrentDictionary<string, SyntaxTree> files)
@@ -57,8 +60,7 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
 
     private static void AnalyzeDirectories(CompilationAnalysisContext context, ConcurrentDictionary<string, SyntaxTree> files, StringComparer pathComparer)
     {
-        foreach (IGrouping<string, KeyValuePair<string, SyntaxTree>> directory in files.GroupBy(
-            static file => Path.GetDirectoryName(file.Key) is { Length: > 0 } name ? name : ".", pathComparer))
+        foreach (IGrouping<string, KeyValuePair<string, SyntaxTree>> directory in files.GroupBy(static file => Path.GetDirectoryName(file.Key) is { Length: > 0 } name ? name : ".", pathComparer))
         {
             context.CancellationToken.ThrowIfCancellationRequested();
             int count = directory.Count();
@@ -68,8 +70,15 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
 
             SyntaxTree firstFile = directory.OrderBy(static file => file.Key, pathComparer).First().Value;
 
-            context.ReportDiagnostic(Diagnostic.Create(Rule, Location.Create(firstFile, new TextSpan(start: 0, length: 0)),
-                directory.Key, count.ToString(CultureInfo.InvariantCulture), MaximumFileCount.ToString(CultureInfo.InvariantCulture)));
+            context.ReportDiagnostic(
+                Diagnostic.Create(
+                    Rule,
+                    Location.Create(firstFile, new TextSpan(start: 0, length: 0)),
+                    directory.Key,
+                    count.ToString(CultureInfo.InvariantCulture),
+                    MaximumFileCount.ToString(CultureInfo.InvariantCulture)
+                )
+            );
         }
     }
 }

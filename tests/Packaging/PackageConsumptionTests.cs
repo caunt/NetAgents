@@ -79,29 +79,32 @@ public sealed class PackageConsumptionTests
                 """;
 
             await File.WriteAllTextAsync(Path.Combine(paths: [workspace.FullName, "NuGet.Config"]), sourceConfiguration);
-            await RunDevelopmentKit(workspace.FullName, arguments:
-                ["restore", projectPath, "--packages", Path.Combine(paths: [workspace.FullName, "packages"])]);
+            await RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(paths: [workspace.FullName, "packages"])]);
 
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
             await RunDevelopmentKit(workspace.FullName, buildArguments);
             await VerifyDirectoryLimit(workspace.FullName, buildArguments);
 
-            string spacingSource = ValidSource.Replace(oldValue: "return recipientName;",
+            string spacingSource = ValidSource.Replace(
+                oldValue: "return recipientName;",
                 newValue: "string greeting = recipientName;\n        if (string.IsNullOrEmpty(greeting))\n            return string.Empty;\n        return greeting;",
-                StringComparison.Ordinal);
+                StringComparison.Ordinal
+            );
 
             await File.WriteAllTextAsync(sourcePath, spacingSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0016");
-            await RunDevelopmentKit(workspace.FullName, arguments:
-                ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0016", "--no-restore"]);
+            await RunDevelopmentKit(workspace.FullName, arguments: ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0016", "--no-restore"]);
 
             string expectedSpacing = spacingSource.Replace(oldValue: "\n        if", newValue: "\n\n        if", StringComparison.Ordinal)
                 .Replace(oldValue: "\n        return greeting;", newValue: "\n\n        return greeting;", StringComparison.Ordinal);
 
             Assert.Equal(expectedSpacing, await File.ReadAllTextAsync(sourcePath));
             await RunDevelopmentKit(workspace.FullName, buildArguments);
-            await RunDevelopmentKit(workspace.FullName, arguments:
-                ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0016", "--no-restore", "--verify-no-changes"]);
+            await RunDevelopmentKit(
+                workspace.FullName,
+                arguments:
+                ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0016", "--no-restore", "--verify-no-changes"]
+            );
 
             const string braceBody = """
                 if (string.IsNullOrEmpty(recipientName))
@@ -122,14 +125,18 @@ public sealed class PackageConsumptionTests
             string braceSource = ValidSource.Replace(oldValue: "return recipientName;", braceBody, StringComparison.Ordinal);
             await File.WriteAllTextAsync(sourcePath, braceSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0017");
-            await RunDevelopmentKit(workspace.FullName, arguments:
-                ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0017", "--no-restore"]);
+            await RunDevelopmentKit(workspace.FullName, arguments: ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0017", "--no-restore"]);
 
-            string expectedBraces = braceSource.Replace(oldValue: "        {\n            return string.Empty;\n        }",
-                newValue: "            return string.Empty;", StringComparison.Ordinal)
-                .Replace(oldValue: "            if (char.IsWhiteSpace(character))\n                return recipientName\n                    .Trim();",
+            string expectedBraces = braceSource.Replace(
+                oldValue: "        {\n            return string.Empty;\n        }",
+                newValue: "            return string.Empty;",
+                StringComparison.Ordinal
+            )
+                .Replace(
+                    oldValue: "            if (char.IsWhiteSpace(character))\n                return recipientName\n                    .Trim();",
                     newValue: "            if (char.IsWhiteSpace(character))\n            {\n                return recipientName\n                    .Trim();\n            }",
-                    StringComparison.Ordinal);
+                    StringComparison.Ordinal
+                );
 
             Assert.Equal(expectedBraces, await File.ReadAllTextAsync(sourcePath));
             await RunDevelopmentKit(workspace.FullName, buildArguments);
@@ -137,17 +144,23 @@ public sealed class PackageConsumptionTests
             await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0017\n" + braceSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0017");
 
-            string lookupSource = ValidSource.Replace(oldValue: "return recipientName;",
+            string lookupSource = ValidSource.Replace(
+                oldValue: "return recipientName;",
                 newValue: "System.Collections.Generic.Dictionary<string, string> values = [];\n\n"
                     + "        return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
-                StringComparison.Ordinal);
+                StringComparison.Ordinal
+            );
 
             await File.WriteAllTextAsync(sourcePath, lookupSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments);
-            await File.WriteAllTextAsync(sourcePath, lookupSource.Replace(
-                oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
-                newValue: "bool found = values.TryGetValue(recipientName, out string? greeting);\n\n        return greeting ?? recipientName;",
-                StringComparison.Ordinal));
+            await File.WriteAllTextAsync(
+                sourcePath,
+                lookupSource.Replace(
+                    oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
+                    newValue: "bool found = values.TryGetValue(recipientName, out string? greeting);\n\n        return greeting ?? recipientName;",
+                    StringComparison.Ordinal
+                )
+            );
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "IDE0059");
 
             string[] ignoredLookups =
@@ -160,7 +173,9 @@ public sealed class PackageConsumptionTests
             {
                 string ignoredSource = lookupSource.Replace(
                     oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
-                    newValue: ignoredLookup + "\n\n        return greeting ?? recipientName;", StringComparison.Ordinal);
+                    newValue: ignoredLookup + "\n\n        return greeting ?? recipientName;",
+                    StringComparison.Ordinal
+                );
 
                 await File.WriteAllTextAsync(sourcePath, ignoredSource);
                 await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015");
@@ -170,23 +185,32 @@ public sealed class PackageConsumptionTests
 
             await VerifyDiscardAssignments(workspace.FullName, sourcePath, buildArguments);
 
-            string boxingSource = ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
-                newValue: "System.IComparable CreateGreeting(int recipientName)", StringComparison.Ordinal);
+            string boxingSource = ValidSource.Replace(
+                oldValue: "string CreateGreeting(string recipientName)",
+                newValue: "System.IComparable CreateGreeting(int recipientName)",
+                StringComparison.Ordinal
+            );
 
             await File.WriteAllTextAsync(sourcePath, boxingSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001");
             await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0001\n" + boxingSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001");
-            await File.WriteAllTextAsync(sourcePath, ValidSource.Replace(oldValue: "        return recipientName;",
-                newValue: "return recipientName;", StringComparison.Ordinal));
+            await File.WriteAllTextAsync(
+                sourcePath,
+                ValidSource.Replace(oldValue: "        return recipientName;", newValue: "return recipientName;", StringComparison.Ordinal)
+            );
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "IDE0055");
             await File.WriteAllTextAsync(sourcePath, "using System.Text;\n\n" + ValidSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "IDE0005");
-            await File.WriteAllTextAsync(sourcePath, ValidSource.Replace(
-                oldValue: "/// <summary>Provides the consumer entry point.</summary>\n", newValue: string.Empty, StringComparison.Ordinal));
+            await File.WriteAllTextAsync(
+                sourcePath,
+                ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n", newValue: string.Empty, StringComparison.Ordinal)
+            );
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS1591");
-            await File.WriteAllTextAsync(sourcePath, ValidSource.Replace(oldValue: "return recipientName;",
-                newValue: "return recipientName.ToLower();", StringComparison.Ordinal));
+            await File.WriteAllTextAsync(
+                sourcePath,
+                ValidSource.Replace(oldValue: "return recipientName;", newValue: "return recipientName.ToLower();", StringComparison.Ordinal)
+            );
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CA1311");
             await File.WriteAllTextAsync(sourcePath, ValidSource);
 
@@ -233,8 +257,14 @@ public sealed class PackageConsumptionTests
 
             foreach (string conflictingSetting in conflictingProjectSettings)
             {
-                await File.WriteAllTextAsync(projectPath, projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
-                    newValue: $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}", StringComparison.Ordinal));
+                await File.WriteAllTextAsync(
+                    projectPath,
+                    projectContent.Replace(
+                        oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
+                        newValue: $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}",
+                        StringComparison.Ordinal
+                    )
+                );
                 await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0014");
             }
 
@@ -255,10 +285,7 @@ public sealed class PackageConsumptionTests
             ];
 
             foreach (string conflictingArgument in conflictingBuildArguments)
-            {
-                await RunDevelopmentKit(workspace.FullName, arguments: [.. buildArguments, conflictingArgument],
-                    expectedDiagnosticIdentifier: "NETAGENTS0014");
-            }
+                await RunDevelopmentKit(workspace.FullName, arguments: [.. buildArguments, conflictingArgument], expectedDiagnosticIdentifier: "NETAGENTS0014");
 
             await RunDevelopmentKit(workspace.FullName, buildArguments);
         }
@@ -286,10 +313,12 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspacePath, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015").ConfigureAwait(continueOnCapturedContext: false);
         }
 
-        string discardedLoop = ValidSource.Replace(oldValue: "return recipientName;",
+        string discardedLoop = ValidSource.Replace(
+            oldValue: "return recipientName;",
             newValue: "(string First, string Second)[] greetings = [(recipientName, string.Empty)];\n\n"
                 + "        foreach ((string greeting, string _) in greetings)\n            recipientName = greeting;\n\n        return recipientName;",
-            StringComparison.Ordinal);
+            StringComparison.Ordinal
+        );
 
         await File.WriteAllTextAsync(sourcePath, discardedLoop).ConfigureAwait(continueOnCapturedContext: false);
         await RunDevelopmentKit(workspacePath, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015").ConfigureAwait(continueOnCapturedContext: false);
@@ -373,8 +402,7 @@ public sealed class PackageConsumptionTests
 
         Assert.NotEmpty(templateOptions.AnalyzerOptions);
 
-        using Stream embeddedStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(
-            name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
+        using Stream embeddedStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
             ?? throw new InvalidOperationException(message: "The embedded configuration is missing.");
 
         using StreamReader embeddedReader = new(embeddedStream);
@@ -436,17 +464,19 @@ public sealed class PackageConsumptionTests
             ?? throw new InvalidOperationException(message: "The test build configuration is missing.");
 
         string packageDirectory = Path.Combine(paths: [workspacePath, "artifacts"]);
-        await RunDevelopmentKit(repositoryDirectory.FullName, arguments:
+        await RunDevelopmentKit(
+            repositoryDirectory.FullName,
+            arguments:
         [
             "pack", "src/NetAgents.Analyzers.csproj", "--configuration", configuration,
             "--no-build", "--no-restore", "--output", packageDirectory,
-        ]).ConfigureAwait(continueOnCapturedContext: false);
+        ]
+        ).ConfigureAwait(continueOnCapturedContext: false);
 
         return Assert.Single(Directory.EnumerateFiles(packageDirectory, searchPattern: "*.nupkg"));
     }
 
-    private static async Task RunDevelopmentKit(string workingDirectory, string[] arguments,
-        string? expectedDiagnosticIdentifier = null)
+    private static async Task RunDevelopmentKit(string workingDirectory, string[] arguments, string? expectedDiagnosticIdentifier = null)
     {
         using Process process = new();
 

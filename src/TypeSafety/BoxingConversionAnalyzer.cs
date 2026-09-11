@@ -25,7 +25,8 @@ public sealed class BoxingConversionAnalyzer() : PolicyAnalyzer(Rule)
         category: "TypeSafety",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

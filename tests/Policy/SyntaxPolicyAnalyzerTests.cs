@@ -18,8 +18,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     [Fact]
     public async Task RejectsLockStatements()
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new LockStatementAnalyzer(), source: "public class ExampleType { public void Execute() { lock (this) { } } }");
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new LockStatementAnalyzer(), source: "public class ExampleType { public void Execute() { lock (this) { } } }");
 
         Assert.Equal(LockStatementAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -30,8 +29,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     [Fact]
     public async Task RejectsCommentOnlyCatchBlocks()
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { /* ignored */ } } }");
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { /* ignored */ } } }");
 
         Assert.Equal(EmptyCatchBlockAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -42,8 +40,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     [Fact]
     public async Task AllowsRethrowingCaughtExceptions()
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { throw; } } }");
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { throw; } } }");
 
         Assert.Empty(diagnostics);
     }
@@ -54,8 +51,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     [Fact]
     public async Task RejectsNullForgivingOperators()
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new NullForgivingOperatorAnalyzer(), source: "public class ExampleType { public string Value => null!; }");
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new NullForgivingOperatorAnalyzer(), source: "public class ExampleType { public string Value => null!; }");
 
         Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -70,8 +66,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     [InlineData("do { break; } while (true);")]
     public async Task RejectsUnconditionalLoops(string loop)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new UnconditionalLoopAnalyzer(), $"public class ExampleType {{ public void Execute() {{ {loop} }} }}");
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UnconditionalLoopAnalyzer(), $"public class ExampleType {{ public void Execute() {{ {loop} }} }}");
 
         Assert.Equal(UnconditionalLoopAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -83,7 +78,9 @@ public sealed class SyntaxPolicyAnalyzerTests
     public async Task AllowsCancellationControlledLoops()
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new UnconditionalLoopAnalyzer(), source: "public class ExampleType { public void Execute(System.Threading.CancellationToken cancellationToken) { while (!cancellationToken.IsCancellationRequested) { } } }");
+            new UnconditionalLoopAnalyzer(),
+            source: "public class ExampleType { public void Execute(System.Threading.CancellationToken cancellationToken) { while (!cancellationToken.IsCancellationRequested) { } } }"
+        );
 
         Assert.Empty(diagnostics);
     }
@@ -105,8 +102,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     [Fact]
     public async Task RejectsNamespaceContainmentCollisions()
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new TypeContainmentNameAnalyzer(), source: "namespace ExampleType { public class ExampleType { } }");
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TypeContainmentNameAnalyzer(), source: "namespace ExampleType { public class ExampleType { } }");
 
         Assert.Equal(TypeContainmentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -118,7 +114,10 @@ public sealed class SyntaxPolicyAnalyzerTests
     public async Task ExcludesGeneratedSource()
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new LockStatementAnalyzer(), source: "// <auto-generated/>\npublic class ExampleType { public void Execute() { lock (this) { } } }", fileName: "ExampleType.g.cs");
+            new LockStatementAnalyzer(),
+            source: "// <auto-generated/>\npublic class ExampleType { public void Execute() { lock (this) { } } }",
+            fileName: "ExampleType.g.cs"
+        );
 
         Assert.Empty(diagnostics);
     }

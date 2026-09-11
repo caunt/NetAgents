@@ -23,7 +23,9 @@ public sealed class StatementSpacingAnalyzerTests
     [InlineData("public static void Execute(int count) { count++;\ntry { } finally { } }")]
     [InlineData("public static void Execute(int count) { count++;\nusing (new System.IO.MemoryStream()) { } }")]
     [InlineData("public static void Execute(int count) { count++;\nusing var stream = new System.IO.MemoryStream(); }")]
-    [InlineData("public static async System.Threading.Tasks.Task Execute(int count) { count++;\nawait using var stream = new System.IO.MemoryStream(); }")]
+    [InlineData(
+        "public static async System.Threading.Tasks.Task Execute(int count) { count++;\nawait using var stream = new System.IO.MemoryStream(); }"
+    )]
     [InlineData("public static void Execute(int count) { count++;\nreturn; }")]
     [InlineData("public static void Execute(int count) { count++;\nthrow new System.InvalidOperationException(); }")]
     [InlineData("public static void Execute(int count) { while (count > 0) { count++;\nbreak; } }")]
@@ -35,8 +37,7 @@ public sealed class StatementSpacingAnalyzerTests
     [InlineData("public static void Execute(int count) { switch (count) { case 0: count++;\nbreak; } }")]
     public async Task RequiresBlankLinesBetweenStatements(string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new StatementSpacingAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Equal(StatementSpacingAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -51,8 +52,10 @@ public sealed class StatementSpacingAnalyzerTests
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), source);
 
         Assert.Equal(StatementSpacingAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-        Assert.Equal(expected: "numbers", actual: source.Substring(Assert.Single(diagnostics).Location.SourceSpan.Start,
-            Assert.Single(diagnostics).Location.SourceSpan.Length));
+        Assert.Equal(
+            expected: "numbers",
+            actual: source.Substring(Assert.Single(diagnostics).Location.SourceSpan.Start, Assert.Single(diagnostics).Location.SourceSpan.Length)
+        );
     }
 
     /// <summary>
@@ -63,8 +66,12 @@ public sealed class StatementSpacingAnalyzerTests
     [InlineData("public static int Execute() {\nreturn 0;\n}")]
     [InlineData("public static void Execute(int count) {\nint result =\ncount + 1;\n}")]
     [InlineData("public static void Execute(int count) {\nif (count > 0)\nreturn;\n}")]
-    [InlineData("public static void Execute(int count) { if (count > 0) { return; } else if (count < 0) { throw new System.InvalidOperationException(); } else { return; } }")]
-    [InlineData("public static void Execute() { try { return; } catch (System.InvalidOperationException) { throw; } finally { System.Console.WriteLine(); } }")]
+    [InlineData(
+        "public static void Execute(int count) { if (count > 0) { return; } else if (count < 0) { throw new System.InvalidOperationException(); } else { return; } }"
+    )]
+    [InlineData(
+        "public static void Execute() { try { return; } catch (System.InvalidOperationException) { throw; } finally { System.Console.WriteLine(); } }"
+    )]
     [InlineData("public static int Execute() { int count = 0;\n\nreturn count; }")]
     [InlineData("public static int Execute() { int count = 0;\n \t\nreturn count; }")]
     [InlineData("public static int Execute() { int count = 0; // prior statement\n\n// result\nreturn count; }")]
@@ -72,8 +79,7 @@ public sealed class StatementSpacingAnalyzerTests
     [InlineData("public static void Execute(int count) {\nusing var stream = new System.IO.MemoryStream();\n}")]
     public async Task PreservesBlockEdgesAndExistingSeparators(string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new StatementSpacingAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }

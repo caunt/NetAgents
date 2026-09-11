@@ -28,21 +28,27 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule)
         category: "Concurrency",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
     private static readonly ImmutableHashSet<string> ForbiddenTypes = ImmutableHashSet.Create(
         StringComparer.Ordinal,
         items: [        "Lock", "Monitor", "Semaphore", "SemaphoreSlim", "Mutex", "ReaderWriterLock", "ReaderWriterLockSlim",
         "SpinLock", "SpinWait", "AutoResetEvent", "ManualResetEvent", "ManualResetEventSlim", "EventWaitHandle",
-        "WaitHandle", "CountdownEvent", "Barrier"]);
+        "WaitHandle", "CountdownEvent", "Barrier"]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
         context.RegisterSyntaxNodeAction(AnalyzeTypeName, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
-        context.RegisterOperationAction(AnalyzeMember,
-            OperationKind.Invocation, OperationKind.PropertyReference, OperationKind.MethodReference,
-            OperationKind.ObjectCreation);
+        context.RegisterOperationAction(
+            AnalyzeMember,
+            OperationKind.Invocation,
+            OperationKind.PropertyReference,
+            OperationKind.MethodReference,
+            OperationKind.ObjectCreation
+        );
     }
 
     private static bool IsForbiddenType(INamedTypeSymbol? type)

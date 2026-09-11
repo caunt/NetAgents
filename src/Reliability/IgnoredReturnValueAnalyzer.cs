@@ -26,14 +26,20 @@ public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule)
         category: "Reliability",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
         context.RegisterOperationAction(AnalyzeExpressionStatement, OperationKind.ExpressionStatement);
-        context.RegisterOperationAction(AnalyzeAssignment, OperationKind.SimpleAssignment, OperationKind.DeconstructionAssignment,
-            OperationKind.CompoundAssignment, OperationKind.CoalesceAssignment);
+        context.RegisterOperationAction(
+            AnalyzeAssignment,
+            OperationKind.SimpleAssignment,
+            OperationKind.DeconstructionAssignment,
+            OperationKind.CompoundAssignment,
+            OperationKind.CoalesceAssignment
+        );
         context.RegisterOperationAction(AnalyzeVariable, OperationKind.VariableDeclarator);
         context.RegisterOperationAction(AnalyzeLoop, OperationKind.Loop);
     }

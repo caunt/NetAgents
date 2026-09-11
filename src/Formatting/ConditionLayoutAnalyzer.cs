@@ -22,19 +22,26 @@ public sealed class ConditionLayoutAnalyzer() : PolicyAnalyzer(Rule)
     private static readonly DiagnosticDescriptor Rule = new(
         RuleIdentifier,
         title: "Conditions must fit on one short line",
-        messageFormat: "Keep the condition on one line and within 128 characters; move longer conditions into a separate variable declaration",
+        messageFormat: "Keep the condition on one line and within {0} characters; move longer conditions into a separate variable declaration",
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]
+    );
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(AnalyzeCondition,
-            SyntaxKind.IfStatement, SyntaxKind.WhileStatement, SyntaxKind.DoStatement,
-            SyntaxKind.ForStatement, SyntaxKind.ConditionalExpression,
-            SyntaxKind.CatchFilterClause, SyntaxKind.WhenClause);
+        context.RegisterSyntaxNodeAction(
+            AnalyzeCondition,
+            SyntaxKind.IfStatement,
+            SyntaxKind.WhileStatement,
+            SyntaxKind.DoStatement,
+            SyntaxKind.ForStatement,
+            SyntaxKind.ConditionalExpression,
+            SyntaxKind.CatchFilterClause,
+            SyntaxKind.WhenClause
+        );
     }
 
     private static void AnalyzeCondition(SyntaxNodeAnalysisContext context)
@@ -105,7 +112,11 @@ public sealed class ConditionLayoutAnalyzer() : PolicyAnalyzer(Rule)
         bool isMultiline = source.Lines.GetLineFromPosition(span.Start).LineNumber
             != source.Lines.GetLineFromPosition(span.End).LineNumber;
 
-        if (isMultiline || span.Length > 128)
-            context.ReportDiagnostic(Diagnostic.Create(Rule, condition.GetLocation()));
+        if (isMultiline || span.Length > LayoutLimits.MaximumInlineLength)
+        {
+            context.ReportDiagnostic(
+                Diagnostic.Create(Rule, condition.GetLocation(), LayoutLimits.MaximumInlineLength.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            );
+        }
     }
 }
