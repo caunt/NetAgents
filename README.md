@@ -1,10 +1,10 @@
-# NetAgents
+# ✨ NetAgents
 
 [![NuGet](https://img.shields.io/nuget/v/NetAgents.Analyzers.svg)](https://www.nuget.org/packages/NetAgents.Analyzers)
 
 **Consistent C# standards, enforced on every build.**
 
-`NetAgents.Analyzers` keeps formatting, naming, and code quality consistent across your .NET projects. Builds automatically apply formatting and available code fixes before compilation.
+Keep formatting, naming, and code quality consistent across your .NET projects. NetAgents automatically formats your source files and applies available code fixes when you build.
 
 ## 📦 Install
 
@@ -14,31 +14,47 @@ dotnet add package NetAgents.Analyzers
 
 Requires the **.NET 10 SDK or newer**. Your projects can target older .NET versions.
 
-Set `PrivateAssets="all"` on the package reference to keep the analyzer dependency private to your project. Shared rules apply automatically.
+Set `PrivateAssets="all"` on the package reference to keep the dependency private to your project. Shared rules apply automatically.
 
-## ✅ What it checks
-
-- **Type safety** — no boxing, `object`/`dynamic` values, or untyped collections; nullable analysis is required.
-- **Naming and structure** — descriptive names, one top-level type per matching file, files under 1,000 lines, and at most 16 authored C# files per directory.
-- **Reliability** — consume return values; no discarded results, empty catches, null-forgiving operators, or unconditional loops.
-- **Concurrency** — no `lock`, framework synchronization primitives, or blocking waits. Use asynchronous composition or Nito.AsyncEx when coordination is needed.
-- **Style** — consistent formatting, blank lines around control flow and multiline declarations, braces based on body layout, single-line conditions up to 128 characters, argument and parameter lists wrapped at the same limit, a final newline, and named literal arguments. Includes automatic spacing, brace, and argument layout fixes.
-- **Documentation** — XML comments for public APIs; missing comments and unused imports fail the build.
-
-Violations fail the build. Existing editor and project settings must agree with the shared rules.
-
-[Documentation](https://github.com/caunt/NetAgents/blob/main/docs/engineering-rules.md)
-
-## 🛠️ Everyday use
+## 🛠️ Build and format
 
 ```bash
 dotnet build
 ```
 
-The package runs a compiled Roslyn task directly inside MSBuild: no shell, `Exec`, child process, or `dotnet` lookup in `PATH`. Files with fixable issues are updated automatically; remaining violations fail the build.
+On each build, NetAgents:
 
-IDE quick fixes and `dotnet format` remain available. To check without rewriting source, use `dotnet build -p:NetAgentsFormatOnBuild=false`; all analyzers still run.
+1. Formats your source files and applies available code fixes automatically.
+2. Checks the updated code against the shared rules.
+3. Reports any remaining violations as build errors for you to resolve.
+
+**Builds can change your source files.** Review those changes before committing. Some violations require a manual fix; IDE quick fixes and `dotnet format` are also available.
+
+To check the rules without changing files:
+
+```bash
+dotnet build -p:NetAgentsFormatOnBuild=false
+```
+
+## 📏 Formatting rules
+
+- **Conditions:** keep conditions on one line, with at most **128 characters**. Extract longer expressions into separate variables. Ternary conditions follow this rule; their `?` and `:` branches can span multiple lines.
+- **Arguments and parameters:** keep lists on one line when their normalized contents fit within **128 characters**, excluding the surrounding delimiters. Longer lists put each item and the closing delimiter on separate lines. This applies to calls and declarations, including constructors and records.
+- **Layout:** use consistent spacing, blank lines around control flow and multiline declarations, braces based on body layout, and a final newline.
+- **Clarity:** name literal arguments and remove unused imports.
+
+## ✅ Code standards
+
+| Area | What to expect |
+| --- | --- |
+| 🧩 Type safety | Nullable analysis is required. No boxing, `object`/`dynamic` values, or untyped collections. |
+| 🏷️ Naming and structure | Descriptive names, one top-level type per matching file, files under 1,000 lines, and at most 16 authored C# files per directory. |
+| 🛡️ Reliability | Consume return values. No discarded results, empty catches, null-forgiving operators, or unconditional loops. |
+| ⚡ Concurrency | Use asynchronous composition or Nito.AsyncEx for coordination. No `lock`, framework synchronization primitives, or blocking waits. |
+| 📖 Documentation | XML comments are required for public APIs. |
+
+Existing editor and project settings must agree with the shared rules. See the [complete rule reference](docs/engineering-rules.md) for details.
 
 ---
 
-[NuGet package](https://www.nuget.org/packages/NetAgents.Analyzers) · [MIT license](https://github.com/caunt/NetAgents/blob/main/LICENSE)
+[📦 NuGet package](https://www.nuget.org/packages/NetAgents.Analyzers) · [📖 Rule reference](docs/engineering-rules.md) · [⚖️ MIT license](LICENSE)
