@@ -20,7 +20,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
             new LockStatementAnalyzer(), source: "public class ExampleType { public void Execute() { lock (this) { } } }");
-        _ = Assert.Single(diagnostics);
+        Assert.Equal(LockStatementAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
 
     /// <summary>
@@ -31,7 +31,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
             new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { /* ignored */ } } }");
-        _ = Assert.Single(diagnostics);
+        Assert.Equal(EmptyCatchBlockAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
             new NullForgivingOperatorAnalyzer(), source: "public class ExampleType { public string Value => null!; }");
-        _ = Assert.Single(diagnostics);
+        Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
 
     /// <summary>
@@ -68,7 +68,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
             new UnconditionalLoopAnalyzer(), $"public class ExampleType {{ public void Execute() {{ {loop} }} }}");
-        _ = Assert.Single(diagnostics);
+        Assert.Equal(UnconditionalLoopAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
 
     /// <summary>
@@ -90,7 +90,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     {
         string source = "public class ExampleType { }" + new string(c: '\n', count: 999);
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileLengthAnalyzer(), source);
-        _ = Assert.Single(diagnostics);
+        Assert.Equal(SourceFileLengthAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
 
     /// <summary>
@@ -101,7 +101,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
             new TypeContainmentNameAnalyzer(), source: "namespace ExampleType { public class ExampleType { } }");
-        _ = Assert.Single(diagnostics);
+        Assert.Equal(TypeContainmentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
 
     /// <summary>

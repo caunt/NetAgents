@@ -22,6 +22,17 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0012 | Reject framework synchronization types and blocking task/thread waits, including aliases, static imports, and explicit awaiter `GetResult` calls. |
 | NETAGENTS0013 | Reject changes to the effective shared configuration and diagnostic severities. |
 | NETAGENTS0014 | Reject incompatible project settings. This diagnostic comes from the package's MSBuild target. |
+| NETAGENTS0015 | Require return values to be consumed. Reject ignored non-void calls, ignored awaited results, and assignments to `_`, including tuple deconstruction. This includes conditional calls, expression-bodied members, callbacks, and `for` clauses. |
+
+Check, return, pass, or store and use every returned value. For example, use
+`if (values.TryGetValue(key, out var value))` to handle success and failure;
+calling `TryGetValue` alone or assigning its result to `_` fails the build.
+Storing a result without reading it also fails the build (`IDE0059`).
+Calls returning `void` and awaited operations with no result (`Task` or
+`ValueTask`) are allowed. Awaited `Task<T>` and `ValueTask<T>` results must be
+consumed. Fluent and assertion APIs follow the same rule. An `out _` argument
+does not discard a method's return value and remains allowed when that return
+value is consumed.
 
 Framework synchronization bans cover `Lock`, `Monitor`, `Semaphore`,
 `SemaphoreSlim`, `Mutex`, reader/writer locks, spin locks/waits, reset events,
@@ -48,9 +59,9 @@ The template's generic type-parameter naming selector is corrected to
 Consumer editor and project settings must agree with the shared policy.
 All .NET and code style analysis is enabled at the latest SDK level, with
 warnings treated as errors during builds. XML documentation is generated;
-public APIs require XML comments (`CS1591`), and unused imports are errors
-(`IDE0005`). Disabling required analysis, documentation, or severity settings
-fails the build with `NETAGENTS0014`.
+public APIs require XML comments (`CS1591`), and unused imports and assignments
+are errors (`IDE0005`, `IDE0059`). Disabling required analysis, documentation,
+or severity settings fails the build with `NETAGENTS0014`.
 Global analyzer configuration applies to C# compiler inputs; it does not
 control XML, JSON, or Markdown editor formatting.
 

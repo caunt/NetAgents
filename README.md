@@ -20,7 +20,7 @@ Set `PrivateAssets="all"` on the package reference to keep the analyzer dependen
 
 - **Type safety** — no boxing, `object`/`dynamic` values, or untyped collections; nullable analysis is required.
 - **Naming and structure** — descriptive names, one top-level type per matching file, and files under 1,000 lines.
-- **Reliability** — no empty catches, null-forgiving operators, or unconditional loops.
+- **Reliability** — consume return values; no discarded results, empty catches, null-forgiving operators, or unconditional loops.
 - **Concurrency** — no `lock`, framework synchronization primitives, or blocking waits. Use asynchronous composition or Nito.AsyncEx when coordination is needed.
 - **Style** — consistent formatting, a final newline, named literal arguments, and warnings treated as errors.
 - **Documentation** — XML comments for public APIs; missing comments and unused imports fail the build.

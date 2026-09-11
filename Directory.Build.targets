@@ -28,6 +28,8 @@
       <NetAgentsEditorConfiguration>$([System.Text.RegularExpressions.Regex]::Replace('$(NetAgentsEditorConfiguration)', '(?m)^(?:root\s*=.*|\[.*\]|#.*)(?:\r?\n|$)', ''))</NetAgentsEditorConfiguration>
       <!-- Correct the .NET template's namespace selector for generic type parameters. -->
       <NetAgentsEditorConfiguration>$([System.Text.RegularExpressions.Regex]::Replace('$(NetAgentsEditorConfiguration)', '(?m)^(dotnet_naming_symbols\.type_parameters\.applicable_kinds\s*=\s*)namespace\s*$', '${1}type_parameter'))</NetAgentsEditorConfiguration>
+      <!-- The SDK gates unused-assignment analysis on the option's own severity. -->
+      <NetAgentsEditorConfiguration>$([System.Text.RegularExpressions.Regex]::Replace('$(NetAgentsEditorConfiguration)', '(?m)^(csharp_style_unused_value_assignment_preference\s*=\s*[^:\r\n]+)(?::[^\r\n]+)?$', '${1}:error'))</NetAgentsEditorConfiguration>
     </PropertyGroup>
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)src/AnalyzerReleases.Shipped.md">
       <Output TaskParameter="Lines" ItemName="NetAgentsReleaseLines" />
@@ -43,7 +45,7 @@
       <NetAgentsGlobalConfigurationLines Include="insert_final_newline = true" />
       <NetAgentsGlobalConfigurationLines Include="$([System.Text.RegularExpressions.Regex]::Replace('%(NetAgentsDiagnosticReleaseLines.Identity)', '^(NETAGENTS[0-9]+).*', 'dotnet_diagnostic.$1.severity = error'))" />
       <NetAgentsGlobalConfigurationLines Include="dotnet_analyzer_diagnostic.category-Style.severity = error;dotnet_diagnostic.IDE0055.severity = error;dotnet_diagnostic.IDE1006.severity = error" />
-      <NetAgentsGlobalConfigurationLines Include="dotnet_diagnostic.IDE0005.severity = error;dotnet_diagnostic.CS1591.severity = error" />
+      <NetAgentsGlobalConfigurationLines Include="dotnet_diagnostic.IDE0005.severity = error;dotnet_diagnostic.IDE0059.severity = error;dotnet_diagnostic.CS1591.severity = error" />
       <FileWrites Include="$(NetAgentsGlobalConfigurationPath);$(NetAgentsEditorConfigTemplatePath)" />
     </ItemGroup>
     <WriteLinesToFile File="$(NetAgentsGlobalConfigurationPath)" Lines="@(NetAgentsGlobalConfigurationLines)"

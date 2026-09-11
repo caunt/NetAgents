@@ -13,7 +13,8 @@ internal static class AnalyzerTestHarness
             ?? throw new InvalidOperationException(message: "The runtime assembly directory is unavailable."), searchPattern: "*.dll")
         .Select(static assemblyPath => MetadataReference.CreateFromFile(assemblyPath))];
 
-    public static async Task<Diagnostic[]> Analyze(DiagnosticAnalyzer analyzer, string source, string fileName = "ExampleType.cs")
+    public static async Task<Diagnostic[]> Analyze(DiagnosticAnalyzer analyzer, string source, string fileName = "ExampleType.cs",
+        bool allowUnsafeCode = false)
     {
         foreach (DiagnosticDescriptor descriptor in analyzer.SupportedDiagnostics)
         {
@@ -27,7 +28,7 @@ internal static class AnalyzerTestHarness
         CSharpCompilation compilation = CSharpCompilation.Create(assemblyName: "AnalyzerTestAssembly",
             syntaxTrees: [syntaxTree], references: References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                nullableContextOptions: NullableContextOptions.Enable));
+                nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: allowUnsafeCode));
         Diagnostic[] compilerErrors = [.. compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)];
         Assert.Empty(compilerErrors);
 

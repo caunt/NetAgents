@@ -78,6 +78,33 @@ public sealed class PackageConsumptionTests
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
             await RunDevelopmentKit(workspace.FullName, buildArguments);
 
+            string lookupSource = ValidSource.Replace(oldValue: "return recipientName;",
+                newValue: "System.Collections.Generic.Dictionary<string, string> values = [];\n"
+                    + "        return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
+                StringComparison.Ordinal);
+            await File.WriteAllTextAsync(sourcePath, lookupSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments);
+            await File.WriteAllTextAsync(sourcePath, lookupSource.Replace(
+                oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
+                newValue: "bool found = values.TryGetValue(recipientName, out string? greeting);\n        return greeting ?? recipientName;",
+                StringComparison.Ordinal));
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "IDE0059");
+            string[] ignoredLookups =
+            [
+                "values.TryGetValue(recipientName, out string? greeting);",
+                "_ = values.TryGetValue(recipientName, out string? greeting);",
+            ];
+            foreach (string ignoredLookup in ignoredLookups)
+            {
+                string ignoredSource = lookupSource.Replace(
+                    oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
+                    newValue: ignoredLookup + "\n        return greeting ?? recipientName;", StringComparison.Ordinal);
+                await File.WriteAllTextAsync(sourcePath, ignoredSource);
+                await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015");
+                await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0015\n" + ignoredSource);
+                await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015");
+            }
+
             string boxingSource = ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
                 newValue: "System.IComparable CreateGreeting(int recipientName)", StringComparison.Ordinal);
             await File.WriteAllTextAsync(sourcePath, boxingSource);
@@ -103,7 +130,9 @@ public sealed class PackageConsumptionTests
                 "csharp_style_var_elsewhere = true:silent",
                 "insert_final_newline = false",
                 "dotnet_diagnostic.NETAGENTS0001.severity = none",
+                "dotnet_diagnostic.NETAGENTS0015.severity = none",
                 "dotnet_diagnostic.IDE0005.severity = none",
+                "dotnet_diagnostic.IDE0059.severity = none",
                 "dotnet_diagnostic.CS1591.severity = none",
             ];
             foreach (string conflictingSetting in conflictingEditorSettings)
@@ -145,6 +174,7 @@ public sealed class PackageConsumptionTests
                 "-p:GenerateDocumentationFile=false",
                 "-p:SkipGlobalAnalyzerConfigForPackage=true",
                 "-p:NoWarn=NETAGENTS0001",
+                "-p:NoWarn=NETAGENTS0015",
                 "-p:NoWarn=1591",
                 "-p:WarningsNotAsErrors=CS1591",
                 "-p:NoWarn=IDE0005",
@@ -230,11 +260,12 @@ public sealed class PackageConsumptionTests
         Assert.True(generatedOptions.Diagnostics.IsEmpty);
         foreach (KeyValuePair<string, string> preference in templateOptions.AnalyzerOptions)
         {
-            // Preserve the required final newline and correct the SDK's generic parameter selector.
+            // Preserve policy overrides while following the SDK's formatting preferences.
             string expectedValue = preference.Key switch
             {
                 "insert_final_newline" => "true",
                 "dotnet_naming_symbols.type_parameters.applicable_kinds" when preference.Value == "namespace" => "type_parameter",
+                "csharp_style_unused_value_assignment_preference" => preference.Value.Split(separator: ':').First() + ":error",
                 _ => preference.Value,
             };
             Assert.Equal(expectedValue, generatedOptions.AnalyzerOptions[preference.Key]);
