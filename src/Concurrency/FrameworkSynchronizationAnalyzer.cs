@@ -55,6 +55,7 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule)
     private static void AnalyzeTypeName(SyntaxNodeAnalysisContext context)
     {
         ISymbol? symbol = context.SemanticModel.GetSymbolInfo(context.Node, context.CancellationToken).Symbol;
+
         if (IsForbiddenType(symbol as INamedTypeSymbol))
         {
             context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
@@ -71,20 +72,26 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule)
             IObjectCreationOperation creation => creation.Constructor,
             _ => null,
         };
+
         INamedTypeSymbol? containingType = member?.ContainingType;
+
         if (member is null || containingType is null)
         {
             return;
         }
 
         string containingNamespace = containingType.ContainingNamespace.ToDisplayString();
+
         bool isThreadSleep = containingNamespace == "System.Threading"
             && containingType.Name == "Thread" && member.Name == "Sleep";
+
         bool isBlockingTask = containingNamespace == "System.Threading.Tasks"
             && containingType.Name is "Task" or "ValueTask"
             && member.Name is "Result" or "Wait" or "WaitAll" or "WaitAny";
+
         bool isBlockingAwaiter = containingNamespace == "System.Runtime.CompilerServices"
             && containingType.Name.EndsWith(value: "Awaiter", StringComparison.Ordinal) && member.Name == "GetResult";
+
         if (IsForbiddenType(containingType) || isThreadSleep || isBlockingTask || isBlockingAwaiter)
         {
             context.ReportDiagnostic(Diagnostic.Create(Rule, context.Operation.Syntax.GetLocation()));

@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/CodeFixes/NetAgents.CodeFixes.csproj" />
     <Project Path="src/NetAgents.Analyzers.csproj" />
   </Folder>
   <Folder Name="/tests/">

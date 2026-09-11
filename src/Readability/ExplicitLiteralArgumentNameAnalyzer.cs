@@ -40,6 +40,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
     {
         ArgumentSyntax argument = (ArgumentSyntax)context.Node;
         ExpressionSyntax expression = argument.Expression;
+
         while (expression is ParenthesizedExpressionSyntax parenthesizedExpression)
         {
             expression = parenthesizedExpression.Expression;
@@ -56,6 +57,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
         }
 
         IParameterSymbol? parameter = ResolveParameter(argument, context);
+
         if (parameter is not null)
         {
             context.ReportDiagnostic(Diagnostic.Create(Rule, argument.GetLocation()));
@@ -75,13 +77,16 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
         }
 
         ISymbol? invokedSymbol = context.SemanticModel.GetSymbolInfo(argumentList.Parent, context.CancellationToken).Symbol;
+
         ImmutableArray<IParameterSymbol> parameters = invokedSymbol switch
         {
             IMethodSymbol method => method.Parameters,
             IPropertySymbol property => property.Parameters,
             _ => [],
         };
+
         int argumentIndex = argumentList.Arguments.IndexOf(argument);
+
         return argumentIndex < parameters.Length
             ? parameters[argumentIndex]
             : parameters.Length > 0 && parameters[parameters.Length - 1].IsParams

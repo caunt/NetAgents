@@ -19,7 +19,9 @@
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="CodeFixes/**/*.cs" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <ProjectReference Include="CodeFixes/NetAgents.CodeFixes.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
     <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="Packaging/NetAgents.Analyzers.targets" Pack="true" PackagePath="buildTransitive/NetAgents.Analyzers.targets" />
     <None Include="Packaging/NetAgents.Analyzers.props" Pack="true" PackagePath="buildTransitive/NetAgents.Analyzers.props" />

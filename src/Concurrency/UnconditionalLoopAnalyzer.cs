@@ -42,6 +42,7 @@ public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule)
             ForStatementSyntax forStatement => forStatement.Condition,
             _ => null,
         };
+
         while (condition is ParenthesizedExpressionSyntax parenthesizedExpression)
         {
             condition = parenthesizedExpression.Expression;

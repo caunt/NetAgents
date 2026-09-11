@@ -46,11 +46,13 @@ public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
         }
 
         INamespaceSymbol containingNamespace = type.ContainingNamespace;
+
         while (!containingNamespace.IsGlobalNamespace)
         {
             if (string.Equals(type.Name, containingNamespace.Name, StringComparison.OrdinalIgnoreCase))
             {
                 context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
+
                 return;
             }
 
@@ -67,17 +69,20 @@ public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
 
         string root = Path.GetFullPath(projectDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         string sourceDirectory = Path.GetDirectoryName(Path.GetFullPath(context.Node.SyntaxTree.FilePath)) ?? root;
+
         if (!sourceDirectory.StartsWith(root + Path.DirectorySeparatorChar.ToString(), StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
         string relativeDirectory = sourceDirectory.Substring(root.Length + 1);
+
         foreach (string segment in relativeDirectory.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
         {
             if (string.Equals(type.Name, segment, StringComparison.OrdinalIgnoreCase))
             {
                 context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
+
                 return;
             }
         }

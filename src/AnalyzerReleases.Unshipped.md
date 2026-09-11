@@ -18,3 +18,4 @@ NETAGENTS0011 | Naming | Error | Type containment collisions
 NETAGENTS0012 | Concurrency | Error | Framework synchronization and blocking waits
 NETAGENTS0013 | Configuration | Error | Consumer overrides of the embedded policy
 NETAGENTS0015 | Reliability | Error | Ignored return values and discard assignments
+NETAGENTS0016 | Formatting | Error | Blank lines around control flow and multiline variable declarations

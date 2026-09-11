@@ -23,6 +23,20 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0013 | Reject changes to the effective shared configuration and diagnostic severities. |
 | NETAGENTS0014 | Reject incompatible project settings. This diagnostic comes from the package's MSBuild target. |
 | NETAGENTS0015 | Require return values to be consumed. Reject ignored non-void calls, ignored awaited results, and assignments to `_`, including tuple deconstruction. This includes conditional calls, expression-bodied members, callbacks, and `for` clauses. |
+| NETAGENTS0016 | Require blank lines before and after control-flow statements and multiline local declarations when another statement is adjacent. Includes an automatic code fix and Fix all support. |
+
+Statement spacing covers `if`, loops, `switch`, `try`, `using` (including
+declarations), `return`, `throw`, `break`, `continue`, and `yield`. Multiline
+local declarations include chained calls, switch expressions, conditional
+expressions, and object initializers. Single-line declarations can remain
+grouped. Block edges stay unpadded: no blank line is added after `{` or before
+`}`, and unbraced bodies stay attached to their controlling statement.
+Comments and existing line endings are preserved. Use the editor's
+**Insert blank line between statements** quick fix or run:
+
+```bash
+dotnet format analyzers --diagnostics NETAGENTS0016
+```
 
 Check, return, pass, or store and use every returned value. For example, use
 `if (values.TryGetValue(key, out var value))` to handle success and failure;

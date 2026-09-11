@@ -42,6 +42,7 @@ public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule)
         // Bind symbols so names such as 'value.ToString' are not mistaken for type declarations.
         ISymbol? symbol = context.SemanticModel.GetSymbolInfo(context.Node, context.CancellationToken).Symbol;
         ITypeSymbol? type = symbol as ITypeSymbol;
+
         if (context.Node is PredefinedTypeSyntax predefinedType && predefinedType.Keyword.IsKind(SyntaxKind.ObjectKeyword))
         {
             context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));

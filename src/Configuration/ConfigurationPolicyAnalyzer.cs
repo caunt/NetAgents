@@ -44,18 +44,23 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
         using Stream configurationStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(
             name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
             ?? throw new InvalidOperationException(message: "The embedded analyzer policy is missing.");
+
         using StreamReader reader = new(configurationStream);
+
         ImmutableDictionary<string, string>.Builder options = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
         string? line;
+
         while ((line = reader.ReadLine()) is not null)
         {
             string trimmedLine = line.Trim();
+
             if (trimmedLine.Length == 0 || trimmedLine.StartsWith(value: "#", StringComparison.Ordinal))
             {
                 continue;
             }
 
             int separatorIndex = trimmedLine.IndexOf(value: '=');
+
             if (separatorIndex < 0)
             {
                 continue;
@@ -63,6 +68,7 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
 
             string key = trimmedLine.Substring(startIndex: 0, length: separatorIndex).Trim();
             string value = trimmedLine.Substring(separatorIndex + 1).Trim();
+
             if (key is not "is_global" and not "global_level" && value.Length > 0)
             {
                 options[key] = value;
@@ -75,14 +81,17 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
     private static void AnalyzeConfiguration(SyntaxTreeAnalysisContext context, Compilation compilation)
     {
         AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(context.Tree);
+
         foreach (System.Collections.Generic.KeyValuePair<string, string> requiredOption in RequiredOptions)
         {
             bool matches;
+
             if (requiredOption.Key.StartsWith(value: "dotnet_diagnostic.", StringComparison.OrdinalIgnoreCase)
                 && requiredOption.Key.EndsWith(value: ".severity", StringComparison.OrdinalIgnoreCase))
             {
                 string diagnosticIdentifier = requiredOption.Key.Substring(startIndex: 18,
                     length: requiredOption.Key.Length - 18 - 9);
+
                 ReportDiagnostic expectedSeverity = requiredOption.Value switch
                 {
                     "error" => ReportDiagnostic.Error,
@@ -92,6 +101,7 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
                     "none" => ReportDiagnostic.Suppress,
                     _ => ReportDiagnostic.Default,
                 };
+
                 SyntaxTreeOptionsProvider? provider = compilation.Options.SyntaxTreeOptionsProvider;
                 matches = provider is not null
                     && (provider.TryGetDiagnosticValue(context.Tree, diagnosticIdentifier, context.CancellationToken, out ReportDiagnostic severity)

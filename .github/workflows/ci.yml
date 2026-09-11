@@ -42,6 +42,8 @@ jobs:
       - name: Build
         run: dotnet build NetAgents.slnx --configuration Release --no-restore "-p:VersionTimestamp=$VERSION_TIMESTAMP"
       - name: Check formatting
+        env:
+          Configuration: Release
         run: dotnet format NetAgents.slnx --verify-no-changes --no-restore
       - name: Pack one analyzer package
         run: dotnet pack src/NetAgents.Analyzers.csproj --configuration Release --no-build --no-restore --output artifacts/packages "-p:VersionTimestamp=$VERSION_TIMESTAMP"

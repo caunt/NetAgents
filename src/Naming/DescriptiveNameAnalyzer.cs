@@ -74,6 +74,7 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
             EnumMemberDeclarationSyntax declaration => declaration.Identifier,
             _ => default,
         };
+
         if (identifier.IsMissing || identifier.ValueText.Length == 0)
         {
             return;
@@ -81,6 +82,7 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
 
         // Interface/override signatures can be owned by a framework or another assembly.
         ISymbol? symbol = context.SemanticModel.GetDeclaredSymbol(context.Node, context.CancellationToken);
+
         if (symbol is
         { IsOverride: true }
             or IMethodSymbol { ExplicitInterfaceImplementations.Length: > 0 }
@@ -90,6 +92,7 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
         }
 
         string name = identifier.ValueText.TrimStart(trimChars: ['_']);
+
         if ((context.Node is InterfaceDeclarationSyntax && name.StartsWith(value: "I", StringComparison.Ordinal))
             || (context.Node is TypeParameterSyntax && name.StartsWith(value: "T", StringComparison.Ordinal)))
         {
@@ -97,9 +100,11 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
         }
 
         bool invalidName = name.Length < 2;
+
         foreach (Match wordMatch in WordPattern.Matches(name))
         {
             string word = wordMatch.Value;
+
             if (AbbreviatedWords.Contains(word)
                 || (word.Length > 1 && char.IsLetter(word[index: 0]) && word.All(static character => !char.IsLetter(character) || char.IsUpper(character))))
             {

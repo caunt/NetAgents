@@ -3,10 +3,12 @@
     <NetAgentsGlobalConfigurationPath>$(IntermediateOutputPath)NetAgents.globalconfig</NetAgentsGlobalConfigurationPath>
     <NetAgentsEditorConfigTemplateDirectory>$(IntermediateOutputPath)editorconfig-template/$(NETCoreSdkVersion)/</NetAgentsEditorConfigTemplateDirectory>
     <NetAgentsEditorConfigTemplatePath>$(NetAgentsEditorConfigTemplateDirectory)content/EditorConfig/Dotnet/.editorconfig</NetAgentsEditorConfigTemplatePath>
+    <NetAgentsCodeFixAssemblyPath>$(MSBuildThisFileDirectory)src/CodeFixes/bin/$(Configuration)/netstandard2.0/NetAgents.CodeFixes.dll</NetAgentsCodeFixAssemblyPath>
   </PropertyGroup>
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'NetAgents.Analyzers'">
     <EmbeddedResource Include="$(NetAgentsGlobalConfigurationPath)" LogicalName="NetAgents.Analyzers.Configuration.NetAgents.globalconfig" />
     <None Include="$(NetAgentsGlobalConfigurationPath)" Pack="true" PackagePath="buildTransitive/NetAgents.globalconfig" />
+    <None Include="$(NetAgentsCodeFixAssemblyPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
   <Target Name="GenerateNetAgentsGlobalConfiguration"
           BeforeTargets="PrepareForBuild;PrepareResourceNames;GenerateMSBuildEditorConfigFile;CoreCompile">
@@ -51,11 +53,14 @@
     <WriteLinesToFile File="$(NetAgentsGlobalConfigurationPath)" Lines="@(NetAgentsGlobalConfigurationLines)"
                       Overwrite="true" WriteOnlyWhenDifferent="true" Encoding="UTF-8" />
   </Target>
-  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'NetAgents.Analyzers'">
+  <PropertyGroup>
     <NetAgentsSelfAnalysisAssemblyPath>$(MSBuildThisFileDirectory)artifacts/self-analysis/$(Configuration)/NetAgents.Analyzers.dll</NetAgentsSelfAnalysisAssemblyPath>
   </PropertyGroup>
-  <ItemGroup Condition="'$(MSBuildProjectName)' == 'NetAgents.Analyzers' and '$(NetAgentsSelfAnalysisBuild)' == 'true'">
+  <ItemGroup Condition="'$(NetAgentsSelfAnalysisBuild)' == 'true' or ('$(DesignTimeBuild)' == 'true' and '$(IsTestProject)' != 'true' and Exists('$(NetAgentsSelfAnalysisAssemblyPath)'))">
     <Analyzer Include="$(NetAgentsSelfAnalysisAssemblyPath)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DesignTimeBuild)' == 'true' and '$(MSBuildProjectName)' == 'NetAgents.CodeFixes' and Exists('$(NetAgentsCodeFixAssemblyPath)')">
+    <Analyzer Include="$(NetAgentsCodeFixAssemblyPath)" />
   </ItemGroup>
   <Target Name="AnalyzeNetAgentsSource" AfterTargets="Build"
           Condition="'$(MSBuildProjectName)' == 'NetAgents.Analyzers' and '$(NetAgentsSelfAnalysisBuild)' != 'true' and '$(DesignTimeBuild)' != 'true'">

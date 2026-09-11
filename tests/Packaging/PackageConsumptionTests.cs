@@ -39,15 +39,18 @@ public sealed class PackageConsumptionTests
     public async Task PackageEnforcesPolicyInConsumerBuilds()
     {
         DirectoryInfo workspace = Directory.CreateTempSubdirectory(prefix: "netagents-package-consumer-");
+
         try
         {
             string packagePath = Environment.GetEnvironmentVariable(variable: "NETAGENTS_PACKAGE_PATH")
                 ?? await PackAnalyzer(workspace.FullName);
+
             packagePath = Path.GetFullPath(packagePath);
             string packageVersion = VerifyPackageContents(packagePath);
             await VerifyConfigurationMatchesTemplate(workspace.FullName, packagePath);
             string projectPath = Path.Combine(paths: [workspace.FullName, "Consumer.csproj"]);
             string sourcePath = Path.Combine(paths: [workspace.FullName, "ExampleService.cs"]);
+
             string projectContent = $$"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
@@ -59,10 +62,13 @@ public sealed class PackageConsumptionTests
                   </ItemGroup>
                 </Project>
                 """;
+
             await File.WriteAllTextAsync(projectPath, projectContent);
             await File.WriteAllTextAsync(sourcePath, ValidSource);
+
             string packageDirectory = Path.GetDirectoryName(packagePath)
                 ?? throw new InvalidOperationException(message: "The package directory is missing.");
+
             string sourceConfiguration = $$"""
                 <configuration>
                   <packageSources>
@@ -71,6 +77,7 @@ public sealed class PackageConsumptionTests
                   </packageSources>
                 </configuration>
                 """;
+
             await File.WriteAllTextAsync(Path.Combine(paths: [workspace.FullName, "NuGet.Config"]), sourceConfiguration);
             await RunDevelopmentKit(workspace.FullName, arguments:
                 ["restore", projectPath, "--packages", Path.Combine(paths: [workspace.FullName, "packages"])]);
@@ -78,27 +85,48 @@ public sealed class PackageConsumptionTests
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
             await RunDevelopmentKit(workspace.FullName, buildArguments);
 
+            string spacingSource = ValidSource.Replace(oldValue: "return recipientName;",
+                newValue: "string greeting = recipientName;\n        if (string.IsNullOrEmpty(greeting))\n        {\n            return string.Empty;\n        }\n        return greeting;",
+                StringComparison.Ordinal);
+
+            await File.WriteAllTextAsync(sourcePath, spacingSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0016");
+            await RunDevelopmentKit(workspace.FullName, arguments:
+                ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0016", "--no-restore"]);
+
+            string expectedSpacing = spacingSource.Replace(oldValue: "\n        if", newValue: "\n\n        if", StringComparison.Ordinal)
+                .Replace(oldValue: "\n        return greeting;", newValue: "\n\n        return greeting;", StringComparison.Ordinal);
+
+            Assert.Equal(expectedSpacing, await File.ReadAllTextAsync(sourcePath));
+            await RunDevelopmentKit(workspace.FullName, buildArguments);
+            await RunDevelopmentKit(workspace.FullName, arguments:
+                ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0016", "--no-restore", "--verify-no-changes"]);
+
             string lookupSource = ValidSource.Replace(oldValue: "return recipientName;",
-                newValue: "System.Collections.Generic.Dictionary<string, string> values = [];\n"
+                newValue: "System.Collections.Generic.Dictionary<string, string> values = [];\n\n"
                     + "        return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
                 StringComparison.Ordinal);
+
             await File.WriteAllTextAsync(sourcePath, lookupSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments);
             await File.WriteAllTextAsync(sourcePath, lookupSource.Replace(
                 oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
-                newValue: "bool found = values.TryGetValue(recipientName, out string? greeting);\n        return greeting ?? recipientName;",
+                newValue: "bool found = values.TryGetValue(recipientName, out string? greeting);\n\n        return greeting ?? recipientName;",
                 StringComparison.Ordinal));
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "IDE0059");
+
             string[] ignoredLookups =
             [
                 "values.TryGetValue(recipientName, out string? greeting);",
                 "_ = values.TryGetValue(recipientName, out string? greeting);",
             ];
+
             foreach (string ignoredLookup in ignoredLookups)
             {
                 string ignoredSource = lookupSource.Replace(
                     oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
-                    newValue: ignoredLookup + "\n        return greeting ?? recipientName;", StringComparison.Ordinal);
+                    newValue: ignoredLookup + "\n\n        return greeting ?? recipientName;", StringComparison.Ordinal);
+
                 await File.WriteAllTextAsync(sourcePath, ignoredSource);
                 await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015");
                 await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0015\n" + ignoredSource);
@@ -107,6 +135,7 @@ public sealed class PackageConsumptionTests
 
             string boxingSource = ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
                 newValue: "System.IComparable CreateGreeting(int recipientName)", StringComparison.Ordinal);
+
             await File.WriteAllTextAsync(sourcePath, boxingSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001");
             await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0001\n" + boxingSource);
@@ -125,6 +154,7 @@ public sealed class PackageConsumptionTests
             await File.WriteAllTextAsync(sourcePath, ValidSource);
 
             string editorConfigurationPath = Path.Combine(paths: [workspace.FullName, ".editorconfig"]);
+
             string[] conflictingEditorSettings =
             [
                 "csharp_style_var_elsewhere = true:silent",
@@ -135,6 +165,7 @@ public sealed class PackageConsumptionTests
                 "dotnet_diagnostic.IDE0059.severity = none",
                 "dotnet_diagnostic.CS1591.severity = none",
             ];
+
             foreach (string conflictingSetting in conflictingEditorSettings)
             {
                 await File.WriteAllTextAsync(editorConfigurationPath, $"root = true\n[*.cs]\n{conflictingSetting}\n");
@@ -159,6 +190,7 @@ public sealed class PackageConsumptionTests
                 "<WarningsAsErrors>CS0168</WarningsAsErrors>",
                 "<EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>",
             ];
+
             foreach (string conflictingSetting in conflictingProjectSettings)
             {
                 await File.WriteAllTextAsync(projectPath, projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
@@ -167,6 +199,7 @@ public sealed class PackageConsumptionTests
             }
 
             await File.WriteAllTextAsync(projectPath, projectContent);
+
             string[] conflictingBuildArguments =
             [
                 "-p:RunAnalyzers=false",
@@ -180,6 +213,7 @@ public sealed class PackageConsumptionTests
                 "-p:NoWarn=IDE0005",
                 "-p:WarningsNotAsErrors=CA1311",
             ];
+
             foreach (string conflictingArgument in conflictingBuildArguments)
             {
                 await RunDevelopmentKit(workspace.FullName, arguments: [.. buildArguments, conflictingArgument],
@@ -197,28 +231,33 @@ public sealed class PackageConsumptionTests
     private static string VerifyPackageContents(string packagePath)
     {
         using ZipArchive package = ZipFile.OpenRead(packagePath);
+
         string[] requiredFiles =
         [
             "analyzers/dotnet/cs/NetAgents.Analyzers.dll",
+            "analyzers/dotnet/cs/NetAgents.CodeFixes.dll",
             "buildTransitive/NetAgents.Analyzers.props",
             "buildTransitive/NetAgents.Analyzers.targets",
             "buildTransitive/NetAgents.globalconfig",
             "README.md",
             "LICENSE",
         ];
+
         foreach (string requiredFile in requiredFiles)
         {
             Assert.NotNull(package.GetEntry(requiredFile));
         }
 
-        ZipArchiveEntry assemblyEntry = Assert.Single(package.Entries, static entry =>
-            entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal));
-        Assert.Equal(expected: "analyzers/dotnet/cs/NetAgents.Analyzers.dll", actual: assemblyEntry.FullName);
+        Assert.Equal(expected: 2, actual: package.Entries.Count(static entry => entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal)));
+
         ZipArchiveEntry manifestEntry = package.GetEntry(entryName: "NetAgents.Analyzers.nuspec")
             ?? throw new InvalidOperationException(message: "The package manifest is missing.");
+
         using Stream manifestStream = manifestEntry.Open();
+
         XDocument manifest = XDocument.Load(manifestStream);
         Assert.DoesNotContain(manifest.Descendants(), static element => element.Name.LocalName == "dependency");
+
         return manifest.Descendants().Single(static element => element.Name.LocalName == "version").Value;
     }
 
@@ -230,21 +269,28 @@ public sealed class PackageConsumptionTests
         string templatePath = Path.Combine(paths: [templateDirectory, ".editorconfig"]);
         string template = await File.ReadAllTextAsync(templatePath).ConfigureAwait(continueOnCapturedContext: false);
         AnalyzerConfig[] templateConfigurations = [AnalyzerConfig.Parse(template, templatePath)];
+
         AnalyzerConfigOptionsResult templateOptions = AnalyzerConfigSet.Create(templateConfigurations)
             .GetOptionsForSourcePath(Path.Combine(paths: [templateDirectory, "ExampleService.cs"]));
+
         Assert.NotEmpty(templateOptions.AnalyzerOptions);
 
         using Stream embeddedStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(
             name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
             ?? throw new InvalidOperationException(message: "The embedded configuration is missing.");
+
         using StreamReader embeddedReader = new(embeddedStream);
+
         string embeddedConfiguration = await embeddedReader.ReadToEndAsync().ConfigureAwait(continueOnCapturedContext: false);
         ZipArchive package = await ZipFile.OpenReadAsync(packagePath).ConfigureAwait(continueOnCapturedContext: false);
+
         await using (package.ConfigureAwait(continueOnCapturedContext: false))
         {
             ZipArchiveEntry configurationEntry = package.GetEntry(entryName: "buildTransitive/NetAgents.globalconfig")
                 ?? throw new InvalidOperationException(message: "The packaged configuration is missing.");
+
             using StreamReader packagedReader = new(await configurationEntry.OpenAsync().ConfigureAwait(continueOnCapturedContext: false));
+
             Assert.Equal(embeddedConfiguration, await packagedReader.ReadToEndAsync().ConfigureAwait(continueOnCapturedContext: false));
         }
 
@@ -252,12 +298,16 @@ public sealed class PackageConsumptionTests
         [
             AnalyzerConfig.Parse(embeddedConfiguration, Path.Combine(paths: [templateDirectory, "NetAgents.globalconfig"])),
         ];
+
         AnalyzerConfigSet generatedConfiguration = AnalyzerConfigSet.Create(generatedConfigurations, out ImmutableArray<Diagnostic> diagnostics);
         Assert.True(diagnostics.IsEmpty);
+
         // A source outside the configuration's directory must still receive every C# default.
         AnalyzerConfigOptionsResult generatedOptions = generatedConfiguration
             .GetOptionsForSourcePath(Path.Combine(paths: [workspacePath, "Unrelated", "ExampleService.cs"]));
+
         Assert.True(generatedOptions.Diagnostics.IsEmpty);
+
         foreach (KeyValuePair<string, string> preference in templateOptions.AnalyzerOptions)
         {
             // Preserve policy overrides while following the SDK's formatting preferences.
@@ -268,6 +318,7 @@ public sealed class PackageConsumptionTests
                 "csharp_style_unused_value_assignment_preference" => preference.Value.Split(separator: ':').First() + ":error",
                 _ => preference.Value,
             };
+
             Assert.Equal(expectedValue, generatedOptions.AnalyzerOptions[preference.Key]);
         }
     }
@@ -275,6 +326,7 @@ public sealed class PackageConsumptionTests
     private static async Task<string> PackAnalyzer(string workspacePath)
     {
         DirectoryInfo? repositoryDirectory = new(AppContext.BaseDirectory);
+
         while (repositoryDirectory is not null
             && !File.Exists(Path.Combine(paths: [repositoryDirectory.FullName, "NetAgents.slnx"])))
         {
@@ -282,15 +334,18 @@ public sealed class PackageConsumptionTests
         }
 
         Assert.NotNull(repositoryDirectory);
+
         string configuration = typeof(PackageConsumptionTests).Assembly
             .GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration
             ?? throw new InvalidOperationException(message: "The test build configuration is missing.");
+
         string packageDirectory = Path.Combine(paths: [workspacePath, "artifacts"]);
         await RunDevelopmentKit(repositoryDirectory.FullName, arguments:
         [
             "pack", "src/NetAgents.Analyzers.csproj", "--configuration", configuration,
             "--no-build", "--no-restore", "--output", packageDirectory,
         ]).ConfigureAwait(continueOnCapturedContext: false);
+
         return Assert.Single(Directory.EnumerateFiles(packageDirectory, searchPattern: "*.nupkg"));
     }
 
@@ -298,6 +353,7 @@ public sealed class PackageConsumptionTests
         string? expectedDiagnosticIdentifier = null)
     {
         using Process process = new();
+
         process.StartInfo = new ProcessStartInfo
         {
             FileName = Environment.GetEnvironmentVariable(variable: "DOTNET_HOST_PATH") ?? "dotnet",
@@ -306,6 +362,7 @@ public sealed class PackageConsumptionTests
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
+
         foreach (string argument in arguments)
         {
             process.StartInfo.ArgumentList.Add(argument);
@@ -314,6 +371,7 @@ public sealed class PackageConsumptionTests
         Assert.True(process.Start());
         Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
         Task<string> standardError = process.StandardError.ReadToEndAsync();
+
         try
         {
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMinutes(minutes: 2)).ConfigureAwait(continueOnCapturedContext: false);
@@ -322,11 +380,13 @@ public sealed class PackageConsumptionTests
         {
             process.Kill(entireProcessTree: true);
             await process.WaitForExitAsync().ConfigureAwait(continueOnCapturedContext: false);
+
             throw;
         }
 
         string output = await standardOutput.ConfigureAwait(continueOnCapturedContext: false) + await standardError.ConfigureAwait(continueOnCapturedContext: false);
         Assert.DoesNotContain(expectedSubstring: "AD0001", actualString: output, StringComparison.Ordinal);
+
         if (expectedDiagnosticIdentifier is null)
         {
             Assert.True(process.ExitCode == 0, output);

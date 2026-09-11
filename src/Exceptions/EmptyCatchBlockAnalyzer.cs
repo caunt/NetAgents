@@ -36,6 +36,7 @@ public sealed class EmptyCatchBlockAnalyzer() : PolicyAnalyzer(Rule)
     private static void AnalyzeSyntax(SyntaxNodeAnalysisContext context)
     {
         CatchClauseSyntax catchClause = (CatchClauseSyntax)context.Node;
+
         if (catchClause.Block.Statements.Count > 0)
         {
             return;
