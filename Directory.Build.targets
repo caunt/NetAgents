@@ -1,7 +1,58 @@
 <Project>
+  <PropertyGroup>
+    <NetAgentsGlobalConfigurationPath>$(IntermediateOutputPath)NetAgents.globalconfig</NetAgentsGlobalConfigurationPath>
+    <NetAgentsEditorConfigTemplateDirectory>$(IntermediateOutputPath)editorconfig-template/$(NETCoreSdkVersion)/</NetAgentsEditorConfigTemplateDirectory>
+    <NetAgentsEditorConfigTemplatePath>$(NetAgentsEditorConfigTemplateDirectory)content/EditorConfig/Dotnet/.editorconfig</NetAgentsEditorConfigTemplatePath>
+  </PropertyGroup>
   <ItemGroup>
+    <EditorConfigFiles Include="$(NetAgentsGlobalConfigurationPath)" />
     <CompilerVisibleProperty Include="MSBuildProjectDirectory" />
   </ItemGroup>
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'NetAgents.Analyzers'">
+    <EmbeddedResource Include="$(NetAgentsGlobalConfigurationPath)" LogicalName="NetAgents.Analyzers.Configuration.NetAgents.globalconfig" />
+    <None Include="$(NetAgentsGlobalConfigurationPath)" Pack="true" PackagePath="buildTransitive/NetAgents.globalconfig" />
+  </ItemGroup>
+  <Target Name="GenerateNetAgentsGlobalConfiguration"
+          BeforeTargets="PrepareForBuild;PrepareResourceNames;GenerateMSBuildEditorConfigFile;CoreCompile">
+    <ItemGroup>
+      <NetAgentsEditorConfigTemplatePackage Include="$(NetCoreRoot)templates/*/microsoft.dotnet.common.itemtemplates.$(NETCoreSdkVersion).nupkg" />
+    </ItemGroup>
+    <Error Condition="'@(NetAgentsEditorConfigTemplatePackage->Count())' != '1'"
+           Text="Cannot find the editorconfig template for .NET SDK $(NETCoreSdkVersion). Install the complete .NET SDK, including its bundled templates." />
+    <!-- Read the same built-in template as 'dotnet new editorconfig', without launching a process. -->
+    <Unzip SourceFiles="@(NetAgentsEditorConfigTemplatePackage)" DestinationFolder="$(NetAgentsEditorConfigTemplateDirectory)"
+           Include="content/EditorConfig/Dotnet/.editorconfig" />
+    <ReadLinesFromFile File="$(NetAgentsEditorConfigTemplatePath)">
+      <Output TaskParameter="Lines" ItemName="NetAgentsEditorConfigLines" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <NetAgentsEditorConfiguration>@(NetAgentsEditorConfigLines, '%0A')</NetAgentsEditorConfiguration>
+      <!-- Keep sections that apply to C#, then make their options global. -->
+      <NetAgentsEditorConfiguration>$([System.Text.RegularExpressions.Regex]::Replace('$(NetAgentsEditorConfiguration)', '(?ms)^\[(?!\*\]|\*\.cs\]|\*\.\{(?:cs,vb|vb,cs)\}\])[^\r\n]*\r?\n.*?(?=^\[|\z)', ''))</NetAgentsEditorConfiguration>
+      <NetAgentsEditorConfiguration>$([System.Text.RegularExpressions.Regex]::Replace('$(NetAgentsEditorConfiguration)', '(?m)^(?:root\s*=.*|\[.*\]|#.*)(?:\r?\n|$)', ''))</NetAgentsEditorConfiguration>
+      <!-- Correct the .NET template's namespace selector for generic type parameters. -->
+      <NetAgentsEditorConfiguration>$([System.Text.RegularExpressions.Regex]::Replace('$(NetAgentsEditorConfiguration)', '(?m)^(dotnet_naming_symbols\.type_parameters\.applicable_kinds\s*=\s*)namespace\s*$', '${1}type_parameter'))</NetAgentsEditorConfiguration>
+    </PropertyGroup>
+    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)src/AnalyzerReleases.Shipped.md">
+      <Output TaskParameter="Lines" ItemName="NetAgentsReleaseLines" />
+    </ReadLinesFromFile>
+    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)src/AnalyzerReleases.Unshipped.md">
+      <Output TaskParameter="Lines" ItemName="NetAgentsReleaseLines" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <NetAgentsDiagnosticReleaseLines Include="@(NetAgentsReleaseLines)"
+                                      Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Identity)', '^NETAGENTS[0-9]+\s*\|'))" />
+      <NetAgentsGlobalConfigurationLines Include="is_global = true;global_level = 2147483647" />
+      <NetAgentsGlobalConfigurationLines Include="$([MSBuild]::Escape('$(NetAgentsEditorConfiguration)'))" />
+      <NetAgentsGlobalConfigurationLines Include="$([System.Text.RegularExpressions.Regex]::Replace('%(NetAgentsDiagnosticReleaseLines.Identity)', '^(NETAGENTS[0-9]+).*', 'dotnet_diagnostic.$1.severity = error'))" />
+      <NetAgentsGlobalConfigurationLines Include="dotnet_analyzer_diagnostic.category-Style.severity = error;dotnet_diagnostic.IDE0055.severity = error;dotnet_diagnostic.IDE1006.severity = error" />
+      <!-- IDE0005 requires XML documentation generation to run during builds. -->
+      <NetAgentsGlobalConfigurationLines Include="dotnet_diagnostic.IDE0005.severity = silent" />
+      <FileWrites Include="$(NetAgentsGlobalConfigurationPath);$(NetAgentsEditorConfigTemplatePath)" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(NetAgentsGlobalConfigurationPath)" Lines="@(NetAgentsGlobalConfigurationLines)"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" Encoding="UTF-8" />
+  </Target>
   <ItemGroup Condition="'$(IsTestProject)' == 'true'">
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
@@ -17,7 +68,7 @@
   <Target Name="AnalyzeNetAgentsSource" AfterTargets="Build"
           Condition="'$(MSBuildProjectName)' == 'NetAgents.Analyzers' and '$(NetAgentsSelfAnalysisBuild)' != 'true' and '$(DesignTimeBuild)' != 'true'">
     <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(NetAgentsSelfAnalysisAssemblyPath)" />
-    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Rebuild"
-             Properties="NetAgentsSelfAnalysisBuild=true;VersionTimestamp=$(VersionTimestamp)" />
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Build"
+             Properties="NetAgentsSelfAnalysisBuild=true;VersionTimestamp=$(VersionTimestamp);IntermediateOutputPath=$(BaseIntermediateOutputPath)self-analysis/$(Configuration)/$(TargetFramework)/;OutputPath=$(MSBuildThisFileDirectory)artifacts/self-analysis/$(Configuration)/verified/" />
   </Target>
 </Project>

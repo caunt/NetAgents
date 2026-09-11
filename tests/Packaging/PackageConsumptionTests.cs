@@ -1,8 +1,13 @@
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
 using System.Security;
 using System.Xml.Linq;
+
+using Microsoft.CodeAnalysis;
+
+using NetAgents.Analyzers.Configuration;
 
 namespace NetAgents.Analyzers.Tests.Packaging;
 
@@ -30,6 +35,7 @@ public sealed class PackageConsumptionTests
                 ?? await PackAnalyzer(workspace.FullName);
             packagePath = Path.GetFullPath(packagePath);
             string packageVersion = VerifyPackageContents(packagePath);
+            await VerifyConfigurationMatchesTemplate(workspace.FullName, packagePath);
             string projectPath = Path.Combine(paths: [workspace.FullName, "Consumer.csproj"]);
             string sourcePath = Path.Combine(paths: [workspace.FullName, "ExampleService.cs"]);
             string projectContent = $$"""
@@ -125,6 +131,51 @@ public sealed class PackageConsumptionTests
         XDocument manifest = XDocument.Load(manifestStream);
         Assert.DoesNotContain(manifest.Descendants(), static element => element.Name.LocalName == "dependency");
         return manifest.Descendants().Single(static element => element.Name.LocalName == "version").Value;
+    }
+
+    private static async Task VerifyConfigurationMatchesTemplate(string workspacePath, string packagePath)
+    {
+        string templateDirectory = Path.Combine(paths: [workspacePath, "microsoft-defaults"]);
+        await RunDevelopmentKit(workspacePath, arguments: ["new", "editorconfig", "--output", templateDirectory])
+            .ConfigureAwait(continueOnCapturedContext: false);
+        string templatePath = Path.Combine(paths: [templateDirectory, ".editorconfig"]);
+        string template = await File.ReadAllTextAsync(templatePath).ConfigureAwait(continueOnCapturedContext: false);
+        AnalyzerConfig[] templateConfigurations = [AnalyzerConfig.Parse(template, templatePath)];
+        AnalyzerConfigOptionsResult templateOptions = AnalyzerConfigSet.Create(templateConfigurations)
+            .GetOptionsForSourcePath(Path.Combine(paths: [templateDirectory, "ExampleService.cs"]));
+        Assert.NotEmpty(templateOptions.AnalyzerOptions);
+
+        using Stream embeddedStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(
+            name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
+            ?? throw new InvalidOperationException(message: "The embedded configuration is missing.");
+        using StreamReader embeddedReader = new(embeddedStream);
+        string embeddedConfiguration = await embeddedReader.ReadToEndAsync().ConfigureAwait(continueOnCapturedContext: false);
+        ZipArchive package = await ZipFile.OpenReadAsync(packagePath).ConfigureAwait(continueOnCapturedContext: false);
+        await using (package.ConfigureAwait(continueOnCapturedContext: false))
+        {
+            ZipArchiveEntry configurationEntry = package.GetEntry(entryName: "buildTransitive/NetAgents.globalconfig")
+                ?? throw new InvalidOperationException(message: "The packaged configuration is missing.");
+            using StreamReader packagedReader = new(await configurationEntry.OpenAsync().ConfigureAwait(continueOnCapturedContext: false));
+            Assert.Equal(embeddedConfiguration, await packagedReader.ReadToEndAsync().ConfigureAwait(continueOnCapturedContext: false));
+        }
+
+        AnalyzerConfig[] generatedConfigurations =
+        [
+            AnalyzerConfig.Parse(embeddedConfiguration, Path.Combine(paths: [templateDirectory, "NetAgents.globalconfig"])),
+        ];
+        AnalyzerConfigSet generatedConfiguration = AnalyzerConfigSet.Create(generatedConfigurations, out ImmutableArray<Diagnostic> diagnostics);
+        Assert.True(diagnostics.IsEmpty);
+        // A source outside the configuration's directory must still receive every C# default.
+        AnalyzerConfigOptionsResult generatedOptions = generatedConfiguration
+            .GetOptionsForSourcePath(Path.Combine(paths: [workspacePath, "Unrelated", "ExampleService.cs"]));
+        Assert.True(generatedOptions.Diagnostics.IsEmpty);
+        foreach (KeyValuePair<string, string> preference in templateOptions.AnalyzerOptions)
+        {
+            // The SDK template incorrectly selects namespaces for the generic parameter naming rule.
+            string expectedValue = preference.Key == "dotnet_naming_symbols.type_parameters.applicable_kinds"
+                && preference.Value == "namespace" ? "type_parameter" : preference.Value;
+            Assert.Equal(expectedValue, generatedOptions.AnalyzerOptions[preference.Key]);
+        }
     }
 
     private static async Task<string> PackAnalyzer(string workspacePath)

@@ -16,9 +16,6 @@
     <IsPackable>false</IsPackable>
     <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
   </PropertyGroup>
-  <ItemGroup>
-    <GlobalAnalyzerConfigFiles Include="$(MSBuildThisFileDirectory)src/Configuration/NetAgents.globalconfig" />
-  </ItemGroup>
   <!-- UTC year.month.day plus a 1000..9999 time-of-day bucket. -->
   <PropertyGroup>
     <VersionTimestamp Condition="'$(VersionTimestamp)' == ''">$([System.DateTimeOffset]::UtcNow.ToString('yy MM dd HH mm ss'))</VersionTimestamp>

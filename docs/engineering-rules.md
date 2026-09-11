@@ -1,8 +1,6 @@
 # Engineering rules
 
-The package generalizes the C# editor preferences, build settings, custom
-analyzer rules, and written engineering requirements from the supplied policy.
-It contains no application, deployment, radio, or receiver behavior.
+The package enforces shared C# style, build settings, and engineering rules.
 
 ## Diagnostics
 
@@ -39,19 +37,16 @@ names does not require renaming framework APIs.
 
 ## Shared editor configuration
 
-The complete configuration is
-[`src/Configuration/NetAgents.globalconfig`](../src/Configuration/NetAgents.globalconfig).
-It preserves the original C# preferences: four-space indentation, explicit
-types, file-scoped namespaces, System imports first, the original brace and
-wrapping styles, and conventional interface, generic parameter, field, and
-member naming. The type-parameter naming selector is corrected to the actual
-EditorConfig `type_parameter` symbol kind. Custom diagnostic identifiers are
-renamed for this independent package. Style and formatting diagnostics are
-raised to errors so the preferences participate in consumer builds.
+The shared C# preferences come from Microsoft's built-in
+`dotnet new editorconfig` defaults for the SDK used to build each package
+release. Updating the package picks up refreshed defaults. They apply globally
+and automatically, with style and formatting violations treated as errors.
+The template's generic type-parameter naming selector is corrected to
+`type_parameter` so the conventional `T` prefix applies to type parameters.
 
-The global configuration cannot impose XML/JSON/Markdown editor indentation:
-those files are not C# compiler inputs. Non-C# editing preferences remain in
-this repository's `.editorconfig` for contributors.
+Consumer editor and project settings must agree with the shared policy.
+Global analyzer configuration applies to C# compiler inputs; it does not
+control XML, JSON, or Markdown editor formatting.
 
 ## Architectural review
 
