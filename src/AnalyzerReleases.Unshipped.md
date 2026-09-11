@@ -20,3 +20,4 @@ NETAGENTS0013 | Configuration | Error | Consumer overrides of the embedded polic
 NETAGENTS0015 | Reliability | Error | Ignored return values and discard assignments
 NETAGENTS0016 | Formatting | Error | Blank lines around control flow and multiline variable declarations
 NETAGENTS0017 | Formatting | Error | Braces for multiline bodies and consistent conditional chains
+NETAGENTS0018 | Structure | Error | At most sixteen authored C# files directly in each directory per project

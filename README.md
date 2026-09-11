@@ -19,7 +19,7 @@ Set `PrivateAssets="all"` on the package reference to keep the analyzer dependen
 ## ✅ What it checks
 
 - **Type safety** — no boxing, `object`/`dynamic` values, or untyped collections; nullable analysis is required.
-- **Naming and structure** — descriptive names, one top-level type per matching file, and files under 1,000 lines.
+- **Naming and structure** — descriptive names, one top-level type per matching file, files under 1,000 lines, and at most 16 authored C# files per directory.
 - **Reliability** — consume return values; no discarded results, empty catches, null-forgiving operators, or unconditional loops.
 - **Concurrency** — no `lock`, framework synchronization primitives, or blocking waits. Use asynchronous composition or Nito.AsyncEx when coordination is needed.
 - **Style** — consistent formatting, blank lines around control flow and multiline declarations, braces based on body layout, a final newline, and named literal arguments. Includes automatic spacing and brace fixes.

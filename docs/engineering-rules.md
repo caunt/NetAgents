@@ -25,6 +25,13 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0015 | Require return values to be consumed. Reject ignored non-void calls, ignored awaited results, and assignments to `_`, including tuple deconstruction. This includes conditional calls, expression-bodied members, callbacks, and `for` clauses. |
 | NETAGENTS0016 | Require blank lines before and after control-flow statements and multiline local declarations when another statement is adjacent. Includes an automatic code fix and Fix all support. |
 | NETAGENTS0017 | Omit optional braces around one single-line body statement; require braces for multiline bodies and keep conditional chains consistent. Includes an automatic code fix and Fix all support. |
+| NETAGENTS0018 | Allow at most 16 authored C# files directly in each directory per project. Organize larger directories into subdirectories with narrower responsibilities. |
+
+Directory limits count each distinct `.cs` file included in the project once,
+including linked source files in their physical directories. Generated files
+are excluded, and each subdirectory is counted separately. The seventeenth
+authored file causes a build error that names the directory and its file count.
+Split oversized directories by feature or responsibility to resolve it.
 
 Statement spacing covers `if`, loops, `switch`, `try`, `using` (including
 declarations), `return`, `throw`, `break`, `continue`, and `yield`. Multiline
