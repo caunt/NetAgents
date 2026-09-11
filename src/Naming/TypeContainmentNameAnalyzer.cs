@@ -58,9 +58,10 @@ public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
         }
 
         // Only directories below the project root are source architecture, not checkout locations.
-        if (!context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue(
-                key: "build_property.MSBuildProjectDirectory", out string? projectDirectory)
-            || string.IsNullOrWhiteSpace(projectDirectory))
+        bool hasProjectDirectory = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue(
+            key: "build_property.MSBuildProjectDirectory", out string? projectDirectory);
+
+        if (!hasProjectDirectory || string.IsNullOrWhiteSpace(projectDirectory))
             return;
 
         string root = Path.GetFullPath(projectDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);

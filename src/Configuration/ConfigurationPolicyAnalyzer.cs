@@ -80,8 +80,10 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
         {
             bool matches;
 
-            if (requiredOption.Key.StartsWith(value: "dotnet_diagnostic.", StringComparison.OrdinalIgnoreCase)
-                && requiredOption.Key.EndsWith(value: ".severity", StringComparison.OrdinalIgnoreCase))
+            bool isDiagnosticSeverity = requiredOption.Key.StartsWith(value: "dotnet_diagnostic.", StringComparison.OrdinalIgnoreCase)
+                && requiredOption.Key.EndsWith(value: ".severity", StringComparison.OrdinalIgnoreCase);
+
+            if (isDiagnosticSeverity)
             {
                 string diagnosticIdentifier = requiredOption.Key.Substring(startIndex: 18,
                     length: requiredOption.Key.Length - 18 - 9);

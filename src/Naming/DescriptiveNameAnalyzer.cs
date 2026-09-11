@@ -81,16 +81,19 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
         // Interface/override signatures can be owned by a framework or another assembly.
         ISymbol? symbol = context.SemanticModel.GetDeclaredSymbol(context.Node, context.CancellationToken);
 
-        if (symbol is
-        { IsOverride: true }
+        bool hasExternalSignature = symbol is { IsOverride: true }
             or IMethodSymbol { ExplicitInterfaceImplementations.Length: > 0 }
-            or IPropertySymbol { ExplicitInterfaceImplementations.Length: > 0 })
+            or IPropertySymbol { ExplicitInterfaceImplementations.Length: > 0 };
+
+        if (hasExternalSignature)
             return;
 
         string name = identifier.ValueText.TrimStart(trimChars: ['_']);
 
-        if ((context.Node is InterfaceDeclarationSyntax && name.StartsWith(value: "I", StringComparison.Ordinal))
-            || (context.Node is TypeParameterSyntax && name.StartsWith(value: "T", StringComparison.Ordinal)))
+        bool hasTypePrefix = (context.Node is InterfaceDeclarationSyntax && name.StartsWith(value: "I", StringComparison.Ordinal))
+            || (context.Node is TypeParameterSyntax && name.StartsWith(value: "T", StringComparison.Ordinal));
+
+        if (hasTypePrefix)
             name = name.Substring(startIndex: 1);
 
         bool invalidName = name.Length < 2;
@@ -99,8 +102,10 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
         {
             string word = wordMatch.Value;
 
-            if (AbbreviatedWords.Contains(word)
-                || (word.Length > 1 && char.IsLetter(word[index: 0]) && word.All(static character => !char.IsLetter(character) || char.IsUpper(character))))
+            bool isUppercaseWord = word.Length > 1 && char.IsLetter(word[index: 0])
+                && word.All(static character => !char.IsLetter(character) || char.IsUpper(character));
+
+            if (AbbreviatedWords.Contains(word) || isUppercaseWord)
                 invalidName = true;
         }
 

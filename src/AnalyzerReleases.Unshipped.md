@@ -21,3 +21,4 @@ NETAGENTS0015 | Reliability | Error | Ignored return values, underscore assignme
 NETAGENTS0016 | Formatting | Error | Blank lines around control flow and multiline variable declarations
 NETAGENTS0017 | Formatting | Error | Braces for multiline bodies and consistent conditional chains
 NETAGENTS0018 | Structure | Error | At most sixteen authored C# files directly in each directory per project
+NETAGENTS0019 | Formatting | Error | Single-line conditions of at most 128 characters

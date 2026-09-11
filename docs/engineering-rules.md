@@ -26,6 +26,9 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0016 | Require blank lines before and after control-flow statements and multiline local declarations when another statement is adjacent. Includes an automatic code fix and Fix all support. |
 | NETAGENTS0017 | Omit optional braces around one single-line body statement; require braces for multiline bodies and keep conditional chains consistent. Includes an automatic code fix and Fix all support. |
 | NETAGENTS0018 | Allow at most 16 authored C# files directly in each directory per project. Organize larger directories into subdirectories with narrower responsibilities. |
+| NETAGENTS0019 | Require single-line conditions of at most 128 characters in `if`/`else if`, `while`, `do`, `for`, ternary expressions, catch filters, and switch `when` guards. Extract longer conditions into a separate variable declaration. |
+
+Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
 Directory limits count each distinct `.cs` file included in the project once,
 including linked source files in their physical directories. Generated files
@@ -46,8 +49,8 @@ Comments and existing line endings are preserved. Use the editor's
 dotnet format analyzers --diagnostics NETAGENTS0016
 ```
 
-Brace style depends on the **body**, even when the condition or loop header
-spans several lines. This covers `if`/`else`, `for`, `foreach` (including
+Brace style depends on the **body**, even when a loop header spans several
+lines. Conditions must independently satisfy `NETAGENTS0019`. This covers `if`/`else`, `for`, `foreach` (including
 `await foreach`), `while`, `do`, `using` (including `await using`), `fixed`, and
 `case`/`default` bodies. A case with multiple statements also requires a block.
 If any branch in an `if`/`else if`/`else` chain needs braces, every branch keeps

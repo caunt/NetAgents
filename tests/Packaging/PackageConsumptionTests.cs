@@ -426,8 +426,7 @@ public sealed class PackageConsumptionTests
     {
         DirectoryInfo? repositoryDirectory = new(AppContext.BaseDirectory);
 
-        while (repositoryDirectory is not null
-            && !File.Exists(Path.Combine(paths: [repositoryDirectory.FullName, "NetAgents.slnx"])))
+        while (repositoryDirectory is not null && !File.Exists(Path.Combine(paths: [repositoryDirectory.FullName, "NetAgents.slnx"])))
             repositoryDirectory = repositoryDirectory.Parent;
 
         Assert.NotNull(repositoryDirectory);

@@ -66,8 +66,10 @@ internal static class ControlFlowBraces
 
     private static bool RequiresCaseBraces(SwitchSectionSyntax section, SourceText source)
     {
-        if (section.ContainsDiagnostics || section.ContainsDirectives || section.Statements.Count == 0
-            || section.Statements.Count == 1 && (section.Statements[index: 0] is BlockSyntax || IsSingleLine(section.Statements[index: 0], source)))
+        bool hasSimpleBody = section.Statements.Count == 1
+            && (section.Statements[index: 0] is BlockSyntax || IsSingleLine(section.Statements[index: 0], source));
+
+        if (section.ContainsDiagnostics || section.ContainsDirectives || section.Statements.Count == 0 || hasSimpleBody)
             return false;
 
         // A case block must not hide a variable or local function used by another section.
@@ -104,9 +106,11 @@ internal static class ControlFlowBraces
         StatementSyntax statement = block.Statements[index: 0];
 
         // Declarations must retain their scope, including out variables and pattern captures.
-        if (statement is BlockSyntax or LocalDeclarationStatementSyntax or LocalFunctionStatementSyntax
+        bool requiresScope = statement is BlockSyntax or LocalDeclarationStatementSyntax or LocalFunctionStatementSyntax
             or LabeledStatementSyntax or EmptyStatementSyntax
-            || statement.DescendantNodes().OfType<VariableDesignationSyntax>().Any())
+            || statement.DescendantNodes().OfType<VariableDesignationSyntax>().Any();
+
+        if (requiresScope)
             return false;
 
         return IsSingleLine(statement, source) && !ExposesDanglingElse(block, statement);
@@ -122,8 +126,7 @@ internal static class ControlFlowBraces
             if (!CanRemainUnbraced(current.Statement, source))
                 return false;
 
-            if (current.Else is { Statement: not IfStatementSyntax } otherwise
-                && !CanRemainUnbraced(otherwise.Statement, source))
+            if (current.Else is { Statement: not IfStatementSyntax } otherwise && !CanRemainUnbraced(otherwise.Statement, source))
                 return false;
         }
 

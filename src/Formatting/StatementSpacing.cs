@@ -104,9 +104,11 @@ internal static class StatementSpacing
         {
             TextLine line = source.Lines[lineNumber];
 
-            if (source.ToString(line.Span).All(char.IsWhiteSpace)
+            bool isBlankLine = source.ToString(line.Span).All(char.IsWhiteSpace)
                 && !IsInsideContentTrivia(previous.GetTrailingTrivia(), line.Start)
-                && !IsInsideContentTrivia(current.GetLeadingTrivia(), line.Start))
+                && !IsInsideContentTrivia(current.GetLeadingTrivia(), line.Start);
+
+            if (isBlankLine)
                 return true;
         }
 
