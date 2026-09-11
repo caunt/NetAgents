@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Immutable;
 
 using Microsoft.CodeAnalysis;
@@ -7,13 +6,15 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
+using NetAgents.Analyzers.Diagnostics;
+
 namespace NetAgents.Analyzers.Readability;
 
 /// <summary>
 /// Requires named arguments for inline literals and default values.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class ExplicitLiteralArgumentNameAnalyzer : DiagnosticAnalyzer
+public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
@@ -30,18 +31,8 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer : DiagnosticAnalyzer
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
-
-    /// <inheritdoc />
-    public override void Initialize(AnalysisContext context)
+    protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-        context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(AnalyzeArgument, SyntaxKind.Argument);
     }
 

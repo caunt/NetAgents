@@ -6,13 +6,15 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
+using NetAgents.Analyzers.Diagnostics;
+
 namespace NetAgents.Analyzers.Configuration;
 
 /// <summary>
 /// Requires consumer settings to preserve the embedded configuration policy.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class ConfigurationPolicyAnalyzer : DiagnosticAnalyzer
+public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
@@ -31,18 +33,8 @@ public sealed class ConfigurationPolicyAnalyzer : DiagnosticAnalyzer
     private static readonly ImmutableDictionary<string, string> RequiredOptions = ReadRequiredOptions();
 
     /// <inheritdoc />
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
-
-    /// <inheritdoc />
-    public override void Initialize(AnalysisContext context)
+    protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-        context.EnableConcurrentExecution();
         context.RegisterCompilationStartAction(static compilationContext =>
             compilationContext.RegisterSyntaxTreeAction(treeContext => AnalyzeConfiguration(treeContext, compilationContext.Compilation)));
     }

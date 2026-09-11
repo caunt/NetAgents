@@ -1,10 +1,11 @@
 using System;
-using System.Collections.Immutable;
 using System.IO;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
+
+using NetAgents.Analyzers.Diagnostics;
 
 namespace NetAgents.Analyzers.Naming;
 
@@ -12,7 +13,7 @@ namespace NetAgents.Analyzers.Naming;
 /// Rejects type names that duplicate their owning namespace or feature directory.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class TypeContainmentNameAnalyzer : DiagnosticAnalyzer
+public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
@@ -29,18 +30,8 @@ public sealed class TypeContainmentNameAnalyzer : DiagnosticAnalyzer
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
-
-    /// <inheritdoc />
-    public override void Initialize(AnalysisContext context)
+    protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-        context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(AnalyzeDeclaration,
             SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration, SyntaxKind.InterfaceDeclaration,
             SyntaxKind.RecordDeclaration, SyntaxKind.RecordStructDeclaration, SyntaxKind.EnumDeclaration,

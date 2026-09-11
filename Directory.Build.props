@@ -1,28 +1,14 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)src/Packaging/NetAgents.Analyzers.props" />
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>14.0</LangVersion>
-    <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <AnalysisLevel>latest-all</AnalysisLevel>
-    <AnalysisMode>All</AnalysisMode>
-    <AnalysisLevelStyle>latest-all</AnalysisLevelStyle>
-    <AnalysisModeStyle>AllEnabledByDefault</AnalysisModeStyle>
-    <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
-    <EnableCodeStyleSeverity>true</EnableCodeStyleSeverity>
-    <RunAnalyzers>true</RunAnalyzers>
-    <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <NuGetAudit>true</NuGetAudit>
     <NuGetAuditMode>all</NuGetAuditMode>
     <IsPackable>false</IsPackable>
-    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
   </PropertyGroup>
   <!-- UTC year.month.day plus a 1000..9999 time-of-day bucket. -->
   <PropertyGroup>

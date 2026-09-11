@@ -23,9 +23,7 @@
     <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="Packaging/NetAgents.Analyzers.targets" Pack="true" PackagePath="buildTransitive/NetAgents.Analyzers.targets" />
     <None Include="Packaging/NetAgents.Analyzers.props" Pack="true" PackagePath="buildTransitive/NetAgents.Analyzers.props" />
-    <None Include="Packaging/README.md" Pack="true" PackagePath="/README.md" />
+    <None Include="../README.md" Pack="true" PackagePath="/README.md" />
     <None Include="../LICENSE" Pack="true" PackagePath="/" />
-    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
-    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
   </ItemGroup>
 </Project>

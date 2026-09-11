@@ -3,7 +3,3 @@ root = true
 [*.{csproj,props,targets,slnx,xml,config,nuspec,json}]
 indent_style = space
 indent_size = 2
-
-[src/**/*.cs]
-# The analyzer targets netstandard2.0; this API is only available on newer runtimes.
-dotnet_diagnostic.CA1510.severity = none

@@ -1,9 +1,8 @@
-using System;
-using System.Collections.Immutable;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
+
+using NetAgents.Analyzers.Diagnostics;
 
 namespace NetAgents.Analyzers.SourceFiles;
 
@@ -11,7 +10,7 @@ namespace NetAgents.Analyzers.SourceFiles;
 /// Limits authored source files to fewer than one thousand lines.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class SourceFileLengthAnalyzer : DiagnosticAnalyzer
+public sealed class SourceFileLengthAnalyzer() : PolicyAnalyzer(Rule)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
@@ -28,18 +27,8 @@ public sealed class SourceFileLengthAnalyzer : DiagnosticAnalyzer
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
-
-    /// <inheritdoc />
-    public override void Initialize(AnalysisContext context)
+    protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-        context.EnableConcurrentExecution();
         context.RegisterSyntaxTreeAction(AnalyzeTree);
     }
 

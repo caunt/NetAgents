@@ -16,7 +16,6 @@
     <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <GlobalAnalyzerConfigFiles Include="$(MSBuildThisFileDirectory)NetAgents.globalconfig" />
     <CompilerVisibleProperty Include="MSBuildProjectDirectory" />
   </ItemGroup>
 </Project>

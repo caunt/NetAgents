@@ -6,13 +6,15 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
+using NetAgents.Analyzers.Diagnostics;
+
 namespace NetAgents.Analyzers.Concurrency;
 
 /// <summary>
 /// Rejects framework synchronization primitives and blocking waits.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class FrameworkSynchronizationAnalyzer : DiagnosticAnalyzer
+public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
@@ -35,18 +37,8 @@ public sealed class FrameworkSynchronizationAnalyzer : DiagnosticAnalyzer
         "WaitHandle", "CountdownEvent", "Barrier"]);
 
     /// <inheritdoc />
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
-
-    /// <inheritdoc />
-    public override void Initialize(AnalysisContext context)
+    protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-        context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(AnalyzeTypeName, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
         context.RegisterOperationAction(AnalyzeMember,
             OperationKind.Invocation, OperationKind.PropertyReference, OperationKind.MethodReference,

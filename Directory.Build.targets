@@ -4,10 +4,6 @@
     <NetAgentsEditorConfigTemplateDirectory>$(IntermediateOutputPath)editorconfig-template/$(NETCoreSdkVersion)/</NetAgentsEditorConfigTemplateDirectory>
     <NetAgentsEditorConfigTemplatePath>$(NetAgentsEditorConfigTemplateDirectory)content/EditorConfig/Dotnet/.editorconfig</NetAgentsEditorConfigTemplatePath>
   </PropertyGroup>
-  <ItemGroup>
-    <EditorConfigFiles Include="$(NetAgentsGlobalConfigurationPath)" />
-    <CompilerVisibleProperty Include="MSBuildProjectDirectory" />
-  </ItemGroup>
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'NetAgents.Analyzers'">
     <EmbeddedResource Include="$(NetAgentsGlobalConfigurationPath)" LogicalName="NetAgents.Analyzers.Configuration.NetAgents.globalconfig" />
     <None Include="$(NetAgentsGlobalConfigurationPath)" Pack="true" PackagePath="buildTransitive/NetAgents.globalconfig" />
@@ -53,12 +49,6 @@
     <WriteLinesToFile File="$(NetAgentsGlobalConfigurationPath)" Lines="@(NetAgentsGlobalConfigurationLines)"
                       Overwrite="true" WriteOnlyWhenDifferent="true" Encoding="UTF-8" />
   </Target>
-  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="xunit" />
-    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
-    <Using Include="Xunit" />
-  </ItemGroup>
   <PropertyGroup Condition="'$(MSBuildProjectName)' == 'NetAgents.Analyzers'">
     <NetAgentsSelfAnalysisAssemblyPath>$(MSBuildThisFileDirectory)artifacts/self-analysis/$(Configuration)/NetAgents.Analyzers.dll</NetAgentsSelfAnalysisAssemblyPath>
   </PropertyGroup>

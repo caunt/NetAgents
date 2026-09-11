@@ -1,10 +1,9 @@
-using System;
-using System.Collections.Immutable;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+
+using NetAgents.Analyzers.Diagnostics;
 
 namespace NetAgents.Analyzers.TypeSafety;
 
@@ -12,7 +11,7 @@ namespace NetAgents.Analyzers.TypeSafety;
 /// Rejects conversions that box value types into reference types.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class BoxingConversionAnalyzer : DiagnosticAnalyzer
+public sealed class BoxingConversionAnalyzer() : PolicyAnalyzer(Rule)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
@@ -29,18 +28,8 @@ public sealed class BoxingConversionAnalyzer : DiagnosticAnalyzer
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
-
-    /// <inheritdoc />
-    public override void Initialize(AnalysisContext context)
+    protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-        context.EnableConcurrentExecution();
         context.RegisterOperationAction(AnalyzeConversion, OperationKind.Conversion);
     }
 

@@ -1,4 +1,10 @@
 <Project>
+  <PropertyGroup>
+    <NetAgentsGlobalConfigurationPath Condition="'$(NetAgentsGlobalConfigurationPath)' == ''">$(MSBuildThisFileDirectory)NetAgents.globalconfig</NetAgentsGlobalConfigurationPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <EditorConfigFiles Include="$(NetAgentsGlobalConfigurationPath)" />
+  </ItemGroup>
   <Target Name="ValidateNetAgentsConsumerPolicy" BeforeTargets="CoreCompile" Condition="'$(DesignTimeBuild)' != 'true'">
     <Error Code="NETAGENTS0014" Condition="'$(Nullable)' != 'enable'"
            Text="NetAgents.Analyzers requires Nullable=enable. Remove the conflicting project setting." />

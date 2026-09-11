@@ -15,6 +15,13 @@ internal static class AnalyzerTestHarness
 
     public static async Task<Diagnostic[]> Analyze(DiagnosticAnalyzer analyzer, string source, string fileName = "ExampleType.cs")
     {
+        foreach (DiagnosticDescriptor descriptor in analyzer.SupportedDiagnostics)
+        {
+            Assert.Equal(DiagnosticSeverity.Error, descriptor.DefaultSeverity);
+            Assert.True(descriptor.IsEnabledByDefault);
+            Assert.Contains(WellKnownDiagnosticTags.NotConfigurable, descriptor.CustomTags);
+        }
+
         SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source,
             options: CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp14), path: fileName);
         CSharpCompilation compilation = CSharpCompilation.Create(assemblyName: "AnalyzerTestAssembly",

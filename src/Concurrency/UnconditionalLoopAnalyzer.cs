@@ -1,10 +1,9 @@
-using System;
-using System.Collections.Immutable;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+
+using NetAgents.Analyzers.Diagnostics;
 
 namespace NetAgents.Analyzers.Concurrency;
 
@@ -12,7 +11,7 @@ namespace NetAgents.Analyzers.Concurrency;
 /// Rejects loops without a terminating condition.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class UnconditionalLoopAnalyzer : DiagnosticAnalyzer
+public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
@@ -29,18 +28,8 @@ public sealed class UnconditionalLoopAnalyzer : DiagnosticAnalyzer
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
-
-    /// <inheritdoc />
-    public override void Initialize(AnalysisContext context)
+    protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-        context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(AnalyzeSyntax, SyntaxKind.WhileStatement, SyntaxKind.DoStatement, SyntaxKind.ForStatement);
     }
 

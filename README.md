@@ -27,7 +27,7 @@ Set `PrivateAssets="all"` on the package reference to keep the analyzer dependen
 
 Violations fail the build. Existing editor and project settings must agree with the shared rules.
 
-[Documentation](docs/engineering-rules.md)
+[Documentation](https://github.com/caunt/NetAgents/blob/main/docs/engineering-rules.md)
 
 ## 🛠️ Everyday use
 
@@ -40,4 +40,4 @@ dotnet build
 
 ---
 
-[NuGet package](https://www.nuget.org/packages/NetAgents.Analyzers) · [MIT license](LICENSE)
+[NuGet package](https://www.nuget.org/packages/NetAgents.Analyzers) · [MIT license](https://github.com/caunt/NetAgents/blob/main/LICENSE)

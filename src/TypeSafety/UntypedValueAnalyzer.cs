@@ -1,10 +1,9 @@
-using System;
-using System.Collections.Immutable;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+
+using NetAgents.Analyzers.Diagnostics;
 
 namespace NetAgents.Analyzers.TypeSafety;
 
@@ -12,7 +11,7 @@ namespace NetAgents.Analyzers.TypeSafety;
 /// Rejects object, dynamic, and inferred untyped values.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class UntypedValueAnalyzer : DiagnosticAnalyzer
+public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
@@ -29,18 +28,8 @@ public sealed class UntypedValueAnalyzer : DiagnosticAnalyzer
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
-
-    /// <inheritdoc />
-    public override void Initialize(AnalysisContext context)
+    protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-        context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(AnalyzeTypeName,
             SyntaxKind.PredefinedType, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
         context.RegisterOperationAction(AnalyzeValue,
