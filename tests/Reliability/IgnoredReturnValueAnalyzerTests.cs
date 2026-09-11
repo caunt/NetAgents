@@ -13,6 +13,17 @@ public sealed class IgnoredReturnValueAnalyzerTests
     /// </summary>
     /// <param name="memberSource">The member discarding a returned value.</param>
     [Theory]
+    [InlineData("public static void Execute() { _ = 42; }")]
+    [InlineData("public static void Execute(int count) { _ = count; }")]
+    [InlineData("public static void Execute(string text) { _ = text.Length; }")]
+    [InlineData("public static void Execute() { _ = new System.Text.StringBuilder(); }")]
+    [InlineData("public static void Execute() { _ = (1, 2); }")]
+    [InlineData("public static void Execute(int count) { _ = count > 0 ? 1 : 2; }")]
+    [InlineData("public static void Execute() { _ = default(int); }")]
+    [InlineData("public static void Execute() { _ = nameof(ExampleType); }")]
+    [InlineData("public static void Execute(int count) { for (_ = count; count > 0;) break; }")]
+    [InlineData("public static void Execute(int count) { for (; count > 0; _ = count) break; }")]
+    [InlineData("public static System.Action<int, int> CreateCallback() => (_, _) => _ = 42;")]
     [InlineData("public static void Execute(System.Collections.Generic.Dictionary<string, string> values, string key) { values.TryGetValue(key, out var value); System.Console.WriteLine(value); }")]
     [InlineData("public static void Execute(System.Collections.Generic.Dictionary<string, string> values, string key) { _ = values.TryGetValue(key, out var value); System.Console.WriteLine(value); }")]
     [InlineData("public static void Execute(string text) { int.TryParse(text, out int value); System.Console.WriteLine(value); }")]
@@ -55,6 +66,50 @@ public sealed class IgnoredReturnValueAnalyzerTests
     }
 
     /// <summary>
+    /// Verifies binding an underscore to a symbol cannot bypass the assignment ban.
+    /// </summary>
+    /// <param name="memberSource">The member assigning to an underscore symbol.</param>
+    [Theory]
+    [InlineData("public static int Execute(int count) { int _; _ = count; return _; }")]
+    [InlineData("public static int Execute(int count) { int _ = count; return _; }")]
+    [InlineData("public static int Execute(int count) { int _; (_) = count; return _; }")]
+    [InlineData("public static int Execute(int _) { _ = 42; return _; }")]
+    [InlineData("public static int Execute(int _) { _ += 42; return _; }")]
+    [InlineData("public static string Execute(string? _) { _ ??= string.Empty; return _; }")]
+    [InlineData("private static int _; public static int Execute(int count) { _ = count; return _; }")]
+    [InlineData("private static int _; public static int Execute(int count) { ExampleType._ = count; return _; }")]
+    [InlineData("public static int _ { get; set; } public static int Execute(int count) { _ = count; return _; }")]
+    [InlineData("public static int _ { get; set; } public static int Execute(int count) { ExampleType._ = count; return _; }")]
+    [InlineData("public static System.Action<string> CreateCallback() => _ => _ = string.Empty;")]
+    [InlineData("public static int Execute() { int _; int count; (_, count) = (1, 2); return _ + count; }")]
+    public async Task RejectsAssignmentsToUnderscoreSymbols(string memberSource)
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
+            new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+
+        Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
+    /// Verifies loop deconstruction cannot discard values, including asynchronous iteration.
+    /// </summary>
+    /// <param name="memberSource">The member discarding an iteration value.</param>
+    [Theory]
+    [InlineData("public static void Execute((int, int)[] pairs) { foreach (var (_, count) in pairs) System.Console.WriteLine(count); }")]
+    [InlineData("public static void Execute((int, int)[] pairs) { foreach ((int _, int count) in pairs) System.Console.WriteLine(count); }")]
+    [InlineData("public static void Execute((int, int)[] pairs) { foreach (var (_, _) in pairs) System.Console.WriteLine(); }")]
+    [InlineData("public static void Execute((int, (int, int))[] values) { foreach (var (first, (_, third)) in values) System.Console.WriteLine(first + third); }")]
+    [InlineData("public static void Execute(int[] values) { foreach (int _ in values) System.Console.WriteLine(); }")]
+    [InlineData("public static async System.Threading.Tasks.Task Execute(System.Collections.Generic.IAsyncEnumerable<(int, int)> pairs) { await foreach (var (_, count) in pairs) System.Console.WriteLine(count); }")]
+    public async Task RejectsLoopDiscards(string memberSource)
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
+            new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+
+        Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
     /// Verifies that consuming a result or awaiting completion without a result is permitted.
     /// </summary>
     /// <param name="memberSource">The member consuming returned values.</param>
@@ -84,6 +139,9 @@ public sealed class IgnoredReturnValueAnalyzerTests
     [InlineData("public static int Execute(System.Func<(int, int)> callback) { var (first, second) = callback(); return first + second; }")]
     [InlineData("public static int Execute(System.Func<(int, (int, int))> callback) { var (first, (second, third)) = callback(); return first + second + third; }")]
     [InlineData("public static void Execute(System.Text.StringBuilder? builder) { builder?.Length = 0; }")]
+    [InlineData("public static void Execute(int[] values) { foreach (int count in values) System.Console.WriteLine(count); }")]
+    [InlineData("public static void Execute((int, int)[] pairs) { foreach (var (first, second) in pairs) System.Console.WriteLine(first + second); }")]
+    [InlineData("public static async System.Threading.Tasks.Task Execute(System.Collections.Generic.IAsyncEnumerable<(int, int)> pairs) { await foreach (var (first, second) in pairs) System.Console.WriteLine(first + second); }")]
     public async Task AllowsConsumedValuesAndVoidCalls(string memberSource)
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(

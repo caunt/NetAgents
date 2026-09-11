@@ -168,6 +168,8 @@ public sealed class PackageConsumptionTests
                 await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015");
             }
 
+            await VerifyDiscardAssignments(workspace.FullName, sourcePath, buildArguments);
+
             string boxingSource = ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
                 newValue: "System.IComparable CreateGreeting(int recipientName)", StringComparison.Ordinal);
 
@@ -264,6 +266,39 @@ public sealed class PackageConsumptionTests
         {
             workspace.Delete(recursive: true);
         }
+    }
+
+    private static async Task VerifyDiscardAssignments(string workspacePath, string sourcePath, string[] buildArguments)
+    {
+        string[] discardedValues =
+        [
+            "_ = 42;",
+            "_ = recipientName;",
+            "_ = recipientName?.Length;",
+            "_ = new System.Text.StringBuilder();",
+            "System.Action<string> consume = _ => _ = string.Empty;\n\n        consume(recipientName);",
+        ];
+
+        foreach (string discardedValue in discardedValues)
+        {
+            string source = ValidSource.Replace(oldValue: "return recipientName;", discardedValue + "\n\n        return recipientName;", StringComparison.Ordinal);
+            await File.WriteAllTextAsync(sourcePath, source).ConfigureAwait(continueOnCapturedContext: false);
+            await RunDevelopmentKit(workspacePath, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015").ConfigureAwait(continueOnCapturedContext: false);
+        }
+
+        string discardedLoop = ValidSource.Replace(oldValue: "return recipientName;",
+            newValue: "(string First, string Second)[] greetings = [(recipientName, string.Empty)];\n\n"
+                + "        foreach ((string greeting, string _) in greetings)\n            recipientName = greeting;\n\n        return recipientName;",
+            StringComparison.Ordinal);
+
+        await File.WriteAllTextAsync(sourcePath, discardedLoop).ConfigureAwait(continueOnCapturedContext: false);
+        await RunDevelopmentKit(workspacePath, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015").ConfigureAwait(continueOnCapturedContext: false);
+
+        string consumedLoop = discardedLoop.Replace(oldValue: "string _)", newValue: "string suffix)", StringComparison.Ordinal)
+            .Replace(oldValue: "recipientName = greeting;", newValue: "recipientName = greeting + suffix;", StringComparison.Ordinal);
+
+        await File.WriteAllTextAsync(sourcePath, consumedLoop).ConfigureAwait(continueOnCapturedContext: false);
+        await RunDevelopmentKit(workspacePath, buildArguments).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     private static async Task VerifyDirectoryLimit(string workspacePath, string[] buildArguments)

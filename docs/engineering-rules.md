@@ -22,7 +22,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0012 | Reject framework synchronization types and blocking task/thread waits, including aliases, static imports, and explicit awaiter `GetResult` calls. |
 | NETAGENTS0013 | Reject changes to the effective shared configuration and diagnostic severities. |
 | NETAGENTS0014 | Reject incompatible project settings. This diagnostic comes from the package's MSBuild target. |
-| NETAGENTS0015 | Require return values to be consumed. Reject ignored non-void calls, ignored awaited results, and assignments to `_`, including tuple deconstruction. This includes conditional calls, expression-bodied members, callbacks, and `for` clauses. |
+| NETAGENTS0015 | Require return values to be consumed. Reject ignored non-void calls, ignored awaited results, and assignments to `_`, including named underscore symbols. Reject deconstruction discards, including `foreach` and `await foreach`. This includes conditional calls, expression-bodied members, callbacks, and `for` clauses. |
 | NETAGENTS0016 | Require blank lines before and after control-flow statements and multiline local declarations when another statement is adjacent. Includes an automatic code fix and Fix all support. |
 | NETAGENTS0017 | Omit optional braces around one single-line body statement; require braces for multiline bodies and keep conditional chains consistent. Includes an automatic code fix and Fix all support. |
 | NETAGENTS0018 | Allow at most 16 authored C# files directly in each directory per project. Organize larger directories into subdirectories with narrower responsibilities. |
@@ -66,6 +66,11 @@ Check, return, pass, or store and use every returned value. For example, use
 `if (values.TryGetValue(key, out var value))` to handle success and failure;
 calling `TryGetValue` alone or assigning its result to `_` fails the build.
 Storing a result without reading it also fails the build (`IDE0059`).
+Every `_ = expression` is rejected, including constants, properties, object
+creation, and awaited results. Naming a variable, parameter, field, or property
+`_` does not bypass the assignment rule. Underscore variable initializers and
+compound assignments are rejected too. Consume all deconstructed values,
+including those bound by `foreach` and `await foreach`.
 Calls returning `void` and awaited operations with no result (`Task` or
 `ValueTask`) are allowed. Awaited `Task<T>` and `ValueTask<T>` results must be
 consumed. Fluent and assertion APIs follow the same rule. An `out _` argument
