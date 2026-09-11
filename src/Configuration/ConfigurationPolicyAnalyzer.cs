@@ -8,9 +8,15 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace NetAgents.Analyzers.Configuration;
 
+/// <summary>
+/// Requires consumer settings to preserve the embedded configuration policy.
+/// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class ConfigurationPolicyAnalyzer : DiagnosticAnalyzer
 {
+    /// <summary>
+    /// Identifies the diagnostic emitted by this analyzer.
+    /// </summary>
     public const string RuleIdentifier = "NETAGENTS0013";
 
     private static readonly DiagnosticDescriptor Rule = new(
@@ -24,8 +30,10 @@ public sealed class ConfigurationPolicyAnalyzer : DiagnosticAnalyzer
 
     private static readonly ImmutableDictionary<string, string> RequiredOptions = ReadRequiredOptions();
 
+    /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
 
+    /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
     {
         if (context is null)

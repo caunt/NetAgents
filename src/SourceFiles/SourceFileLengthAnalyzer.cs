@@ -7,9 +7,15 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace NetAgents.Analyzers.SourceFiles;
 
+/// <summary>
+/// Limits authored source files to fewer than one thousand lines.
+/// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class SourceFileLengthAnalyzer : DiagnosticAnalyzer
 {
+    /// <summary>
+    /// Identifies the diagnostic emitted by this analyzer.
+    /// </summary>
     public const string RuleIdentifier = "NETAGENTS0010";
 
     private static readonly DiagnosticDescriptor Rule = new(
@@ -21,8 +27,10 @@ public sealed class SourceFileLengthAnalyzer : DiagnosticAnalyzer
         isEnabledByDefault: true,
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
+    /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
 
+    /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
     {
         if (context is null)

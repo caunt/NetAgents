@@ -8,9 +8,15 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace NetAgents.Analyzers.TypeSafety;
 
+/// <summary>
+/// Rejects conversions that box value types into reference types.
+/// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class BoxingConversionAnalyzer : DiagnosticAnalyzer
 {
+    /// <summary>
+    /// Identifies the diagnostic emitted by this analyzer.
+    /// </summary>
     public const string RuleIdentifier = "NETAGENTS0001";
 
     private static readonly DiagnosticDescriptor Rule = new(
@@ -22,8 +28,10 @@ public sealed class BoxingConversionAnalyzer : DiagnosticAnalyzer
         isEnabledByDefault: true,
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
+    /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
 
+    /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
     {
         if (context is null)

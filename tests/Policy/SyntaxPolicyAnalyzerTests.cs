@@ -7,8 +7,14 @@ using NetAgents.Analyzers.TypeSafety;
 
 namespace NetAgents.Analyzers.Tests.Policy;
 
+/// <summary>
+/// Covers syntax policies, source limits, and generated code exclusions.
+/// </summary>
 public sealed class SyntaxPolicyAnalyzerTests
 {
+    /// <summary>
+    /// Verifies that lock statements produce a diagnostic.
+    /// </summary>
     [Fact]
     public async Task RejectsLockStatements()
     {
@@ -17,6 +23,9 @@ public sealed class SyntaxPolicyAnalyzerTests
         _ = Assert.Single(diagnostics);
     }
 
+    /// <summary>
+    /// Verifies that a comment does not make an empty catch block meaningful.
+    /// </summary>
     [Fact]
     public async Task RejectsCommentOnlyCatchBlocks()
     {
@@ -25,6 +34,9 @@ public sealed class SyntaxPolicyAnalyzerTests
         _ = Assert.Single(diagnostics);
     }
 
+    /// <summary>
+    /// Verifies that rethrowing a caught exception is permitted.
+    /// </summary>
     [Fact]
     public async Task AllowsRethrowingCaughtExceptions()
     {
@@ -33,6 +45,9 @@ public sealed class SyntaxPolicyAnalyzerTests
         Assert.Empty(diagnostics);
     }
 
+    /// <summary>
+    /// Verifies that null-forgiving operators produce a diagnostic.
+    /// </summary>
     [Fact]
     public async Task RejectsNullForgivingOperators()
     {
@@ -41,6 +56,10 @@ public sealed class SyntaxPolicyAnalyzerTests
         _ = Assert.Single(diagnostics);
     }
 
+    /// <summary>
+    /// Verifies that loops without a terminating condition are rejected.
+    /// </summary>
+    /// <param name="loop">The unconditional loop to analyze.</param>
     [Theory]
     [InlineData("while (true) { break; }")]
     [InlineData("for (;;) { break; }")]
@@ -52,6 +71,9 @@ public sealed class SyntaxPolicyAnalyzerTests
         _ = Assert.Single(diagnostics);
     }
 
+    /// <summary>
+    /// Verifies that cancellation provides an accepted loop condition.
+    /// </summary>
     [Fact]
     public async Task AllowsCancellationControlledLoops()
     {
@@ -60,6 +82,9 @@ public sealed class SyntaxPolicyAnalyzerTests
         Assert.Empty(diagnostics);
     }
 
+    /// <summary>
+    /// Verifies the authored source file length limit.
+    /// </summary>
     [Fact]
     public async Task RejectsOversizedSourceFiles()
     {
@@ -68,6 +93,9 @@ public sealed class SyntaxPolicyAnalyzerTests
         _ = Assert.Single(diagnostics);
     }
 
+    /// <summary>
+    /// Verifies that a type cannot duplicate its containing namespace name.
+    /// </summary>
     [Fact]
     public async Task RejectsNamespaceContainmentCollisions()
     {
@@ -76,6 +104,9 @@ public sealed class SyntaxPolicyAnalyzerTests
         _ = Assert.Single(diagnostics);
     }
 
+    /// <summary>
+    /// Verifies that generated source is excluded from custom analysis.
+    /// </summary>
     [Fact]
     public async Task ExcludesGeneratedSource()
     {

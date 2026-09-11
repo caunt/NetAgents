@@ -3,8 +3,15 @@ using NetAgents.Analyzers.TypeSafety;
 
 namespace NetAgents.Analyzers.Tests.TypeSafety;
 
+/// <summary>
+/// Covers explicit and inferred values that lose static type information.
+/// </summary>
 public sealed class UntypedValueAnalyzerTests
 {
+    /// <summary>
+    /// Verifies that untyped declarations and inferred framework results are reported.
+    /// </summary>
+    /// <param name="memberSource">The member containing an untyped value.</param>
     [Theory]
     [InlineData("public object? Value { get; set; }")]
     [InlineData("public System.Object? Value { get; set; }")]
@@ -20,6 +27,9 @@ public sealed class UntypedValueAnalyzerTests
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == UntypedValueAnalyzer.RuleIdentifier);
     }
 
+    /// <summary>
+    /// Verifies that generic collections retain their element types.
+    /// </summary>
     [Fact]
     public async Task AllowsStronglyTypedGenericCollections()
     {

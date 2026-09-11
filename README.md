@@ -22,7 +22,8 @@ Set `PrivateAssets="all"` on the package reference to keep the analyzer dependen
 - **Naming and structure** — descriptive names, one top-level type per matching file, and files under 1,000 lines.
 - **Reliability** — no empty catches, null-forgiving operators, or unconditional loops.
 - **Concurrency** — no `lock`, framework synchronization primitives, or blocking waits. Use asynchronous composition or Nito.AsyncEx when coordination is needed.
-- **Style** — consistent formatting, named literal arguments, and warnings treated as errors.
+- **Style** — consistent formatting, a final newline, named literal arguments, and warnings treated as errors.
+- **Documentation** — XML comments for public APIs; missing comments and unused imports fail the build.
 
 Violations fail the build. Existing editor and project settings must agree with the shared rules.
 

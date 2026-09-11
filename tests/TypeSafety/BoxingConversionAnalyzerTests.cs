@@ -3,8 +3,15 @@ using NetAgents.Analyzers.TypeSafety;
 
 namespace NetAgents.Analyzers.Tests.TypeSafety;
 
+/// <summary>
+/// Covers boxing conversions and strongly typed alternatives.
+/// </summary>
 public sealed class BoxingConversionAnalyzerTests
 {
+    /// <summary>
+    /// Verifies that nullable, interface, generic, and explicit boxing are reported.
+    /// </summary>
+    /// <param name="memberSource">The member containing a boxing conversion.</param>
     [Theory]
     [InlineData("public static object ConvertValue(int value) => value;")]
     [InlineData("public static object ConvertValue(int? value) => value!;")]
@@ -20,6 +27,10 @@ public sealed class BoxingConversionAnalyzerTests
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == BoxingConversionAnalyzer.RuleIdentifier);
     }
 
+    /// <summary>
+    /// Verifies typed operations, interpolation, and constrained generic calls.
+    /// </summary>
+    /// <param name="memberSource">The strongly typed member to analyze.</param>
     [Theory]
     [InlineData("public static int ConvertValue(int value) => value;")]
     [InlineData("public static string FormatValue(int value) => $\"{value}\";")]

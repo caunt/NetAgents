@@ -2,13 +2,17 @@
   <Target Name="ValidateNetAgentsConsumerPolicy" BeforeTargets="CoreCompile" Condition="'$(DesignTimeBuild)' != 'true'">
     <Error Code="NETAGENTS0014" Condition="'$(Nullable)' != 'enable'"
            Text="NetAgents.Analyzers requires Nullable=enable. Remove the conflicting project setting." />
-    <Error Code="NETAGENTS0014" Condition="'$(TreatWarningsAsErrors)' != 'true'"
-           Text="NetAgents.Analyzers requires TreatWarningsAsErrors=true. Remove the conflicting project setting." />
-    <Error Code="NETAGENTS0014" Condition="'$(EnableNETAnalyzers)' != 'true' or '$(EnforceCodeStyleInBuild)' != 'true' or '$(RunAnalyzersDuringBuild)' == 'false' or '$(RunAnalyzers)' == 'false'"
+    <Error Code="NETAGENTS0014" Condition="'$(TreatWarningsAsErrors)' != 'true' or '$(CodeAnalysisTreatWarningsAsErrors)' != 'true' or '$(EffectiveCodeAnalysisTreatWarningsAsErrors)' == 'false'"
+           Text="NetAgents.Analyzers requires TreatWarningsAsErrors=true and CodeAnalysisTreatWarningsAsErrors=true. Remove the conflicting project setting." />
+    <Error Code="NETAGENTS0014" Condition="'$(EnableNETAnalyzers)' != 'true' or '$(EnforceCodeStyleInBuild)' != 'true' or '$(RunAnalyzersDuringBuild)' != 'true' or '$(RunAnalyzers)' != 'true' or '$(SkipGlobalAnalyzerConfigForPackage)' == 'true'"
            Text="NetAgents.Analyzers requires compiler, style, and build analyzers to remain enabled." />
-    <Error Code="NETAGENTS0014" Condition="'$(AnalysisMode)' != 'All' or '$(AnalysisLevel)' != 'latest'"
-           Text="NetAgents.Analyzers requires AnalysisMode=All and AnalysisLevel=latest." />
-    <Error Code="NETAGENTS0014" Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(NoWarn);$(WarningsNotAsErrors)', '(?i)NETAGENTS'))"
-           Text="NetAgents.Analyzers diagnostics cannot be suppressed through NoWarn or WarningsNotAsErrors." />
+    <Error Code="NETAGENTS0014" Condition="'$(AnalysisLevel)' != 'latest-all' or ('$(AnalysisMode)' != 'All' and '$(AnalysisMode)' != 'AllEnabledByDefault')"
+           Text="NetAgents.Analyzers requires AnalysisLevel=latest-all and AnalysisMode=All." />
+    <Error Code="NETAGENTS0014" Condition="'$(AnalysisLevelStyle)' != 'latest-all' or ('$(AnalysisModeStyle)' != 'All' and '$(AnalysisModeStyle)' != 'AllEnabledByDefault') or '$(EnableCodeStyleSeverity)' != 'true'"
+           Text="NetAgents.Analyzers requires AnalysisLevelStyle=latest-all, AnalysisModeStyle=AllEnabledByDefault, and EnableCodeStyleSeverity=true." />
+    <Error Code="NETAGENTS0014" Condition="'$(GenerateDocumentationFile)' != 'true' or !$([System.Text.RegularExpressions.Regex]::IsMatch('$(WarningsAsErrors)', '(?i)(^|[\s,;])(?:CS)?1591($|[\s,;])'))"
+           Text="NetAgents.Analyzers requires GenerateDocumentationFile=true and CS1591 in WarningsAsErrors. Document every public API." />
+    <Error Code="NETAGENTS0014" Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(NoWarn);$(WarningsNotAsErrors)', '(?i)(^|[\s,;])(?:NETAGENTS[0-9]+|IDE[0-9]+|CA[0-9]+|(?:CS)?1591)($|[\s,;])'))"
+           Text="NetAgents.Analyzers, .NET analyzer, style, and public documentation diagnostics cannot be suppressed through NoWarn or WarningsNotAsErrors." />
   </Target>
 </Project>

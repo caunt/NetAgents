@@ -44,10 +44,10 @@
                                       Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Identity)', '^NETAGENTS[0-9]+\s*\|'))" />
       <NetAgentsGlobalConfigurationLines Include="is_global = true;global_level = 2147483647" />
       <NetAgentsGlobalConfigurationLines Include="$([MSBuild]::Escape('$(NetAgentsEditorConfiguration)'))" />
+      <NetAgentsGlobalConfigurationLines Include="insert_final_newline = true" />
       <NetAgentsGlobalConfigurationLines Include="$([System.Text.RegularExpressions.Regex]::Replace('%(NetAgentsDiagnosticReleaseLines.Identity)', '^(NETAGENTS[0-9]+).*', 'dotnet_diagnostic.$1.severity = error'))" />
       <NetAgentsGlobalConfigurationLines Include="dotnet_analyzer_diagnostic.category-Style.severity = error;dotnet_diagnostic.IDE0055.severity = error;dotnet_diagnostic.IDE1006.severity = error" />
-      <!-- IDE0005 requires XML documentation generation to run during builds. -->
-      <NetAgentsGlobalConfigurationLines Include="dotnet_diagnostic.IDE0005.severity = silent" />
+      <NetAgentsGlobalConfigurationLines Include="dotnet_diagnostic.IDE0005.severity = error;dotnet_diagnostic.CS1591.severity = error" />
       <FileWrites Include="$(NetAgentsGlobalConfigurationPath);$(NetAgentsEditorConfigTemplatePath)" />
     </ItemGroup>
     <WriteLinesToFile File="$(NetAgentsGlobalConfigurationPath)" Lines="@(NetAgentsGlobalConfigurationLines)"
@@ -71,4 +71,5 @@
     <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Build"
              Properties="NetAgentsSelfAnalysisBuild=true;VersionTimestamp=$(VersionTimestamp);IntermediateOutputPath=$(BaseIntermediateOutputPath)self-analysis/$(Configuration)/$(TargetFramework)/;OutputPath=$(MSBuildThisFileDirectory)artifacts/self-analysis/$(Configuration)/verified/" />
   </Target>
+  <Import Project="$(MSBuildThisFileDirectory)src/Packaging/NetAgents.Analyzers.targets" />
 </Project>

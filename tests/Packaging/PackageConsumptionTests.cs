@@ -11,20 +11,30 @@ using NetAgents.Analyzers.Configuration;
 
 namespace NetAgents.Analyzers.Tests.Packaging;
 
+/// <summary>
+/// Verifies the published package and its enforcement in real consumer builds.
+/// </summary>
 public sealed class PackageConsumptionTests
 {
     private const string ValidSource = """
         namespace Consumer.Features;
 
+        /// <summary>Provides the consumer entry point.</summary>
         public static class ExampleService
         {
+            /// <summary>Returns the supplied recipient name.</summary>
+            /// <param name="recipientName">The name to return.</param>
+            /// <returns>The supplied name.</returns>
             public static string CreateGreeting(string recipientName)
             {
                 return recipientName;
             }
         }
-        """;
+        """ + "\n";
 
+    /// <summary>
+    /// Verifies SDK defaults, consumer diagnostics, and rejected policy overrides.
+    /// </summary>
     [Fact]
     public async Task PackageEnforcesPolicyInConsumerBuilds()
     {
@@ -77,26 +87,75 @@ public sealed class PackageConsumptionTests
             await File.WriteAllTextAsync(sourcePath, ValidSource.Replace(oldValue: "        return recipientName;",
                 newValue: "return recipientName;", StringComparison.Ordinal));
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "IDE0055");
+            await File.WriteAllTextAsync(sourcePath, "using System.Text;\n\n" + ValidSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "IDE0005");
+            await File.WriteAllTextAsync(sourcePath, ValidSource.Replace(
+                oldValue: "/// <summary>Provides the consumer entry point.</summary>\n", newValue: string.Empty, StringComparison.Ordinal));
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS1591");
+            await File.WriteAllTextAsync(sourcePath, ValidSource.Replace(oldValue: "return recipientName;",
+                newValue: "return recipientName.ToLower();", StringComparison.Ordinal));
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CA1311");
             await File.WriteAllTextAsync(sourcePath, ValidSource);
 
             string editorConfigurationPath = Path.Combine(paths: [workspace.FullName, ".editorconfig"]);
-            await File.WriteAllTextAsync(editorConfigurationPath,
-                contents: "root = true\n[*.cs]\ncsharp_style_var_elsewhere = true:silent\n");
-            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0013");
-            await File.WriteAllTextAsync(editorConfigurationPath,
-                contents: "root = true\n[*.cs]\ndotnet_diagnostic.NETAGENTS0001.severity = none\n");
-            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0013");
+            string[] conflictingEditorSettings =
+            [
+                "csharp_style_var_elsewhere = true:silent",
+                "insert_final_newline = false",
+                "dotnet_diagnostic.NETAGENTS0001.severity = none",
+                "dotnet_diagnostic.IDE0005.severity = none",
+                "dotnet_diagnostic.CS1591.severity = none",
+            ];
+            foreach (string conflictingSetting in conflictingEditorSettings)
+            {
+                await File.WriteAllTextAsync(editorConfigurationPath, $"root = true\n[*.cs]\n{conflictingSetting}\n");
+                await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0013");
+            }
+
             File.Delete(editorConfigurationPath);
 
-            await File.WriteAllTextAsync(projectPath, projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
-                newValue: "<ImplicitUsings>enable</ImplicitUsings><TreatWarningsAsErrors>false</TreatWarningsAsErrors>",
-                StringComparison.Ordinal));
-            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0014");
+            string[] conflictingProjectSettings =
+            [
+                "<Nullable>disable</Nullable>",
+                "<AnalysisLevel>none</AnalysisLevel>",
+                "<AnalysisMode>Minimum</AnalysisMode>",
+                "<AnalysisLevelStyle>none</AnalysisLevelStyle>",
+                "<AnalysisModeStyle>None</AnalysisModeStyle>",
+                "<CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>",
+                "<EnableCodeStyleSeverity>false</EnableCodeStyleSeverity>",
+                "<EnableNETAnalyzers>false</EnableNETAnalyzers>",
+                "<RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>",
+                "<TreatWarningsAsErrors>false</TreatWarningsAsErrors>",
+                "<GenerateDocumentationFile>false</GenerateDocumentationFile>",
+                "<WarningsAsErrors>CS0168</WarningsAsErrors>",
+                "<EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>",
+            ];
+            foreach (string conflictingSetting in conflictingProjectSettings)
+            {
+                await File.WriteAllTextAsync(projectPath, projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
+                    newValue: $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}", StringComparison.Ordinal));
+                await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0014");
+            }
+
             await File.WriteAllTextAsync(projectPath, projectContent);
-            await RunDevelopmentKit(workspace.FullName, arguments: [.. buildArguments, "-p:RunAnalyzers=false"],
-                expectedDiagnosticIdentifier: "NETAGENTS0014");
-            await RunDevelopmentKit(workspace.FullName, arguments: [.. buildArguments, "-p:NoWarn=NETAGENTS0001"],
-                expectedDiagnosticIdentifier: "NETAGENTS0014");
+            string[] conflictingBuildArguments =
+            [
+                "-p:RunAnalyzers=false",
+                "-p:CodeAnalysisTreatWarningsAsErrors=false",
+                "-p:GenerateDocumentationFile=false",
+                "-p:SkipGlobalAnalyzerConfigForPackage=true",
+                "-p:NoWarn=NETAGENTS0001",
+                "-p:NoWarn=1591",
+                "-p:WarningsNotAsErrors=CS1591",
+                "-p:NoWarn=IDE0005",
+                "-p:WarningsNotAsErrors=CA1311",
+            ];
+            foreach (string conflictingArgument in conflictingBuildArguments)
+            {
+                await RunDevelopmentKit(workspace.FullName, arguments: [.. buildArguments, conflictingArgument],
+                    expectedDiagnosticIdentifier: "NETAGENTS0014");
+            }
+
             await RunDevelopmentKit(workspace.FullName, buildArguments);
         }
         finally
@@ -171,9 +230,13 @@ public sealed class PackageConsumptionTests
         Assert.True(generatedOptions.Diagnostics.IsEmpty);
         foreach (KeyValuePair<string, string> preference in templateOptions.AnalyzerOptions)
         {
-            // The SDK template incorrectly selects namespaces for the generic parameter naming rule.
-            string expectedValue = preference.Key == "dotnet_naming_symbols.type_parameters.applicable_kinds"
-                && preference.Value == "namespace" ? "type_parameter" : preference.Value;
+            // Preserve the required final newline and correct the SDK's generic parameter selector.
+            string expectedValue = preference.Key switch
+            {
+                "insert_final_newline" => "true",
+                "dotnet_naming_symbols.type_parameters.applicable_kinds" when preference.Value == "namespace" => "type_parameter",
+                _ => preference.Value,
+            };
             Assert.Equal(expectedValue, generatedOptions.AnalyzerOptions[preference.Key]);
         }
     }

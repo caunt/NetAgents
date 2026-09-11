@@ -3,8 +3,16 @@ using NetAgents.Analyzers.Tests.Infrastructure;
 
 namespace NetAgents.Analyzers.Tests.Concurrency;
 
+/// <summary>
+/// Covers prohibited synchronization APIs and permitted atomic operations.
+/// </summary>
 public sealed class FrameworkSynchronizationAnalyzerTests
 {
+    /// <summary>
+    /// Verifies that aliases and static imports cannot bypass synchronization checks.
+    /// </summary>
+    /// <param name="imports">Using directives that expose the synchronization API.</param>
+    /// <param name="memberSource">The member containing the prohibited operation.</param>
     [Theory]
     [InlineData("using System.Threading;", "public SemaphoreSlim Gate { get; } = new(1);")]
     [InlineData("using Gate = System.Threading.SemaphoreSlim;", "public Gate CreateGate() => new(1);")]
@@ -19,6 +27,9 @@ public sealed class FrameworkSynchronizationAnalyzerTests
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == FrameworkSynchronizationAnalyzer.RuleIdentifier);
     }
 
+    /// <summary>
+    /// Verifies that atomic operations and asynchronous task composition remain available.
+    /// </summary>
     [Fact]
     public async Task AllowsAtomicsAndAsynchronousComposition()
     {

@@ -3,8 +3,15 @@ using NetAgents.Analyzers.Tests.Infrastructure;
 
 namespace NetAgents.Analyzers.Tests.Naming;
 
+/// <summary>
+/// Covers descriptive identifiers and supported language naming conventions.
+/// </summary>
 public sealed class DescriptiveNameAnalyzerTests
 {
+    /// <summary>
+    /// Verifies that shortened parameter names produce a diagnostic.
+    /// </summary>
+    /// <param name="parameterName">The abbreviated parameter name to reject.</param>
     [Theory]
     [InlineData("x")]
     [InlineData("ctx")]
@@ -19,6 +26,9 @@ public sealed class DescriptiveNameAnalyzerTests
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == DescriptiveNameAnalyzer.RuleIdentifier);
     }
 
+    /// <summary>
+    /// Verifies conventional interface and generic parameter prefixes are accepted.
+    /// </summary>
     [Fact]
     public async Task AllowsDescriptiveGenericAndInterfacePrefixes()
     {

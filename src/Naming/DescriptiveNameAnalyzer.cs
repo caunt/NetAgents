@@ -10,9 +10,15 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace NetAgents.Analyzers.Naming;
 
+/// <summary>
+/// Requires descriptive identifiers without known abbreviations or acronyms.
+/// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class DescriptiveNameAnalyzer : DiagnosticAnalyzer
 {
+    /// <summary>
+    /// Identifies the diagnostic emitted by this analyzer.
+    /// </summary>
     public const string RuleIdentifier = "NETAGENTS0005";
 
     private static readonly DiagnosticDescriptor Rule = new(
@@ -35,8 +41,10 @@ public sealed class DescriptiveNameAnalyzer : DiagnosticAnalyzer
         "msg", "num", "opts", "param", "params", "prev", "proc", "ptr", "req", "res", "sdr", "sql",
         "tcp", "temp", "tmp", "udp", "ui", "uri", "url", "utf", "utils", "var", "xml"]);
 
+    /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
 
+    /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
     {
         if (context is null)

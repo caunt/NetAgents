@@ -8,9 +8,15 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace NetAgents.Analyzers.Concurrency;
 
+/// <summary>
+/// Rejects framework synchronization primitives and blocking waits.
+/// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class FrameworkSynchronizationAnalyzer : DiagnosticAnalyzer
 {
+    /// <summary>
+    /// Identifies the diagnostic emitted by this analyzer.
+    /// </summary>
     public const string RuleIdentifier = "NETAGENTS0012";
 
     private static readonly DiagnosticDescriptor Rule = new(
@@ -28,8 +34,10 @@ public sealed class FrameworkSynchronizationAnalyzer : DiagnosticAnalyzer
         "SpinLock", "SpinWait", "AutoResetEvent", "ManualResetEvent", "ManualResetEventSlim", "EventWaitHandle",
         "WaitHandle", "CountdownEvent", "Barrier"]);
 
+    /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
 
+    /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
     {
         if (context is null)

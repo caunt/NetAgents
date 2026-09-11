@@ -9,9 +9,15 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace NetAgents.Analyzers.Readability;
 
+/// <summary>
+/// Requires named arguments for inline literals and default values.
+/// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class ExplicitLiteralArgumentNameAnalyzer : DiagnosticAnalyzer
 {
+    /// <summary>
+    /// Identifies the diagnostic emitted by this analyzer.
+    /// </summary>
     public const string RuleIdentifier = "NETAGENTS0009";
 
     private static readonly DiagnosticDescriptor Rule = new(
@@ -23,8 +29,10 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer : DiagnosticAnalyzer
         isEnabledByDefault: true,
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
+    /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
 
+    /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
     {
         if (context is null)

@@ -41,10 +41,16 @@ The shared C# preferences come from Microsoft's built-in
 `dotnet new editorconfig` defaults for the SDK used to build each package
 release. Updating the package picks up refreshed defaults. They apply globally
 and automatically, with style and formatting violations treated as errors.
+Every source file must end with a newline.
 The template's generic type-parameter naming selector is corrected to
 `type_parameter` so the conventional `T` prefix applies to type parameters.
 
 Consumer editor and project settings must agree with the shared policy.
+All .NET and code style analysis is enabled at the latest SDK level, with
+warnings treated as errors during builds. XML documentation is generated;
+public APIs require XML comments (`CS1591`), and unused imports are errors
+(`IDE0005`). Disabling required analysis, documentation, or severity settings
+fails the build with `NETAGENTS0014`.
 Global analyzer configuration applies to C# compiler inputs; it does not
 control XML, JSON, or Markdown editor formatting.
 
