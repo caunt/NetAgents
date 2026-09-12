@@ -10,9 +10,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
 using NetAgents.Analyzers.CodeFixes.Formatting;
+using NetAgents.Analyzers.CodeFixes.Ordering;
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Ordering;
-using NetAgents.Analyzers.CodeFixes.Ordering;
 
 namespace NetAgents.Analyzers.Tests.Infrastructure;
 
