@@ -8,7 +8,6 @@ namespace NetAgents.Analyzers.Tests.Naming;
 /// </summary>
 public sealed class DescriptiveNameAnalyzerTests
 {
-
     /// <summary>
     /// Verifies conventional interface and generic parameter prefixes are accepted.
     /// </summary>
@@ -18,6 +17,21 @@ public sealed class DescriptiveNameAnalyzerTests
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), source: "public interface IMessageHandler<TMessage> { void Handle(TMessage message); }");
 
         Assert.Empty(diagnostics);
+    }
+
+    /// <summary>
+    /// Verifies standard .NET async names are accepted without requiring expanded words.
+    /// </summary>
+    /// <param name="source">A declaration using the standard Async word.</param>
+    [Theory]
+    [InlineData("class ExampleType { public async System.Threading.Tasks.Task ReadAsync() { await System.Threading.Tasks.Task.Yield(); } }")]
+    [InlineData("class ExampleType { public System.Threading.Tasks.Task ReadAsync() => System.Threading.Tasks.Task.CompletedTask; }")]
+    [InlineData("interface IExampleService { System.Threading.Tasks.ValueTask ReadAsync(); }")]
+    [InlineData("class ExampleType { void Execute() { System.Threading.Tasks.Task ReadAsync() => System.Threading.Tasks.Task.CompletedTask; } }")]
+    [InlineData("interface IAsyncReader { System.Threading.Tasks.Task ReadAsync(); }")]
+    public async Task AllowsStandardAsyncNames(string source)
+    {
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), source));
     }
 
     /// <summary>
@@ -35,5 +49,19 @@ public sealed class DescriptiveNameAnalyzerTests
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), $"public class ExampleType {{ public void Execute(string {parameterName}) {{ }} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == DescriptiveNameAnalyzer.RuleIdentifier);
+    }
+
+    /// <summary>
+    /// Verifies the Async suffix does not exempt abbreviations elsewhere in a name.
+    /// </summary>
+    [Fact]
+    public async Task RejectsAbbreviationsBeforeAsyncSuffix()
+    {
+        const string source = "class ExampleType { System.Threading.Tasks.Task ReadMsgAsync() => System.Threading.Tasks.Task.CompletedTask; }";
+
+        Assert.Equal(
+            DescriptiveNameAnalyzer.RuleIdentifier,
+            Assert.Single(await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), source)).Id
+        );
     }
 }

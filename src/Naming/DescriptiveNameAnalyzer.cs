@@ -37,7 +37,7 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly ImmutableHashSet<string> AbbreviatedWords = ImmutableHashSet.Create(
         StringComparer.OrdinalIgnoreCase,
-        items: [        "api", "args", "async", "auth", "cfg", "config", "ctx", "db", "doc", "docs", "dto", "dsp",
+        items: [        "api", "args", "auth", "cfg", "config", "ctx", "db", "doc", "docs", "dto", "dsp",
         "env", "html", "http", "https", "id", "ids", "info", "init", "io", "ip", "json", "max", "min",
         "msg", "num", "opts", "param", "params", "prev", "proc", "ptr", "req", "res", "sdr", "sql",
         "tcp", "temp", "tmp", "udp", "ui", "uri", "url", "utf", "utils", "var", "xml"]

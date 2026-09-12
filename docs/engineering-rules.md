@@ -18,7 +18,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0002 | Reject explicit `object`/`dynamic` type uses, untyped arrays/generic collections, and untyped values returned by calls, fields, properties, indexing, and await. |
 | NETAGENTS0003 | Reject C# `lock` statements. |
 | NETAGENTS0004 | Reject catch blocks containing no executable statements, including comment-only blocks. |
-| NETAGENTS0005 | Reject single-letter declarations, uppercase acronyms, and known abbreviated identifier words. Standard `I…` and `T…` prefixes are supported. |
+| NETAGENTS0005 | Reject single-letter declarations, uppercase acronyms, and known abbreviated identifier words. Standard `I…` and `T…` prefixes and the .NET `Async` naming convention (for example, `ReadAsync`) are supported. |
 | NETAGENTS0006 | Require one top-level type per file with the matching case-sensitive file name. Appropriate nested types are allowed. |
 | NETAGENTS0007 | Reject the postfix null-forgiving operator. |
 | NETAGENTS0008 | Reject literal-true `while`/`do` conditions and conditionless or literal-true `for` loops. |
