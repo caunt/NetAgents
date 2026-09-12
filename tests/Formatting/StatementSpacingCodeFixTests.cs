@@ -7,6 +7,40 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class StatementSpacingCodeFixTests
 {
+
+    /// <summary>
+    /// Verifies empty lines inside block comments do not count as statement separators.
+    /// </summary>
+    [Fact]
+    public async Task KeepsMultilineCommentsAttached()
+    {
+        const string source = "public static class ExampleType\n{\n    public static int Execute()\n    {\n        int count = 0;\n        /* result\n\n           explanation */\n        return count;\n    }\n}";
+        string expected = source.Replace(oldValue: "        /* result", newValue: "\n        /* result", StringComparison.Ordinal);
+
+        Assert.Equal(expected, await CodeFixTestHarness.FixSpacing(source, fixAll: false));
+    }
+
+    /// <summary>
+    /// Verifies comments and both common newline styles survive an individual fix.
+    /// </summary>
+    /// <param name="lineEnding">The document's existing line ending.</param>
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    public async Task PreservesCommentsAndLineEndings(string lineEnding)
+    {
+        string source = string.Join(
+            lineEnding,
+            value:
+            ["public static class ExampleType", "{", "    public static int Execute()", "    {",
+            "        int count = 0; // retain this comment", "        // explain the result", "        return count;", "    }", "}"]
+        );
+
+        string expected = source.Replace(oldValue: "        // explain the result", newValue: lineEnding + "        // explain the result", StringComparison.Ordinal);
+
+        Assert.Equal(expected, await CodeFixTestHarness.FixSpacing(source, fixAll: false));
+    }
+
     /// <summary>
     /// Verifies blank lines before control flow and after an unbraced conditional.
     /// </summary>
@@ -88,39 +122,6 @@ public sealed class StatementSpacingCodeFixTests
             .Replace(oldValue: "        return options.Result;", newValue: "\n        return options.Result;", StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixSpacing(source, fixAll: true));
-    }
-
-    /// <summary>
-    /// Verifies comments and both common newline styles survive an individual fix.
-    /// </summary>
-    /// <param name="lineEnding">The document's existing line ending.</param>
-    [Theory]
-    [InlineData("\n")]
-    [InlineData("\r\n")]
-    public async Task PreservesCommentsAndLineEndings(string lineEnding)
-    {
-        string source = string.Join(
-            lineEnding,
-            value:
-            ["public static class ExampleType", "{", "    public static int Execute()", "    {",
-            "        int count = 0; // retain this comment", "        // explain the result", "        return count;", "    }", "}"]
-        );
-
-        string expected = source.Replace(oldValue: "        // explain the result", newValue: lineEnding + "        // explain the result", StringComparison.Ordinal);
-
-        Assert.Equal(expected, await CodeFixTestHarness.FixSpacing(source, fixAll: false));
-    }
-
-    /// <summary>
-    /// Verifies empty lines inside block comments do not count as statement separators.
-    /// </summary>
-    [Fact]
-    public async Task KeepsMultilineCommentsAttached()
-    {
-        const string source = "public static class ExampleType\n{\n    public static int Execute()\n    {\n        int count = 0;\n        /* result\n\n           explanation */\n        return count;\n    }\n}";
-        string expected = source.Replace(oldValue: "        /* result", newValue: "\n        /* result", StringComparison.Ordinal);
-
-        Assert.Equal(expected, await CodeFixTestHarness.FixSpacing(source, fixAll: false));
     }
 
     /// <summary>

@@ -51,21 +51,6 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule)
         );
     }
 
-    private static bool IsForbiddenType(INamedTypeSymbol? type)
-    {
-        return type is not null
-            && type.ContainingNamespace.ToDisplayString() == "System.Threading"
-            && ForbiddenTypes.Contains(type.Name);
-    }
-
-    private static void AnalyzeTypeName(SyntaxNodeAnalysisContext context)
-    {
-        ISymbol? symbol = context.SemanticModel.GetSymbolInfo(context.Node, context.CancellationToken).Symbol;
-
-        if (IsForbiddenType(symbol as INamedTypeSymbol))
-            context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
-    }
-
     private static void AnalyzeMember(OperationAnalysisContext context)
     {
         ISymbol? member = context.Operation switch
@@ -96,5 +81,20 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule)
 
         if (IsForbiddenType(containingType) || isThreadSleep || isBlockingTask || isBlockingAwaiter)
             context.ReportDiagnostic(Diagnostic.Create(Rule, context.Operation.Syntax.GetLocation()));
+    }
+
+    private static void AnalyzeTypeName(SyntaxNodeAnalysisContext context)
+    {
+        ISymbol? symbol = context.SemanticModel.GetSymbolInfo(context.Node, context.CancellationToken).Symbol;
+
+        if (IsForbiddenType(symbol as INamedTypeSymbol))
+            context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
+    }
+
+    private static bool IsForbiddenType(INamedTypeSymbol? type)
+    {
+        return type is not null
+            && type.ContainingNamespace.ToDisplayString() == "System.Threading"
+            && ForbiddenTypes.Contains(type.Name);
     }
 }

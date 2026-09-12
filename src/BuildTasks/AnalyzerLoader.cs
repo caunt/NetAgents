@@ -20,6 +20,11 @@ internal sealed class AnalyzerLoader() : AssemblyLoadContext(isCollectible: true
             _directories.Add(directory);
     }
 
+    public void Dispose()
+    {
+        Unload();
+    }
+
     public Assembly LoadFromPath(string fullPath)
     {
         AddDependencyLocation(fullPath);
@@ -28,11 +33,6 @@ internal sealed class AnalyzerLoader() : AssemblyLoadContext(isCollectible: true
         Assembly? existing = Assemblies.FirstOrDefault(assembly => assembly.GetName().Name == name);
 
         return existing ?? LoadFromAssemblyPath(fullPath);
-    }
-
-    public void Dispose()
-    {
-        Unload();
     }
 
     protected override Assembly? Load(AssemblyName assemblyName)

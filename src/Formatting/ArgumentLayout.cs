@@ -10,49 +10,6 @@ internal static class ArgumentLayout
 {
     internal const string RuleIdentifier = "NETAGENTS0020";
 
-    internal static bool IsList(SyntaxNode node)
-    {
-        return node.Kind() is SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList
-            or SyntaxKind.AttributeArgumentList or SyntaxKind.ParameterList or SyntaxKind.BracketedParameterList;
-    }
-
-    internal static string GetCompactText(SyntaxNode list)
-    {
-        return list.WithoutTrivia().NormalizeWhitespace(indentation: "", eol: " ").ToFullString();
-    }
-
-    internal static bool RequiresMultipleLines(SyntaxNode list)
-    {
-        string compact = GetCompactText(list);
-
-        return compact.Length - 2 > LayoutLimits.MaximumInlineLength
-            || compact.IndexOfAny(['\r', '\n', '\u0085', '\u2028', '\u2029']) >= 0
-            || list.DescendantTrivia().Any(static trivia => trivia.IsKind(SyntaxKind.SingleLineCommentTrivia));
-    }
-
-    internal static bool HasExpectedLayout(SyntaxNode list, SourceText source)
-    {
-        SyntaxNode[] items = [.. list.ChildNodes()];
-
-        if (items.Length == 0 && RequiresMultipleLines(list))
-            return true;
-
-        if (!RequiresMultipleLines(list))
-            return GetLine(source, list.SpanStart) == GetLine(source, list.Span.End);
-
-        int previousEnd = list.GetFirstToken().Span.End;
-
-        foreach (SyntaxNode item in items)
-        {
-            if (GetLine(source, item.SpanStart) <= GetLine(source, previousEnd))
-                return false;
-
-            previousEnd = item.Span.End;
-        }
-
-        return GetLine(source, list.GetLastToken().SpanStart) > GetLine(source, previousEnd);
-    }
-
     internal static bool CanFix(SyntaxNode list)
     {
         return !list.ContainsDirectives && list.DescendantTrivia().All(
@@ -91,6 +48,54 @@ internal static class ArgumentLayout
         return changes;
     }
 
+    internal static string GetCompactText(SyntaxNode list)
+    {
+        return list.WithoutTrivia().NormalizeWhitespace(indentation: "", eol: " ").ToFullString();
+    }
+
+    internal static bool HasExpectedLayout(SyntaxNode list, SourceText source)
+    {
+        SyntaxNode[] items = [.. list.ChildNodes()];
+
+        if (items.Length == 0 && RequiresMultipleLines(list))
+            return true;
+
+        if (!RequiresMultipleLines(list))
+            return GetLine(source, list.SpanStart) == GetLine(source, list.Span.End);
+
+        int previousEnd = list.GetFirstToken().Span.End;
+
+        foreach (SyntaxNode item in items)
+        {
+            if (GetLine(source, item.SpanStart) <= GetLine(source, previousEnd))
+                return false;
+
+            previousEnd = item.Span.End;
+        }
+
+        return GetLine(source, list.GetLastToken().SpanStart) > GetLine(source, previousEnd);
+    }
+
+    internal static bool IsList(SyntaxNode node)
+    {
+        return node.Kind() is SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList
+            or SyntaxKind.AttributeArgumentList or SyntaxKind.ParameterList or SyntaxKind.BracketedParameterList;
+    }
+
+    internal static bool RequiresMultipleLines(SyntaxNode list)
+    {
+        string compact = GetCompactText(list);
+
+        return compact.Length - 2 > LayoutLimits.MaximumInlineLength
+            || compact.IndexOfAny(['\r', '\n', '\u0085', '\u2028', '\u2029']) >= 0
+            || list.DescendantTrivia().Any(static trivia => trivia.IsKind(SyntaxKind.SingleLineCommentTrivia));
+    }
+
+    private static int GetLine(SourceText source, int position)
+    {
+        return source.Lines.GetLineFromPosition(position).LineNumber;
+    }
+
     private static TextChange SeparateItems(SourceText source, int start, int end, string newline, string indentation)
     {
         TextSpan span = TextSpan.FromBounds(start, end);
@@ -98,10 +103,5 @@ internal static class ArgumentLayout
         string replacement = comments.Length == 0 ? newline + indentation : newline + indentation + comments + newline + indentation;
 
         return new TextChange(span, replacement);
-    }
-
-    private static int GetLine(SourceText source, int position)
-    {
-        return source.Lines.GetLineFromPosition(position).LineNumber;
     }
 }

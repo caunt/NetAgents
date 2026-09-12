@@ -11,14 +11,17 @@ using Microsoft.CodeAnalysis.Text;
 
 using NetAgents.Analyzers.CodeFixes.Formatting;
 using NetAgents.Analyzers.Formatting;
+using NetAgents.Analyzers.Ordering;
+using NetAgents.Analyzers.CodeFixes.Ordering;
 
 namespace NetAgents.Analyzers.Tests.Infrastructure;
 
 internal static class CodeFixTestHarness
 {
-    public static async Task<string> FixSpacing(string source, bool fixAll)
+
+    public static async Task<string> FixArguments(string source, bool fixAll)
     {
-        return await Fix(source, new StatementSpacingAnalyzer(), new StatementSpacingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+        return await Fix(source, new ArgumentLayoutAnalyzer(), new ArgumentLayoutCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<string> FixBraces(string source, bool fixAll)
@@ -26,9 +29,29 @@ internal static class CodeFixTestHarness
         return await Fix(source, new ControlFlowBracesAnalyzer(), new ControlFlowBracesCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
-    public static async Task<string> FixArguments(string source, bool fixAll)
+    public static async Task<string> FixMemberOrdering(string source, bool fixAll)
     {
-        return await Fix(source, new ArgumentLayoutAnalyzer(), new ArgumentLayoutCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+        return await Fix(source, new MemberOrderingAnalyzer(), new MemberOrderingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixMethodSpacing(string source, bool fixAll)
+    {
+        return await Fix(source, new MethodSpacingAnalyzer(), new MethodSpacingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixSpacing(string source, bool fixAll)
+    {
+        return await Fix(source, new StatementSpacingAnalyzer(), new StatementSpacingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<ImmutableArray<Diagnostic>> GetDiagnostics(Document document, DiagnosticAnalyzer analyzer)
+    {
+        Compilation? compilation = await document.Project.GetCompilationAsync().ConfigureAwait(continueOnCapturedContext: false);
+        Assert.NotNull(compilation);
+        Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+
+        return await compilation.WithAnalyzers([analyzer]).GetAnalyzerDiagnosticsAsync()
+            .ConfigureAwait(continueOnCapturedContext: false);
     }
 
     private static async Task<string> Fix(string source, DiagnosticAnalyzer analyzer, CodeFixProvider provider, bool fixAll)
@@ -83,15 +106,5 @@ internal static class CodeFixTestHarness
             Assert.True(remaining.IsEmpty);
 
         return (await changedDocument.GetTextAsync().ConfigureAwait(continueOnCapturedContext: false)).ToString();
-    }
-
-    public static async Task<ImmutableArray<Diagnostic>> GetDiagnostics(Document document, DiagnosticAnalyzer analyzer)
-    {
-        Compilation? compilation = await document.Project.GetCompilationAsync().ConfigureAwait(continueOnCapturedContext: false);
-        Assert.NotNull(compilation);
-        Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
-
-        return await compilation.WithAnalyzers([analyzer]).GetAnalyzerDiagnosticsAsync()
-            .ConfigureAwait(continueOnCapturedContext: false);
     }
 }

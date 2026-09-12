@@ -8,6 +8,91 @@ namespace NetAgents.Analyzers.Tests.Reliability;
 /// </summary>
 public sealed class IgnoredReturnValueAnalyzerTests
 {
+
+    /// <summary>
+    /// Verifies that consuming a result or awaiting completion without a result is permitted.
+    /// </summary>
+    /// <param name="memberSource">The member consuming returned values.</param>
+    [Theory]
+    [InlineData(
+        "public static void Execute(System.Collections.Generic.Dictionary<string, string> values, string key) { if (values.TryGetValue(key, out var value)) { System.Console.WriteLine(value); } }"
+    )]
+    [InlineData("public static void Execute(string text) { if (int.TryParse(text, out int value)) { System.Console.WriteLine(value); } }")]
+    [InlineData("public static bool Execute(string text) => int.TryParse(text, out _);")]
+    [InlineData(
+        "public static bool Execute(string text) { bool parsed = int.TryParse(text, out int value); System.Console.WriteLine(value); return parsed; }"
+    )]
+    [InlineData("public static void Execute(string text) { System.Console.WriteLine(int.TryParse(text, out int value)); }")]
+    [InlineData("public static string Execute(string text) => text.Trim();")]
+    [InlineData("public static string? Execute(string? text) => text?.Trim();")]
+    [InlineData("public static System.Func<string> CreateCallback(string text) => () => text.Trim();")]
+    [InlineData("public static System.Action CreateCallback(string text) => () => System.Console.WriteLine(text);")]
+    [InlineData("public static void Execute(System.Action? callback) { callback?.Invoke(); }")]
+    [InlineData("public static void Execute(System.Func<bool> callback) { for (; callback();) { } }")]
+    [InlineData(
+        "public static void Execute(string text) { for (int index = 0; index < text.Length; index++) { System.Console.WriteLine(index); } }"
+    )]
+    [InlineData("public static void Execute(string text) { for (text = text.Trim(); text.Length > 0; text = text.Substring(1)) { } }")]
+    [InlineData("public static async System.Threading.Tasks.Task Execute() { await System.Threading.Tasks.Task.Delay(1); }")]
+    [InlineData(
+        "public static async System.Threading.Tasks.Task Execute() { await System.Threading.Tasks.Task.CompletedTask.ConfigureAwait(false); }"
+    )]
+    [InlineData(
+        "public static async System.Threading.Tasks.Task Execute() { await new System.Threading.Tasks.ValueTask().ConfigureAwait(false); }"
+    )]
+    [InlineData("public static async System.Threading.Tasks.Task<bool> Execute() => await System.Threading.Tasks.Task.FromResult(true);")]
+    [InlineData(
+        "public static async System.Threading.Tasks.Task Execute() { if (await System.Threading.Tasks.Task.FromResult(true)) { System.Console.WriteLine(true); } }"
+    )]
+    [InlineData(
+        "public static async System.Threading.Tasks.Task Execute() { int value = await new System.Threading.Tasks.ValueTask<int>(1); System.Console.WriteLine(value); }"
+    )]
+    [InlineData("public static System.Text.StringBuilder Execute(System.Text.StringBuilder builder) => builder.AppendLine();")]
+    [InlineData("public static unsafe bool Execute(delegate*<bool> callback) => callback();")]
+    [InlineData("public static unsafe void Execute(delegate*<void> callback) { callback(); }")]
+    [InlineData("public static int Execute(System.Func<(int, int)> callback) { var (first, second) = callback(); return first + second; }")]
+    [InlineData(
+        "public static int Execute(System.Func<(int, (int, int))> callback) { var (first, (second, third)) = callback(); return first + second + third; }"
+    )]
+    [InlineData("public static void Execute(System.Text.StringBuilder? builder) { builder?.Length = 0; }")]
+    [InlineData("public static void Execute(int[] values) { foreach (int count in values) System.Console.WriteLine(count); }")]
+    [InlineData(
+        "public static void Execute((int, int)[] pairs) { foreach (var (first, second) in pairs) System.Console.WriteLine(first + second); }"
+    )]
+    [InlineData(
+        "public static async System.Threading.Tasks.Task Execute(System.Collections.Generic.IAsyncEnumerable<(int, int)> pairs) { await foreach (var (first, second) in pairs) System.Console.WriteLine(first + second); }"
+    )]
+    public async Task AllowsConsumedValuesAndVoidCalls(string memberSource)
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
+
+        Assert.Empty(diagnostics);
+    }
+
+    /// <summary>
+    /// Verifies binding an underscore to a symbol cannot bypass the assignment ban.
+    /// </summary>
+    /// <param name="memberSource">The member assigning to an underscore symbol.</param>
+    [Theory]
+    [InlineData("public static int Execute(int count) { int _; _ = count; return _; }")]
+    [InlineData("public static int Execute(int count) { int _ = count; return _; }")]
+    [InlineData("public static int Execute(int count) { int _; (_) = count; return _; }")]
+    [InlineData("public static int Execute(int _) { _ = 42; return _; }")]
+    [InlineData("public static int Execute(int _) { _ += 42; return _; }")]
+    [InlineData("public static string Execute(string? _) { _ ??= string.Empty; return _; }")]
+    [InlineData("private static int _; public static int Execute(int count) { _ = count; return _; }")]
+    [InlineData("private static int _; public static int Execute(int count) { ExampleType._ = count; return _; }")]
+    [InlineData("public static int _ { get; set; } public static int Execute(int count) { _ = count; return _; }")]
+    [InlineData("public static int _ { get; set; } public static int Execute(int count) { ExampleType._ = count; return _; }")]
+    [InlineData("public static System.Action<string> CreateCallback() => _ => _ = string.Empty;")]
+    [InlineData("public static int Execute() { int _; int count; (_, count) = (1, 2); return _ + count; }")]
+    public async Task RejectsAssignmentsToUnderscoreSymbols(string memberSource)
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+
+        Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
     /// <summary>
     /// Verifies that statements, callbacks, loops, and discards cannot drop returned values.
     /// </summary>
@@ -79,30 +164,6 @@ public sealed class IgnoredReturnValueAnalyzerTests
     }
 
     /// <summary>
-    /// Verifies binding an underscore to a symbol cannot bypass the assignment ban.
-    /// </summary>
-    /// <param name="memberSource">The member assigning to an underscore symbol.</param>
-    [Theory]
-    [InlineData("public static int Execute(int count) { int _; _ = count; return _; }")]
-    [InlineData("public static int Execute(int count) { int _ = count; return _; }")]
-    [InlineData("public static int Execute(int count) { int _; (_) = count; return _; }")]
-    [InlineData("public static int Execute(int _) { _ = 42; return _; }")]
-    [InlineData("public static int Execute(int _) { _ += 42; return _; }")]
-    [InlineData("public static string Execute(string? _) { _ ??= string.Empty; return _; }")]
-    [InlineData("private static int _; public static int Execute(int count) { _ = count; return _; }")]
-    [InlineData("private static int _; public static int Execute(int count) { ExampleType._ = count; return _; }")]
-    [InlineData("public static int _ { get; set; } public static int Execute(int count) { _ = count; return _; }")]
-    [InlineData("public static int _ { get; set; } public static int Execute(int count) { ExampleType._ = count; return _; }")]
-    [InlineData("public static System.Action<string> CreateCallback() => _ => _ = string.Empty;")]
-    [InlineData("public static int Execute() { int _; int count; (_, count) = (1, 2); return _ + count; }")]
-    public async Task RejectsAssignmentsToUnderscoreSymbols(string memberSource)
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
-
-        Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-    }
-
-    /// <summary>
     /// Verifies loop deconstruction cannot discard values, including asynchronous iteration.
     /// </summary>
     /// <param name="memberSource">The member discarding an iteration value.</param>
@@ -122,65 +183,5 @@ public sealed class IgnoredReturnValueAnalyzerTests
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-    }
-
-    /// <summary>
-    /// Verifies that consuming a result or awaiting completion without a result is permitted.
-    /// </summary>
-    /// <param name="memberSource">The member consuming returned values.</param>
-    [Theory]
-    [InlineData(
-        "public static void Execute(System.Collections.Generic.Dictionary<string, string> values, string key) { if (values.TryGetValue(key, out var value)) { System.Console.WriteLine(value); } }"
-    )]
-    [InlineData("public static void Execute(string text) { if (int.TryParse(text, out int value)) { System.Console.WriteLine(value); } }")]
-    [InlineData("public static bool Execute(string text) => int.TryParse(text, out _);")]
-    [InlineData(
-        "public static bool Execute(string text) { bool parsed = int.TryParse(text, out int value); System.Console.WriteLine(value); return parsed; }"
-    )]
-    [InlineData("public static void Execute(string text) { System.Console.WriteLine(int.TryParse(text, out int value)); }")]
-    [InlineData("public static string Execute(string text) => text.Trim();")]
-    [InlineData("public static string? Execute(string? text) => text?.Trim();")]
-    [InlineData("public static System.Func<string> CreateCallback(string text) => () => text.Trim();")]
-    [InlineData("public static System.Action CreateCallback(string text) => () => System.Console.WriteLine(text);")]
-    [InlineData("public static void Execute(System.Action? callback) { callback?.Invoke(); }")]
-    [InlineData("public static void Execute(System.Func<bool> callback) { for (; callback();) { } }")]
-    [InlineData(
-        "public static void Execute(string text) { for (int index = 0; index < text.Length; index++) { System.Console.WriteLine(index); } }"
-    )]
-    [InlineData("public static void Execute(string text) { for (text = text.Trim(); text.Length > 0; text = text.Substring(1)) { } }")]
-    [InlineData("public static async System.Threading.Tasks.Task Execute() { await System.Threading.Tasks.Task.Delay(1); }")]
-    [InlineData(
-        "public static async System.Threading.Tasks.Task Execute() { await System.Threading.Tasks.Task.CompletedTask.ConfigureAwait(false); }"
-    )]
-    [InlineData(
-        "public static async System.Threading.Tasks.Task Execute() { await new System.Threading.Tasks.ValueTask().ConfigureAwait(false); }"
-    )]
-    [InlineData("public static async System.Threading.Tasks.Task<bool> Execute() => await System.Threading.Tasks.Task.FromResult(true);")]
-    [InlineData(
-        "public static async System.Threading.Tasks.Task Execute() { if (await System.Threading.Tasks.Task.FromResult(true)) { System.Console.WriteLine(true); } }"
-    )]
-    [InlineData(
-        "public static async System.Threading.Tasks.Task Execute() { int value = await new System.Threading.Tasks.ValueTask<int>(1); System.Console.WriteLine(value); }"
-    )]
-    [InlineData("public static System.Text.StringBuilder Execute(System.Text.StringBuilder builder) => builder.AppendLine();")]
-    [InlineData("public static unsafe bool Execute(delegate*<bool> callback) => callback();")]
-    [InlineData("public static unsafe void Execute(delegate*<void> callback) { callback(); }")]
-    [InlineData("public static int Execute(System.Func<(int, int)> callback) { var (first, second) = callback(); return first + second; }")]
-    [InlineData(
-        "public static int Execute(System.Func<(int, (int, int))> callback) { var (first, (second, third)) = callback(); return first + second + third; }"
-    )]
-    [InlineData("public static void Execute(System.Text.StringBuilder? builder) { builder?.Length = 0; }")]
-    [InlineData("public static void Execute(int[] values) { foreach (int count in values) System.Console.WriteLine(count); }")]
-    [InlineData(
-        "public static void Execute((int, int)[] pairs) { foreach (var (first, second) in pairs) System.Console.WriteLine(first + second); }"
-    )]
-    [InlineData(
-        "public static async System.Threading.Tasks.Task Execute(System.Collections.Generic.IAsyncEnumerable<(int, int)> pairs) { await foreach (var (first, second) in pairs) System.Console.WriteLine(first + second); }"
-    )]
-    public async Task AllowsConsumedValuesAndVoidCalls(string memberSource)
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
-
-        Assert.Empty(diagnostics);
     }
 }

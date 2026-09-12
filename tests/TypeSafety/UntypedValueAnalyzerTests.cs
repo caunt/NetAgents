@@ -8,6 +8,21 @@ namespace NetAgents.Analyzers.Tests.TypeSafety;
 /// </summary>
 public sealed class UntypedValueAnalyzerTests
 {
+
+    /// <summary>
+    /// Verifies that generic collections retain their element types.
+    /// </summary>
+    [Fact]
+    public async Task AllowsStronglyTypedGenericCollections()
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
+            new UntypedValueAnalyzer(),
+            source: "public class ExampleType { public System.Collections.Generic.List<string> Values { get; } = new(); }"
+        );
+
+        Assert.Empty(diagnostics);
+    }
+
     /// <summary>
     /// Verifies that untyped declarations and inferred framework results are reported.
     /// </summary>
@@ -24,19 +39,5 @@ public sealed class UntypedValueAnalyzerTests
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(), $"public class ExampleType {{ {memberSource} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == UntypedValueAnalyzer.RuleIdentifier);
-    }
-
-    /// <summary>
-    /// Verifies that generic collections retain their element types.
-    /// </summary>
-    [Fact]
-    public async Task AllowsStronglyTypedGenericCollections()
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new UntypedValueAnalyzer(),
-            source: "public class ExampleType { public System.Collections.Generic.List<string> Values { get; } = new(); }"
-        );
-
-        Assert.Empty(diagnostics);
     }
 }

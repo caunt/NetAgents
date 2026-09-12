@@ -8,6 +8,22 @@ namespace NetAgents.Analyzers.Tests.TypeSafety;
 /// </summary>
 public sealed class BoxingConversionAnalyzerTests
 {
+
+    /// <summary>
+    /// Verifies typed operations, interpolation, and constrained generic calls.
+    /// </summary>
+    /// <param name="memberSource">The strongly typed member to analyze.</param>
+    [Theory]
+    [InlineData("public static int ConvertValue(int value) => value;")]
+    [InlineData("public static string FormatValue(int value) => $\"{value}\";")]
+    [InlineData("public static string FormatValue<TValue>(TValue value) where TValue : System.IFormattable => value.ToString(null, null);")]
+    public async Task AllowsTypedAndConstrainedGenericOperations(string memberSource)
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new BoxingConversionAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+
+        Assert.Empty(diagnostics);
+    }
+
     /// <summary>
     /// Verifies that nullable, interface, generic, and explicit boxing are reported.
     /// </summary>
@@ -24,20 +40,5 @@ public sealed class BoxingConversionAnalyzerTests
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new BoxingConversionAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == BoxingConversionAnalyzer.RuleIdentifier);
-    }
-
-    /// <summary>
-    /// Verifies typed operations, interpolation, and constrained generic calls.
-    /// </summary>
-    /// <param name="memberSource">The strongly typed member to analyze.</param>
-    [Theory]
-    [InlineData("public static int ConvertValue(int value) => value;")]
-    [InlineData("public static string FormatValue(int value) => $\"{value}\";")]
-    [InlineData("public static string FormatValue<TValue>(TValue value) where TValue : System.IFormattable => value.ToString(null, null);")]
-    public async Task AllowsTypedAndConstrainedGenericOperations(string memberSource)
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new BoxingConversionAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
-
-        Assert.Empty(diagnostics);
     }
 }

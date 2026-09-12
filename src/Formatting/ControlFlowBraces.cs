@@ -32,6 +32,28 @@ internal static class ControlFlowBraces
         return changes.ToImmutable();
     }
 
+    private static bool CanAbsorbElse(StatementSyntax statement)
+    {
+        // Look through nested blocks too: Fix all may remove them in the same operation.
+        return statement switch
+        {
+            IfStatementSyntax conditional => conditional.Else is null || CanAbsorbElse(conditional.Else.Statement),
+            BlockSyntax { Statements.Count: 1 } block => CanAbsorbElse(block.Statements[index: 0]),
+            ForStatementSyntax loop => CanAbsorbElse(loop.Statement),
+            CommonForEachStatementSyntax loop => CanAbsorbElse(loop.Statement),
+            WhileStatementSyntax loop => CanAbsorbElse(loop.Statement),
+            UsingStatementSyntax resource => CanAbsorbElse(resource.Statement),
+            LockStatementSyntax synchronization => CanAbsorbElse(synchronization.Statement),
+            FixedStatementSyntax pinned => CanAbsorbElse(pinned.Statement),
+            _ => false,
+        };
+    }
+
+    private static bool CanRemainUnbraced(StatementSyntax statement, SourceText source)
+    {
+        return statement is BlockSyntax block ? HasSingleLineBody(block, source) : IsSingleLine(statement, source);
+    }
+
     private static bool CanRemove(BlockSyntax block, SourceText source)
     {
         return HasSingleLineBody(block, source) && block.Parent switch
@@ -43,6 +65,66 @@ internal static class ControlFlowBraces
                 or SwitchSectionSyntax or BlockSyntax or LabeledStatementSyntax => true,
             _ => false,
         };
+    }
+
+    private static bool CanRemoveFromChain(IfStatementSyntax conditional, SourceText source)
+    {
+        while (conditional.Parent is ElseClauseSyntax { Parent: IfStatementSyntax previous })
+            conditional = previous;
+
+        for (IfStatementSyntax? current = conditional; current is not null; current = current.Else?.Statement as IfStatementSyntax)
+        {
+            if (!CanRemainUnbraced(current.Statement, source))
+                return false;
+
+            if (current.Else is { Statement: not IfStatementSyntax } otherwise && !CanRemainUnbraced(otherwise.Statement, source))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool ExposesDanglingElse(BlockSyntax block, StatementSyntax statement)
+    {
+        if (!CanAbsorbElse(statement))
+            return false;
+
+        for (SyntaxNode? current = block; current is not null; current = current.Parent)
+        {
+            switch (current.Parent)
+            {
+                case IfStatementSyntax conditional when conditional.Statement == current && conditional.Else is not null:
+                    return true;
+                case IfStatementSyntax or ElseClauseSyntax or ForStatementSyntax or CommonForEachStatementSyntax
+                    or WhileStatementSyntax or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax:
+                    continue;
+                default:
+                    return false;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasSingleLineBody(BlockSyntax block, SourceText source)
+    {
+        if (block.ContainsDiagnostics || block.ContainsDirectives || block.Statements.Count != 1)
+            return false;
+
+        StatementSyntax statement = block.Statements[index: 0];
+
+        // Declarations must retain their scope, including out variables and pattern captures.
+        bool requiresScope = statement is BlockSyntax or LocalDeclarationStatementSyntax or LocalFunctionStatementSyntax
+            or LabeledStatementSyntax or EmptyStatementSyntax
+            || statement.DescendantNodes().OfType<VariableDesignationSyntax>().Any();
+
+        return !requiresScope && IsSingleLine(statement, source) && !ExposesDanglingElse(block, statement);
+    }
+
+    private static bool IsSingleLine(StatementSyntax statement, SourceText source)
+    {
+        return source.Lines.GetLineFromPosition(statement.SpanStart).LineNumber
+            == source.Lines.GetLineFromPosition(statement.Span.End - 1).LineNumber;
     }
 
     private static bool RequiresBraces(StatementSyntax statement, SourceText source)
@@ -90,87 +172,5 @@ internal static class ControlFlowBraces
         return section.Parent is not SwitchStatementSyntax selection
             || !selection.DescendantNodes().OfType<SimpleNameSyntax>()
                 .Any(identifier => !section.Span.Contains(identifier.Span) && declarations.Contains(identifier.Identifier.ValueText));
-    }
-
-    private static bool HasSingleLineBody(BlockSyntax block, SourceText source)
-    {
-        if (block.ContainsDiagnostics || block.ContainsDirectives || block.Statements.Count != 1)
-            return false;
-
-        StatementSyntax statement = block.Statements[index: 0];
-
-        // Declarations must retain their scope, including out variables and pattern captures.
-        bool requiresScope = statement is BlockSyntax or LocalDeclarationStatementSyntax or LocalFunctionStatementSyntax
-            or LabeledStatementSyntax or EmptyStatementSyntax
-            || statement.DescendantNodes().OfType<VariableDesignationSyntax>().Any();
-
-        return !requiresScope && IsSingleLine(statement, source) && !ExposesDanglingElse(block, statement);
-    }
-
-    private static bool CanRemoveFromChain(IfStatementSyntax conditional, SourceText source)
-    {
-        while (conditional.Parent is ElseClauseSyntax { Parent: IfStatementSyntax previous })
-            conditional = previous;
-
-        for (IfStatementSyntax? current = conditional; current is not null; current = current.Else?.Statement as IfStatementSyntax)
-        {
-            if (!CanRemainUnbraced(current.Statement, source))
-                return false;
-
-            if (current.Else is { Statement: not IfStatementSyntax } otherwise && !CanRemainUnbraced(otherwise.Statement, source))
-                return false;
-        }
-
-        return true;
-    }
-
-    private static bool CanRemainUnbraced(StatementSyntax statement, SourceText source)
-    {
-        return statement is BlockSyntax block ? HasSingleLineBody(block, source) : IsSingleLine(statement, source);
-    }
-
-    private static bool IsSingleLine(StatementSyntax statement, SourceText source)
-    {
-        return source.Lines.GetLineFromPosition(statement.SpanStart).LineNumber
-            == source.Lines.GetLineFromPosition(statement.Span.End - 1).LineNumber;
-    }
-
-    private static bool ExposesDanglingElse(BlockSyntax block, StatementSyntax statement)
-    {
-        if (!CanAbsorbElse(statement))
-            return false;
-
-        for (SyntaxNode? current = block; current is not null; current = current.Parent)
-        {
-            switch (current.Parent)
-            {
-                case IfStatementSyntax conditional when conditional.Statement == current && conditional.Else is not null:
-                    return true;
-                case IfStatementSyntax or ElseClauseSyntax or ForStatementSyntax or CommonForEachStatementSyntax
-                    or WhileStatementSyntax or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax:
-                    continue;
-                default:
-                    return false;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool CanAbsorbElse(StatementSyntax statement)
-    {
-        // Look through nested blocks too: Fix all may remove them in the same operation.
-        return statement switch
-        {
-            IfStatementSyntax conditional => conditional.Else is null || CanAbsorbElse(conditional.Else.Statement),
-            BlockSyntax { Statements.Count: 1 } block => CanAbsorbElse(block.Statements[index: 0]),
-            ForStatementSyntax loop => CanAbsorbElse(loop.Statement),
-            CommonForEachStatementSyntax loop => CanAbsorbElse(loop.Statement),
-            WhileStatementSyntax loop => CanAbsorbElse(loop.Statement),
-            UsingStatementSyntax resource => CanAbsorbElse(resource.Statement),
-            LockStatementSyntax synchronization => CanAbsorbElse(synchronization.Statement),
-            FixedStatementSyntax pinned => CanAbsorbElse(pinned.Statement),
-            _ => false,
-        };
     }
 }

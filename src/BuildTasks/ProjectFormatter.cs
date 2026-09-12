@@ -23,6 +23,19 @@ internal static class ProjectFormatter
             await FormatCore(inputs, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
     }
 
+    private static PortableExecutableReference CreateReference(ITaskItem item)
+    {
+        string aliases = item.GetMetadata(metadataName: "Aliases");
+        ImmutableArray<string> referenceAliases = string.IsNullOrEmpty(aliases) ? [] : [.. aliases.Split(separator: ',')];
+
+        MetadataReferenceProperties properties = new(
+            aliases: referenceAliases,
+            embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"), b: "true", StringComparison.OrdinalIgnoreCase)
+        );
+
+        return MetadataReference.CreateFromFile(GetPath(item), properties);
+    }
+
     private static async Task FormatCore(FormatProject inputs, CancellationToken cancellationToken)
     {
         using AnalyzerLoader loader = new();
@@ -160,19 +173,6 @@ internal static class ProjectFormatter
             // Analyzer assemblies can embed optional helpers for older Roslyn interfaces.
             return exception.Types.OfType<Type>();
         }
-    }
-
-    private static PortableExecutableReference CreateReference(ITaskItem item)
-    {
-        string aliases = item.GetMetadata(metadataName: "Aliases");
-        ImmutableArray<string> referenceAliases = string.IsNullOrEmpty(aliases) ? [] : [.. aliases.Split(separator: ',')];
-
-        MetadataReferenceProperties properties = new(
-            aliases: referenceAliases,
-            embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"), b: "true", StringComparison.OrdinalIgnoreCase)
-        );
-
-        return MetadataReference.CreateFromFile(GetPath(item), properties);
     }
 
     private static string GetPath(ITaskItem item)

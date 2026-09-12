@@ -6,15 +6,6 @@ namespace NetAgents.Analyzers.Tests.Infrastructure;
 
 internal sealed class CodeFixDiagnosticProvider(DiagnosticAnalyzer analyzer) : FixAllContext.DiagnosticProvider
 {
-    public override async Task<IEnumerable<Diagnostic>> GetDocumentDiagnosticsAsync(Document document, CancellationToken cancellationToken)
-    {
-        return [.. await CodeFixTestHarness.GetDiagnostics(document, analyzer).ConfigureAwait(continueOnCapturedContext: false)];
-    }
-
-    public override Task<IEnumerable<Diagnostic>> GetProjectDiagnosticsAsync(Project project, CancellationToken cancellationToken)
-    {
-        return Task.FromResult<IEnumerable<Diagnostic>>([]);
-    }
 
     public override async Task<IEnumerable<Diagnostic>> GetAllDiagnosticsAsync(Project project, CancellationToken cancellationToken)
     {
@@ -24,5 +15,15 @@ internal sealed class CodeFixDiagnosticProvider(DiagnosticAnalyzer analyzer) : F
             diagnostics.AddRange(await GetDocumentDiagnosticsAsync(document, cancellationToken).ConfigureAwait(continueOnCapturedContext: false));
 
         return diagnostics;
+    }
+
+    public override async Task<IEnumerable<Diagnostic>> GetDocumentDiagnosticsAsync(Document document, CancellationToken cancellationToken)
+    {
+        return [.. await CodeFixTestHarness.GetDiagnostics(document, analyzer).ConfigureAwait(continueOnCapturedContext: false)];
+    }
+
+    public override Task<IEnumerable<Diagnostic>> GetProjectDiagnosticsAsync(Project project, CancellationToken cancellationToken)
+    {
+        return Task.FromResult<IEnumerable<Diagnostic>>([]);
     }
 }

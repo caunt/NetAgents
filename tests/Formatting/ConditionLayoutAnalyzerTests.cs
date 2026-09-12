@@ -10,34 +10,6 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class ConditionLayoutAnalyzerTests
 {
-    /// <summary>
-    /// Rejects multiline conditions across supported control flow constructs.
-    /// </summary>
-    /// <param name="statement">The statement containing a condition violation.</param>
-    [Theory]
-    [InlineData("if (\nvalue > 0) return;")]
-    [InlineData("if (value > 0\n) return;")]
-    [InlineData("if (value > 0\r\n || value < -1) return;")]
-    [InlineData("if (value > 0) return; else if (\nvalue < 0) return;")]
-    [InlineData("while (value >\n0) value--;")]
-    [InlineData("do value--; while (\nvalue > 0);")]
-    [InlineData("for (; value >\n0; value--) { }")]
-    [InlineData("value = value >\n0 ? 1 : 2;")]
-    [InlineData("try { } catch (System.Exception) when (\nvalue > 0) { }")]
-    [InlineData("switch (value) { case int number when\nnumber > 0: break; }")]
-    [InlineData("value = value switch { int number when number >\n0 => 1, _ => 0 };")]
-    [InlineData("if (value /* comment\ncomment */ > 0) return;")]
-    public async Task RejectsMultilineConditions(string statement)
-    {
-        Diagnostic[] diagnostics = await Analyze(statement);
-
-        Assert.Equal(ConditionLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-        Assert.Contains(
-            expectedSubstring: "separate variable declaration",
-            diagnostics[0].GetMessage(System.Globalization.CultureInfo.InvariantCulture),
-            StringComparison.Ordinal
-        );
-    }
 
     /// <summary>
     /// Accepts short conditions and ignores unrelated multiline headers or expressions.
@@ -98,6 +70,35 @@ public sealed class ConditionLayoutAnalyzerTests
         Diagnostic[] diagnostics = await Analyze(template.Replace(oldValue: "CONDITION", condition, StringComparison.Ordinal));
 
         Assert.Equal(ConditionLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
+    /// Rejects multiline conditions across supported control flow constructs.
+    /// </summary>
+    /// <param name="statement">The statement containing a condition violation.</param>
+    [Theory]
+    [InlineData("if (\nvalue > 0) return;")]
+    [InlineData("if (value > 0\n) return;")]
+    [InlineData("if (value > 0\r\n || value < -1) return;")]
+    [InlineData("if (value > 0) return; else if (\nvalue < 0) return;")]
+    [InlineData("while (value >\n0) value--;")]
+    [InlineData("do value--; while (\nvalue > 0);")]
+    [InlineData("for (; value >\n0; value--) { }")]
+    [InlineData("value = value >\n0 ? 1 : 2;")]
+    [InlineData("try { } catch (System.Exception) when (\nvalue > 0) { }")]
+    [InlineData("switch (value) { case int number when\nnumber > 0: break; }")]
+    [InlineData("value = value switch { int number when number >\n0 => 1, _ => 0 };")]
+    [InlineData("if (value /* comment\ncomment */ > 0) return;")]
+    public async Task RejectsMultilineConditions(string statement)
+    {
+        Diagnostic[] diagnostics = await Analyze(statement);
+
+        Assert.Equal(ConditionLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+        Assert.Contains(
+            expectedSubstring: "separate variable declaration",
+            diagnostics[0].GetMessage(System.Globalization.CultureInfo.InvariantCulture),
+            StringComparison.Ordinal
+        );
     }
 
     private static Task<Diagnostic[]> Analyze(string statement)

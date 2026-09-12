@@ -31,17 +31,6 @@ internal sealed class FormattingLock(List<FileStream> streams) : IAsyncDisposabl
         }
     }
 
-    async ValueTask IAsyncDisposable.DisposeAsync()
-    {
-        foreach (FileStream stream in streams)
-            await stream.DisposeAsync().ConfigureAwait(continueOnCapturedContext: false);
-    }
-
-    private static string Normalize(string path)
-    {
-        return OperatingSystem.IsWindows() ? path.ToUpperInvariant() : path;
-    }
-
     private static async Task<FileStream> AcquireDirectory(string directory, CancellationToken cancellationToken)
     {
         string identifier = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(directory)));
@@ -60,5 +49,16 @@ internal sealed class FormattingLock(List<FileStream> streams) : IAsyncDisposabl
         }
 
         throw new OperationCanceledException(cancellationToken);
+    }
+
+    private static string Normalize(string path)
+    {
+        return OperatingSystem.IsWindows() ? path.ToUpperInvariant() : path;
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        foreach (FileStream stream in streams)
+            await stream.DisposeAsync().ConfigureAwait(continueOnCapturedContext: false);
     }
 }

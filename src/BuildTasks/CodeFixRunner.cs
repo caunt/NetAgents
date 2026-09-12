@@ -50,31 +50,6 @@ internal static class CodeFixRunner
         throw new InvalidOperationException(message: "Automatic formatting did not stabilize after 64 fix passes. Resolve conflicting code fixes before rebuilding.");
     }
 
-    private static async Task<Project> FormatWhitespace(Project project, ImmutableHashSet<DocumentId> editable, CancellationToken cancellationToken)
-    {
-        foreach (DocumentId identifier in editable)
-        {
-            Document document = project.GetDocument(identifier) ?? throw new InvalidOperationException(message: "A formatting document is missing.");
-            Document formatted = await Formatter.FormatAsync(document, cancellationToken: cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-            SourceText text = await formatted.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-            SyntaxTree? tree = await formatted.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-            AnalyzerConfigOptions options = project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GetOptions(tree ?? throw new InvalidOperationException(message: "A syntax tree is missing."));
-
-            bool needsFinalNewline = text.Length > 0 && text.Lines.GetLineFromPosition(text.Length).Span.Length > 0
-                && options.TryGetValue(key: "insert_final_newline", out string? finalNewline) && finalNewline == "true";
-
-            if (needsFinalNewline)
-            {
-                string newline = options.TryGetValue(key: "end_of_line", out string? lineEnding) && lineEnding == "crlf" ? "\r\n" : "\n";
-                formatted = formatted.WithText(text.WithChanges(new TextChange(new TextSpan(text.Length, length: 0), newline)));
-            }
-
-            project = formatted.Project;
-        }
-
-        return project;
-    }
-
     private static async Task<Project?> ApplyAvailableFix(
         Project project,
         ImmutableArray<Diagnostic> diagnostics,
@@ -156,5 +131,30 @@ internal static class CodeFixRunner
         }
 
         return null;
+    }
+
+    private static async Task<Project> FormatWhitespace(Project project, ImmutableHashSet<DocumentId> editable, CancellationToken cancellationToken)
+    {
+        foreach (DocumentId identifier in editable)
+        {
+            Document document = project.GetDocument(identifier) ?? throw new InvalidOperationException(message: "A formatting document is missing.");
+            Document formatted = await Formatter.FormatAsync(document, cancellationToken: cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            SourceText text = await formatted.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            SyntaxTree? tree = await formatted.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            AnalyzerConfigOptions options = project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GetOptions(tree ?? throw new InvalidOperationException(message: "A syntax tree is missing."));
+
+            bool needsFinalNewline = text.Length > 0 && text.Lines.GetLineFromPosition(text.Length).Span.Length > 0
+                && options.TryGetValue(key: "insert_final_newline", out string? finalNewline) && finalNewline == "true";
+
+            if (needsFinalNewline)
+            {
+                string newline = options.TryGetValue(key: "end_of_line", out string? lineEnding) && lineEnding == "crlf" ? "\r\n" : "\n";
+                formatted = formatted.WithText(text.WithChanges(new TextChange(new TextSpan(text.Length, length: 0), newline)));
+            }
+
+            project = formatted.Project;
+        }
+
+        return project;
     }
 }

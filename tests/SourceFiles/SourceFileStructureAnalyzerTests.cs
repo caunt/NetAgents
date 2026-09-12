@@ -8,20 +8,6 @@ namespace NetAgents.Analyzers.Tests.SourceFiles;
 /// </summary>
 public sealed class SourceFileStructureAnalyzerTests
 {
-    /// <summary>
-    /// Verifies that mismatched filenames and multiple top-level types are reported.
-    /// </summary>
-    /// <param name="source">The source containing invalid type placement.</param>
-    [Theory]
-    [InlineData("public class DifferentName { }")]
-    [InlineData("public class ExampleType { } public class SecondType { }")]
-    [InlineData("namespace First { public class ExampleType { } } namespace Second { public class DifferentName { } }")]
-    public async Task RejectsMismatchedAndMultipleTopLevelTypes(string source)
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileStructureAnalyzer(), source);
-
-        Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == SourceFileStructureAnalyzer.RuleIdentifier);
-    }
 
     /// <summary>
     /// Verifies supported top-level declarations and appropriate nested types.
@@ -36,5 +22,20 @@ public sealed class SourceFileStructureAnalyzerTests
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileStructureAnalyzer(), source);
 
         Assert.Empty(diagnostics);
+    }
+
+    /// <summary>
+    /// Verifies that mismatched filenames and multiple top-level types are reported.
+    /// </summary>
+    /// <param name="source">The source containing invalid type placement.</param>
+    [Theory]
+    [InlineData("public class DifferentName { }")]
+    [InlineData("public class ExampleType { } public class SecondType { }")]
+    [InlineData("namespace First { public class ExampleType { } } namespace Second { public class DifferentName { } }")]
+    public async Task RejectsMismatchedAndMultipleTopLevelTypes(string source)
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileStructureAnalyzer(), source);
+
+        Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == SourceFileStructureAnalyzer.RuleIdentifier);
     }
 }

@@ -10,6 +10,75 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class ControlFlowBracesAnalyzerTests
 {
+
+    /// <summary>
+    /// Verifies all simple branches lose braces, while mixed chains acquire braces consistently.
+    /// </summary>
+    /// <param name="statements">The conditional chain.</param>
+    /// <param name="expectedCount">The number of bodies needing a change.</param>
+    [Theory]
+    [InlineData("if (count > 0) { return; } else if (count < 0) { return; } else { return; }", "3")]
+    [InlineData("if (count > 0) System.Console.WriteLine(\ncount); else if (count < 0) return; else return;", "3")]
+    [InlineData("if (count > 0) { System.Console.WriteLine(\ncount); } else return;", "1")]
+    [InlineData("if (count > 0) return; else { System.Console.WriteLine(\ncount); }", "1")]
+    [InlineData("if (count > 0) { count++; count--; } else return;", "1")]
+    public async Task KeepsConditionalChainsConsistent(string statements, string expectedCount)
+    {
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
+            new ControlFlowBracesAnalyzer(),
+            $"public static class ExampleType {{ public static void Execute(int count) {{ {statements} }} }}"
+        );
+
+        Assert.Equal(int.Parse(expectedCount, System.Globalization.CultureInfo.InvariantCulture), diagnostics.Length);
+        Assert.All(diagnostics, static diagnostic => Assert.Equal(ControlFlowBracesAnalyzer.RuleIdentifier, diagnostic.Id));
+    }
+
+    /// <summary>
+    /// Verifies required braces, multiline bodies, and unsafe scope changes remain untouched.
+    /// </summary>
+    /// <param name="memberSource">A member whose braces must remain as written.</param>
+    [Theory]
+    [InlineData("public static int Execute() { return 0; }")]
+    [InlineData("public static int Result { get { return 0; } }")]
+    [InlineData("public static void Execute() { System.Action action = () => { System.Console.WriteLine(); }; action(); }")]
+    [InlineData("public static void Execute() { void Local() { System.Console.WriteLine(); } Local(); }")]
+    [InlineData("public static void Execute(int count) { if (count > 0) { } }")]
+    [InlineData("public static void Execute(int count) { if (count > 0) { count++; count--; } }")]
+    [InlineData("public static void Execute(int count) { if (count > 0) { count = System.Math.Abs(count)\n.GetHashCode(); } }")]
+    [InlineData("public static void Execute(int count) { foreach (int value in new[] { count }) { System.Console.WriteLine(\nvalue); } }")]
+    [InlineData("public static void Execute(int count) { if (count > 0) { int result = 0; } }")]
+    [InlineData("public static void Execute(int count) { if (count > 0) { void Local() { } } }")]
+    [InlineData("public static void Execute(int count) { if (count > 0) { destination: return; } }")]
+    [InlineData(
+        "public static void Execute(string value) { if (value.Length > 0) { System.Console.WriteLine(int.TryParse(value, out int result)); } }"
+    )]
+    [InlineData(
+        "public static void Execute(string value) { if (value.Length > 0) { System.Console.WriteLine(value is { Length: > 0 } result); } }"
+    )]
+    [InlineData("public static void Execute() { try { return; } catch (System.Exception) { throw; } finally { System.Console.WriteLine(); } }")]
+    [InlineData("public static void Execute(int count) { checked { count++; } unchecked { count++; } }")]
+    [InlineData("public static unsafe void Execute(int* pointer) { unsafe { *pointer = 0; } }")]
+    [InlineData("public static void Execute(int count) { if (count > 0) { if (count > 1) return; } else { return; } }")]
+    [InlineData("public static void Execute(int count) { if (count > 0) while (count > 1) { if (count > 2) return; } else return; }")]
+    [InlineData(
+        "public static void Execute(int count) { if (count > 0) { count = System.Math.Abs(\ncount); } else if (count < 0) { return; } else { return; } }"
+    )]
+    [InlineData("public static void Execute(int count) { if (count > 0) { return; } else { count = System.Math.Abs(\ncount); } }")]
+    [InlineData("public static int Execute(int count) { switch (count) { case 0: int result; goto default; default: return result = 1; } }")]
+    [InlineData(
+        "public static int Execute(int count) { switch (count) { case 0: int Local<TValue>() => 1; return Local<int>(); default: return Local<string>(); } }"
+    )]
+    [InlineData(
+        "public static int Execute(int count) { switch (count) { case 0: count++; destination: return count; default: goto destination; } }"
+    )]
+    [InlineData("public static void Execute(int count) { if (count > 0) {\n#if true\nreturn;\n#endif\n} }")]
+    public async Task PreservesRequiredBracesAndScopes(string memberSource)
+    {
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
+
+        Assert.Empty(diagnostics);
+    }
+
     /// <summary>
     /// Verifies optional single-line braces and missing multiline braces are diagnosed.
     /// </summary>
@@ -61,73 +130,5 @@ public sealed class ControlFlowBracesAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
 
         Assert.Equal(ControlFlowBracesAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-    }
-
-    /// <summary>
-    /// Verifies required braces, multiline bodies, and unsafe scope changes remain untouched.
-    /// </summary>
-    /// <param name="memberSource">A member whose braces must remain as written.</param>
-    [Theory]
-    [InlineData("public static int Execute() { return 0; }")]
-    [InlineData("public static int Result { get { return 0; } }")]
-    [InlineData("public static void Execute() { System.Action action = () => { System.Console.WriteLine(); }; action(); }")]
-    [InlineData("public static void Execute() { void Local() { System.Console.WriteLine(); } Local(); }")]
-    [InlineData("public static void Execute(int count) { if (count > 0) { } }")]
-    [InlineData("public static void Execute(int count) { if (count > 0) { count++; count--; } }")]
-    [InlineData("public static void Execute(int count) { if (count > 0) { count = System.Math.Abs(count)\n.GetHashCode(); } }")]
-    [InlineData("public static void Execute(int count) { foreach (int value in new[] { count }) { System.Console.WriteLine(\nvalue); } }")]
-    [InlineData("public static void Execute(int count) { if (count > 0) { int result = 0; } }")]
-    [InlineData("public static void Execute(int count) { if (count > 0) { void Local() { } } }")]
-    [InlineData("public static void Execute(int count) { if (count > 0) { destination: return; } }")]
-    [InlineData(
-        "public static void Execute(string value) { if (value.Length > 0) { System.Console.WriteLine(int.TryParse(value, out int result)); } }"
-    )]
-    [InlineData(
-        "public static void Execute(string value) { if (value.Length > 0) { System.Console.WriteLine(value is { Length: > 0 } result); } }"
-    )]
-    [InlineData("public static void Execute() { try { return; } catch (System.Exception) { throw; } finally { System.Console.WriteLine(); } }")]
-    [InlineData("public static void Execute(int count) { checked { count++; } unchecked { count++; } }")]
-    [InlineData("public static unsafe void Execute(int* pointer) { unsafe { *pointer = 0; } }")]
-    [InlineData("public static void Execute(int count) { if (count > 0) { if (count > 1) return; } else { return; } }")]
-    [InlineData("public static void Execute(int count) { if (count > 0) while (count > 1) { if (count > 2) return; } else return; }")]
-    [InlineData(
-        "public static void Execute(int count) { if (count > 0) { count = System.Math.Abs(\ncount); } else if (count < 0) { return; } else { return; } }"
-    )]
-    [InlineData("public static void Execute(int count) { if (count > 0) { return; } else { count = System.Math.Abs(\ncount); } }")]
-    [InlineData("public static int Execute(int count) { switch (count) { case 0: int result; goto default; default: return result = 1; } }")]
-    [InlineData(
-        "public static int Execute(int count) { switch (count) { case 0: int Local<TValue>() => 1; return Local<int>(); default: return Local<string>(); } }"
-    )]
-    [InlineData(
-        "public static int Execute(int count) { switch (count) { case 0: count++; destination: return count; default: goto destination; } }"
-    )]
-    [InlineData("public static void Execute(int count) { if (count > 0) {\n#if true\nreturn;\n#endif\n} }")]
-    public async Task PreservesRequiredBracesAndScopes(string memberSource)
-    {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
-
-        Assert.Empty(diagnostics);
-    }
-
-    /// <summary>
-    /// Verifies all simple branches lose braces, while mixed chains acquire braces consistently.
-    /// </summary>
-    /// <param name="statements">The conditional chain.</param>
-    /// <param name="expectedCount">The number of bodies needing a change.</param>
-    [Theory]
-    [InlineData("if (count > 0) { return; } else if (count < 0) { return; } else { return; }", "3")]
-    [InlineData("if (count > 0) System.Console.WriteLine(\ncount); else if (count < 0) return; else return;", "3")]
-    [InlineData("if (count > 0) { System.Console.WriteLine(\ncount); } else return;", "1")]
-    [InlineData("if (count > 0) return; else { System.Console.WriteLine(\ncount); }", "1")]
-    [InlineData("if (count > 0) { count++; count--; } else return;", "1")]
-    public async Task KeepsConditionalChainsConsistent(string statements, string expectedCount)
-    {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new ControlFlowBracesAnalyzer(),
-            $"public static class ExampleType {{ public static void Execute(int count) {{ {statements} }} }}"
-        );
-
-        Assert.Equal(int.Parse(expectedCount, System.Globalization.CultureInfo.InvariantCulture), diagnostics.Length);
-        Assert.All(diagnostics, static diagnostic => Assert.Equal(ControlFlowBracesAnalyzer.RuleIdentifier, diagnostic.Id));
     }
 }

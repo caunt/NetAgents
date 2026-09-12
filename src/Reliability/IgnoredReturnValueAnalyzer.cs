@@ -44,6 +44,14 @@ public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule)
         context.RegisterOperationAction(AnalyzeLoop, OperationKind.Loop);
     }
 
+    private static void AnalyzeAssignment(OperationAnalysisContext context)
+    {
+        IAssignmentOperation assignment = (IAssignmentOperation)context.Operation;
+
+        if (ContainsDiscard(assignment.Target))
+            context.ReportDiagnostic(Diagnostic.Create(Rule, assignment.Syntax.GetLocation()));
+    }
+
     private static void AnalyzeExpressionStatement(OperationAnalysisContext context)
     {
         IOperation expression = ((IExpressionStatementOperation)context.Operation).Operation;
@@ -52,12 +60,16 @@ public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule)
             context.ReportDiagnostic(Diagnostic.Create(Rule, expression.Syntax.GetLocation()));
     }
 
-    private static void AnalyzeAssignment(OperationAnalysisContext context)
+    private static void AnalyzeLoop(OperationAnalysisContext context)
     {
-        IAssignmentOperation assignment = (IAssignmentOperation)context.Operation;
+        if (context.Operation is IForEachLoopOperation loop && ContainsDiscard(loop.LoopControlVariable))
+            context.ReportDiagnostic(Diagnostic.Create(Rule, loop.LoopControlVariable.Syntax.GetLocation()));
+    }
 
-        if (ContainsDiscard(assignment.Target))
-            context.ReportDiagnostic(Diagnostic.Create(Rule, assignment.Syntax.GetLocation()));
+    private static void AnalyzeVariable(OperationAnalysisContext context)
+    {
+        if (context.Operation is IVariableDeclaratorOperation { Symbol.Name: "_", Initializer: not null } declaration)
+            context.ReportDiagnostic(Diagnostic.Create(Rule, declaration.Syntax.GetLocation()));
     }
 
     private static bool ContainsDiscard(IOperation target)
@@ -72,18 +84,6 @@ public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule)
             ITupleOperation tuple => tuple.Elements.Any(ContainsDiscard),
             _ => false,
         };
-    }
-
-    private static void AnalyzeVariable(OperationAnalysisContext context)
-    {
-        if (context.Operation is IVariableDeclaratorOperation { Symbol.Name: "_", Initializer: not null } declaration)
-            context.ReportDiagnostic(Diagnostic.Create(Rule, declaration.Syntax.GetLocation()));
-    }
-
-    private static void AnalyzeLoop(OperationAnalysisContext context)
-    {
-        if (context.Operation is IForEachLoopOperation loop && ContainsDiscard(loop.LoopControlVariable))
-            context.ReportDiagnostic(Diagnostic.Create(Rule, loop.LoopControlVariable.Syntax.GetLocation()));
     }
 
     private static bool ReturnsValue(IOperation expression)

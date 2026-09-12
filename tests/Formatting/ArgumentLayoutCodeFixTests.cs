@@ -7,6 +7,19 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class ArgumentLayoutCodeFixTests
 {
+
+    /// <summary>
+    /// Collapsing a short lambda argument preserves its body and reaches a stable layout.
+    /// </summary>
+    [Fact]
+    public async Task CollapsesLambdaArgument()
+    {
+        const string source = "public class ExampleType { public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(\n() => {\nSystem.Console.WriteLine();\n}\n); }";
+        const string expected = "public class ExampleType { public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); }); }";
+
+        Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
+    }
+
     /// <summary>
     /// Collapses short parameter declarations, including attributes and default values.
     /// </summary>
@@ -37,6 +50,18 @@ public sealed class ArgumentLayoutCodeFixTests
     }
 
     /// <summary>
+    /// An individual fix collapses a call without requiring Fix all.
+    /// </summary>
+    [Fact]
+    public async Task FixesIndividualCall()
+    {
+        const string source = "public class ExampleType { public void Execute() { System.Console.WriteLine(\n1\n); } }";
+        const string expected = "public class ExampleType { public void Execute() { System.Console.WriteLine(1); } }";
+
+        Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: false));
+    }
+
+    /// <summary>
     /// Fix all handles several declarations with different target layouts.
     /// </summary>
     [Fact]
@@ -45,6 +70,19 @@ public sealed class ArgumentLayoutCodeFixTests
         string parameter = "string " + new string(c: 'p', count: 122);
         string source = $"public class ExampleType\n{{\n    public ExampleType({parameter}) {{ }}\n    public void Execute(\nint value\n) {{ }}\n}}";
         string expected = $"public class ExampleType\n{{\n    public ExampleType(\n        {parameter}\n    ) {{ }}\n    public void Execute(int value) {{ }}\n}}";
+
+        Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
+    }
+
+    /// <summary>
+    /// Fix all resolves nested call lists without conflicting text edits.
+    /// </summary>
+    [Fact]
+    public async Task FixesNestedCalls()
+    {
+        string argument = "\"" + new string(c: 'x', count: 130) + "\"";
+        string source = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(string.Concat({argument}, {argument})); }} }}";
+        string expected = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(\n    string.Concat(\n        {argument},\n        {argument}\n    )\n); }} }}";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
@@ -70,42 +108,6 @@ public sealed class ArgumentLayoutCodeFixTests
         const string literal = "\"\"\"\nfirst line\nsecond line\n\"\"\"";
         string source = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine({literal}); }} }}";
         string expected = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(\n    {literal}\n); }} }}";
-
-        Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
-    }
-
-    /// <summary>
-    /// Fix all resolves nested call lists without conflicting text edits.
-    /// </summary>
-    [Fact]
-    public async Task FixesNestedCalls()
-    {
-        string argument = "\"" + new string(c: 'x', count: 130) + "\"";
-        string source = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(string.Concat({argument}, {argument})); }} }}";
-        string expected = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(\n    string.Concat(\n        {argument},\n        {argument}\n    )\n); }} }}";
-
-        Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
-    }
-    /// <summary>
-    /// An individual fix collapses a call without requiring Fix all.
-    /// </summary>
-    [Fact]
-    public async Task FixesIndividualCall()
-    {
-        const string source = "public class ExampleType { public void Execute() { System.Console.WriteLine(\n1\n); } }";
-        const string expected = "public class ExampleType { public void Execute() { System.Console.WriteLine(1); } }";
-
-        Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: false));
-    }
-
-    /// <summary>
-    /// Collapsing a short lambda argument preserves its body and reaches a stable layout.
-    /// </summary>
-    [Fact]
-    public async Task CollapsesLambdaArgument()
-    {
-        const string source = "public class ExampleType { public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(\n() => {\nSystem.Console.WriteLine();\n}\n); }";
-        const string expected = "public class ExampleType { public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); }); }";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }

@@ -42,38 +42,6 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
         );
     }
 
-    private static ImmutableDictionary<string, string> ReadRequiredOptions()
-    {
-        using Stream configurationStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
-            ?? throw new InvalidOperationException(message: "The embedded analyzer policy is missing.");
-
-        using StreamReader reader = new(configurationStream);
-
-        ImmutableDictionary<string, string>.Builder options = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
-        string? line;
-
-        while ((line = reader.ReadLine()) is not null)
-        {
-            string trimmedLine = line.Trim();
-
-            if (trimmedLine.Length == 0 || trimmedLine.StartsWith(value: "#", StringComparison.Ordinal))
-                continue;
-
-            int separatorIndex = trimmedLine.IndexOf(value: '=');
-
-            if (separatorIndex < 0)
-                continue;
-
-            string key = trimmedLine.Substring(startIndex: 0, length: separatorIndex).Trim();
-            string value = trimmedLine.Substring(separatorIndex + 1).Trim();
-
-            if (key is not "is_global" and not "global_level" && value.Length > 0)
-                options[key] = value;
-        }
-
-        return options.ToImmutable();
-    }
-
     private static void AnalyzeConfiguration(SyntaxTreeAnalysisContext context, Compilation compilation)
     {
         AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(context.Tree);
@@ -118,5 +86,37 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
                 context.ReportDiagnostic(Diagnostic.Create(Rule, Location.Create(context.Tree, new TextSpan(start: 0, length: 0)), messageArgs: messageArguments));
             }
         }
+    }
+
+    private static ImmutableDictionary<string, string> ReadRequiredOptions()
+    {
+        using Stream configurationStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
+            ?? throw new InvalidOperationException(message: "The embedded analyzer policy is missing.");
+
+        using StreamReader reader = new(configurationStream);
+
+        ImmutableDictionary<string, string>.Builder options = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
+        string? line;
+
+        while ((line = reader.ReadLine()) is not null)
+        {
+            string trimmedLine = line.Trim();
+
+            if (trimmedLine.Length == 0 || trimmedLine.StartsWith(value: "#", StringComparison.Ordinal))
+                continue;
+
+            int separatorIndex = trimmedLine.IndexOf(value: '=');
+
+            if (separatorIndex < 0)
+                continue;
+
+            string key = trimmedLine.Substring(startIndex: 0, length: separatorIndex).Trim();
+            string value = trimmedLine.Substring(separatorIndex + 1).Trim();
+
+            if (key is not "is_global" and not "global_level" && value.Length > 0)
+                options[key] = value;
+        }
+
+        return options.ToImmutable();
     }
 }

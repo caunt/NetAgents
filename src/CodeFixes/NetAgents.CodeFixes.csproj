@@ -8,8 +8,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
     <ProjectReference Include="../BuildTasks/NetAgents.BuildTasks.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" PrivateAssets="all" />
+    <Compile Include="../Ordering/MemberOrdering.cs" Link="Ordering/MemberOrdering.cs" />
     <Compile Include="../Formatting/LayoutLimits.cs" Link="Formatting/LayoutLimits.cs" />
     <Compile Include="../Formatting/ArgumentLayout.cs" Link="Formatting/ArgumentLayout.cs" />
+    <Compile Include="../Formatting/DeclarationSpacing.cs" Link="Formatting/DeclarationSpacing.cs" />
+    <Compile Include="../Formatting/MethodSpacing.cs" Link="Formatting/MethodSpacing.cs" />
     <Compile Include="../Formatting/StatementSpacing.cs" Link="Formatting/StatementSpacing.cs" />
     <Compile Include="../Formatting/ControlFlowBraces.cs" Link="Formatting/ControlFlowBraces.cs" />
   </ItemGroup>

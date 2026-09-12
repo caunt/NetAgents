@@ -34,6 +34,8 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0018 | Allow at most 16 authored C# files directly in each directory per project. Organize larger directories into subdirectories with narrower responsibilities. |
 | NETAGENTS0019 | Require single-line conditions of at most 128 characters in `if`/`else if`, `while`, `do`, `for`, ternary expressions, catch filters, and switch `when` guards. Extract longer conditions into a separate variable declaration. |
 | NETAGENTS0020 | Keep argument and parameter lists on one line when their compact contents are at most 128 characters; otherwise put each item and the closing delimiter on separate lines. Includes an automatic fix and Fix All support. |
+| NETAGENTS0021 | Require a blank line between adjacent method declarations, including constructors, destructors, and operators. Includes an automatic fix and Fix All support. |
+| NETAGENTS0022 | Order type members by kind, visibility, const/static/instance, readonly, then ordinal name. Includes an automatic fix and Fix All support. |
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
@@ -149,3 +151,22 @@ represented in Roslyn operations; it is not an allocation profiler or an
 inspection of every lowered intermediate-language instruction. Framework
 signatures are not rewritten. Do not pass value types to an untyped framework
 API even if a particular implicit boxing path is outside static coverage.
+
+## Member separation and ordering
+
+Adjacent methods require at least one blank line, including expression-bodied and interface methods.
+Comments, XML documentation, and attributes stay attached to their declaration. Existing blank lines
+and newline styles are preserved. This rule does not add padding inside method bodies.
+
+Member ordering follows StyleCop's kind order: fields, constructors, finalizers, events, enums,
+interfaces, properties, indexers, operators, methods, structs, classes, and delegates. Records follow
+their class or struct kind. Within each kind, order by public, internal, protected internal,
+protected, private protected, then private; next by const, static, then instance; next readonly
+before writable; finally by case-sensitive ordinal name. Overloads with equal keys retain their
+relative order. Each partial declaration is ordered independently.
+
+Automatic sorting preserves the relative execution order of nonconstant field, event, and property
+initializers, taking precedence over the ordinary ordering keys. Storage members also retain their
+relative order in structs and types annotated with StructLayout. Types containing preprocessor
+directives are excluded from ordering so region, conditional compilation, nullable, and warning
+boundaries remain intact. Comments and attributes move with their member.

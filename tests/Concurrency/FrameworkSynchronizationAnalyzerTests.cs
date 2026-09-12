@@ -8,6 +8,21 @@ namespace NetAgents.Analyzers.Tests.Concurrency;
 /// </summary>
 public sealed class FrameworkSynchronizationAnalyzerTests
 {
+
+    /// <summary>
+    /// Verifies that atomic operations and asynchronous task composition remain available.
+    /// </summary>
+    [Fact]
+    public async Task AllowsAtomicsAndAsynchronousComposition()
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
+            new FrameworkSynchronizationAnalyzer(),
+            source: "public class ExampleType { private int count; public async System.Threading.Tasks.Task Execute() { System.Threading.Interlocked.Increment(ref count); await System.Threading.Tasks.Task.Delay(1); } }"
+        );
+
+        Assert.Empty(diagnostics);
+    }
+
     /// <summary>
     /// Verifies that aliases and static imports cannot bypass synchronization checks.
     /// </summary>
@@ -24,19 +39,5 @@ public sealed class FrameworkSynchronizationAnalyzerTests
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new FrameworkSynchronizationAnalyzer(), $"{imports} public class ExampleType {{ {memberSource} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == FrameworkSynchronizationAnalyzer.RuleIdentifier);
-    }
-
-    /// <summary>
-    /// Verifies that atomic operations and asynchronous task composition remain available.
-    /// </summary>
-    [Fact]
-    public async Task AllowsAtomicsAndAsynchronousComposition()
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new FrameworkSynchronizationAnalyzer(),
-            source: "public class ExampleType { private int count; public async System.Threading.Tasks.Task Execute() { System.Threading.Interlocked.Increment(ref count); await System.Threading.Tasks.Task.Delay(1); } }"
-        );
-
-        Assert.Empty(diagnostics);
     }
 }

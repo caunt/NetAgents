@@ -23,3 +23,5 @@ NETAGENTS0017 | Formatting | Error | Braces for multiline bodies and consistent 
 NETAGENTS0018 | Structure | Error | At most sixteen authored C# files directly in each directory per project
 NETAGENTS0019 | Formatting | Error | Single-line conditions of at most 128 characters
 NETAGENTS0020 | Formatting | Error | Single-line argument and parameter lists up to 128 characters, otherwise one item per line
+NETAGENTS0021 | Formatting | Error | Blank lines between adjacent method declarations
+NETAGENTS0022 | Ordering | Error | Order members by kind, visibility, storage, readonly modifier, and name

@@ -40,8 +40,14 @@ dotnet build -p:NetAgentsFormatOnBuild=false
 
 - **Conditions:** keep conditions on one line, with at most **128 characters**. Extract longer expressions into separate variables. Ternary conditions follow this rule; their `?` and `:` branches can span multiple lines.
 - **Arguments and parameters:** keep lists on one line when their normalized contents fit within **128 characters**, excluding the surrounding delimiters. Longer lists put each item and the closing delimiter on separate lines. This applies to calls and declarations, including constructors and records.
-- **Layout:** use consistent spacing, blank lines around control flow and multiline declarations, braces based on body layout, and a final newline.
+- **Layout:** use consistent spacing, blank lines between methods and around control flow and multiline declarations, braces based on body layout, and a final newline.
 - **Clarity:** name literal arguments and remove unused imports.
+
+## 🗂️ Member order
+
+Members are sorted by kind, visibility, const/static/instance, readonly, then name. Nested classes follow methods. Overloads with matching sorting keys retain their relative order.
+
+Sorting preserves initializer order and storage order in structs and types with explicit layout. Types containing preprocessor directives retain their member order.
 
 ## ✅ Code standards
 

@@ -18,6 +18,9 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
     [Required]
     public string ProjectPath { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets whether unsafe code is enabled.</summary>
+    public bool AllowUnsafe { get; set; }
+
     /// <summary>Gets or sets the compilation assembly name.</summary>
     [Required]
     public string AssemblyName { get; set; } = string.Empty;
@@ -30,9 +33,6 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
 
     /// <summary>Gets or sets the active conditional compilation symbols.</summary>
     public string DefineConstants { get; set; } = string.Empty;
-
-    /// <summary>Gets or sets whether unsafe code is enabled.</summary>
-    public bool AllowUnsafe { get; set; }
 
     /// <summary>Gets or sets the compilation output kind.</summary>
     public string OutputType { get; set; } = "Library";
@@ -60,6 +60,18 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
     public string SdkAssemblyDirectory { get; set; } = string.Empty;
 
     /// <inheritdoc />
+    public void Cancel()
+    {
+        _cancellation.Cancel();
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _cancellation.Dispose();
+    }
+
+    /// <inheritdoc />
     public override bool Execute()
     {
         using (_cancellation)
@@ -78,17 +90,6 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
                 return false;
             }
         }
-    }
-
-    /// <inheritdoc />
-    public void Cancel()
-    {
-        _cancellation.Cancel();
-    }
-    /// <inheritdoc />
-    public void Dispose()
-    {
-        _cancellation.Dispose();
     }
 
 }

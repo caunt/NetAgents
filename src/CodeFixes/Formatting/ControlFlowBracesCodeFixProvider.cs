@@ -54,37 +54,6 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
         return Task.CompletedTask;
     }
 
-    private static async Task<Document> FixBraces(Document document, ImmutableArray<Diagnostic> diagnostics, bool fixAll, CancellationToken cancellationToken)
-    {
-        ImmutableHashSet<TextSpan>? requestedSpans = [.. diagnostics.Select(static diagnostic => diagnostic.Location.SourceSpan)];
-        bool hasChanges = true;
-
-        while (hasChanges)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-
-            if (root is null)
-                return document;
-
-            SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-
-            SyntaxNode[] bodies = [.. ControlFlowBraces.GetChanges(root, source)
-                .Where(change => requestedSpans is null || requestedSpans.Contains(change.Key))
-                .Select(static change => change.Value)];
-
-            if (bodies.Length == 0)
-                return document;
-
-            document = await ApplyBraceChanges(document, source, bodies, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-            SourceText changedSource = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-            hasChanges = fixAll && !source.ContentEquals(changedSource);
-            requestedSpans = null;
-        }
-
-        return document;
-    }
-
     private static async Task<Document> ApplyBraceChanges(Document document, SourceText source, SyntaxNode[] bodies, CancellationToken cancellationToken)
     {
         List<TextChange> changes = [];
@@ -130,6 +99,37 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
 
         return await Formatter.FormatAsync(changedDocument, formattingSpans, options, cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    private static async Task<Document> FixBraces(Document document, ImmutableArray<Diagnostic> diagnostics, bool fixAll, CancellationToken cancellationToken)
+    {
+        ImmutableHashSet<TextSpan>? requestedSpans = [.. diagnostics.Select(static diagnostic => diagnostic.Location.SourceSpan)];
+        bool hasChanges = true;
+
+        while (hasChanges)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            if (root is null)
+                return document;
+
+            SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            SyntaxNode[] bodies = [.. ControlFlowBraces.GetChanges(root, source)
+                .Where(change => requestedSpans is null || requestedSpans.Contains(change.Key))
+                .Select(static change => change.Value)];
+
+            if (bodies.Length == 0)
+                return document;
+
+            document = await ApplyBraceChanges(document, source, bodies, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            SourceText changedSource = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            hasChanges = fixAll && !source.ContentEquals(changedSource);
+            requestedSpans = null;
+        }
+
+        return document;
     }
 
     private static TextChange InsertBrace(int position, string brace, SourceText source, string lineEnding)

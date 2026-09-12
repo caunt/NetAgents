@@ -12,64 +12,6 @@ namespace NetAgents.Analyzers.Tests.Policy;
 /// </summary>
 public sealed class SyntaxPolicyAnalyzerTests
 {
-    /// <summary>
-    /// Verifies that lock statements produce a diagnostic.
-    /// </summary>
-    [Fact]
-    public async Task RejectsLockStatements()
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new LockStatementAnalyzer(), source: "public class ExampleType { public void Execute() { lock (this) { } } }");
-
-        Assert.Equal(LockStatementAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-    }
-
-    /// <summary>
-    /// Verifies that a comment does not make an empty catch block meaningful.
-    /// </summary>
-    [Fact]
-    public async Task RejectsCommentOnlyCatchBlocks()
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { /* ignored */ } } }");
-
-        Assert.Equal(EmptyCatchBlockAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-    }
-
-    /// <summary>
-    /// Verifies that rethrowing a caught exception is permitted.
-    /// </summary>
-    [Fact]
-    public async Task AllowsRethrowingCaughtExceptions()
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { throw; } } }");
-
-        Assert.Empty(diagnostics);
-    }
-
-    /// <summary>
-    /// Verifies that null-forgiving operators produce a diagnostic.
-    /// </summary>
-    [Fact]
-    public async Task RejectsNullForgivingOperators()
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new NullForgivingOperatorAnalyzer(), source: "public class ExampleType { public string Value => null!; }");
-
-        Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-    }
-
-    /// <summary>
-    /// Verifies that loops without a terminating condition are rejected.
-    /// </summary>
-    /// <param name="loop">The unconditional loop to analyze.</param>
-    [Theory]
-    [InlineData("while (true) { break; }")]
-    [InlineData("for (;;) { break; }")]
-    [InlineData("do { break; } while (true);")]
-    public async Task RejectsUnconditionalLoops(string loop)
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UnconditionalLoopAnalyzer(), $"public class ExampleType {{ public void Execute() {{ {loop} }} }}");
-
-        Assert.Equal(UnconditionalLoopAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-    }
 
     /// <summary>
     /// Verifies that cancellation provides an accepted loop condition.
@@ -86,25 +28,14 @@ public sealed class SyntaxPolicyAnalyzerTests
     }
 
     /// <summary>
-    /// Verifies the authored source file length limit.
+    /// Verifies that rethrowing a caught exception is permitted.
     /// </summary>
     [Fact]
-    public async Task RejectsOversizedSourceFiles()
+    public async Task AllowsRethrowingCaughtExceptions()
     {
-        string source = "public class ExampleType { }" + new string(c: '\n', count: 999);
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileLengthAnalyzer(), source);
-        Assert.Equal(SourceFileLengthAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-    }
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { throw; } } }");
 
-    /// <summary>
-    /// Verifies that a type cannot duplicate its containing namespace name.
-    /// </summary>
-    [Fact]
-    public async Task RejectsNamespaceContainmentCollisions()
-    {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TypeContainmentNameAnalyzer(), source: "namespace ExampleType { public class ExampleType { } }");
-
-        Assert.Equal(TypeContainmentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+        Assert.Empty(diagnostics);
     }
 
     /// <summary>
@@ -120,5 +51,75 @@ public sealed class SyntaxPolicyAnalyzerTests
         );
 
         Assert.Empty(diagnostics);
+    }
+
+    /// <summary>
+    /// Verifies that a comment does not make an empty catch block meaningful.
+    /// </summary>
+    [Fact]
+    public async Task RejectsCommentOnlyCatchBlocks()
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { /* ignored */ } } }");
+
+        Assert.Equal(EmptyCatchBlockAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
+    /// Verifies that lock statements produce a diagnostic.
+    /// </summary>
+    [Fact]
+    public async Task RejectsLockStatements()
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new LockStatementAnalyzer(), source: "public class ExampleType { public void Execute() { lock (this) { } } }");
+
+        Assert.Equal(LockStatementAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
+    /// Verifies that a type cannot duplicate its containing namespace name.
+    /// </summary>
+    [Fact]
+    public async Task RejectsNamespaceContainmentCollisions()
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TypeContainmentNameAnalyzer(), source: "namespace ExampleType { public class ExampleType { } }");
+
+        Assert.Equal(TypeContainmentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
+    /// Verifies that null-forgiving operators produce a diagnostic.
+    /// </summary>
+    [Fact]
+    public async Task RejectsNullForgivingOperators()
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new NullForgivingOperatorAnalyzer(), source: "public class ExampleType { public string Value => null!; }");
+
+        Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
+    /// Verifies the authored source file length limit.
+    /// </summary>
+    [Fact]
+    public async Task RejectsOversizedSourceFiles()
+    {
+        string source = "public class ExampleType { }" + new string(c: '\n', count: 999);
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileLengthAnalyzer(), source);
+        Assert.Equal(SourceFileLengthAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
+    /// Verifies that loops without a terminating condition are rejected.
+    /// </summary>
+    /// <param name="loop">The unconditional loop to analyze.</param>
+    [Theory]
+    [InlineData("while (true) { break; }")]
+    [InlineData("for (;;) { break; }")]
+    [InlineData("do { break; } while (true);")]
+    public async Task RejectsUnconditionalLoops(string loop)
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UnconditionalLoopAnalyzer(), $"public class ExampleType {{ public void Execute() {{ {loop} }} }}");
+
+        Assert.Equal(UnconditionalLoopAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
 }

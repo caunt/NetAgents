@@ -50,14 +50,6 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
         );
     }
 
-    private static void CollectFile(SyntaxTreeAnalysisContext context, ConcurrentDictionary<string, SyntaxTree> files)
-    {
-        if (context.IsGeneratedCode || !context.Tree.FilePath.EndsWith(value: ".cs", StringComparison.OrdinalIgnoreCase))
-            return;
-
-        files[context.Tree.FilePath.Replace(oldChar: '\\', newChar: '/')] = context.Tree;
-    }
-
     private static void AnalyzeDirectories(CompilationAnalysisContext context, ConcurrentDictionary<string, SyntaxTree> files, StringComparer pathComparer)
     {
         foreach (IGrouping<string, KeyValuePair<string, SyntaxTree>> directory in files.GroupBy(static file => Path.GetDirectoryName(file.Key) is { Length: > 0 } name ? name : ".", pathComparer))
@@ -80,5 +72,13 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
                 )
             );
         }
+    }
+
+    private static void CollectFile(SyntaxTreeAnalysisContext context, ConcurrentDictionary<string, SyntaxTree> files)
+    {
+        if (context.IsGeneratedCode || !context.Tree.FilePath.EndsWith(value: ".cs", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        files[context.Tree.FilePath.Replace(oldChar: '\\', newChar: '/')] = context.Tree;
     }
 }
