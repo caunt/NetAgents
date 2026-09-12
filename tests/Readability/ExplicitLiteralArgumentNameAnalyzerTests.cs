@@ -10,6 +10,28 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
 {
 
     /// <summary>
+    /// Verifies member-access arguments do not require parameter names.
+    /// </summary>
+    /// <param name="arguments">The named or positional coordinate arguments.</param>
+    [Theory]
+    [InlineData("boy.StateTargetCoordinate.First, boy.StateTargetCoordinate.Second")]
+    [InlineData("horizontalCoordinate: boy.StateTargetCoordinate.First, verticalCoordinate: boy.StateTargetCoordinate.Second")]
+    public async Task AllowsMemberAccessArguments(string arguments)
+    {
+        string source = $$"""
+            class ExampleType
+            {
+                ExampleType GameObject => this;
+                (int First, int Second) StateTargetCoordinate => (1, 2);
+                void Execute(ExampleType boy) => boy.GameObject.MoveTo({{arguments}});
+                void MoveTo(int horizontalCoordinate, int verticalCoordinate) { }
+            }
+            """;
+
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), source));
+    }
+
+    /// <summary>
     /// Verifies that explicitly named literal arguments are accepted.
     /// </summary>
     [Fact]
