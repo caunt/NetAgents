@@ -15,6 +15,24 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// <summary>Checks formatter progress with unresolved compiler diagnostics.</summary>
 public sealed class CodeFixRunnerTests
 {
+
+    /// <summary>Still applies valid automatic fixes to compiler errors.</summary>
+    [Theory]
+    [InlineData("valid")]
+    [InlineData("noop")]
+    public async Task PreservesValidCompilerFix(string firstAction)
+    {
+        using AdhocWorkspace workspace = new();
+
+        CompilerFix provider = new(mode: "valid");
+        CodeFixProvider[] providers = firstAction == "noop" ? [new CompilerFix(mode: "noop"), provider] : [provider];
+        Project result = await CodeFixRunner.Fix(CreateProject(workspace), [new MethodSpacingAnalyzer()], providers, CancellationToken.None);
+        Compilation? compilation = await result.GetCompilationAsync();
+        Assert.NotNull(compilation);
+        Assert.DoesNotContain(compilation.GetDiagnostics().ToArray(), static diagnostic => diagnostic.Id == "CS0122");
+        Assert.Equal(expected: 1, provider.Attempts);
+    }
+
     /// <summary>Reports stalled actions without exhausting the pass limit.</summary>
     [Theory]
     [InlineData("noop")]
@@ -23,40 +41,29 @@ public sealed class CodeFixRunnerTests
     public async Task ReportsStalledCompilerFix(string mode)
     {
         using AdhocWorkspace workspace = new();
+
         Project project = CreateProject(workspace);
         CompilerFix provider = new(mode);
-        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => CodeFixRunner.Fix(project, [new MethodSpacingAnalyzer()], [provider], CancellationToken.None));
 
-        Assert.Contains("CS0122", exception.Message, StringComparison.Ordinal);
-        Assert.Matches(@"Example\.cs\([1-9][0-9]*,[1-9][0-9]*\): error CS0122", exception.Message);
-        Assert.Contains("Attempt accessibility repair", exception.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("64 fix passes", exception.Message, StringComparison.Ordinal);
-        Assert.InRange(provider.Attempts, 1, 3);
-    }
+        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => CodeFixRunner.Fix(project, [new MethodSpacingAnalyzer()], [provider], CancellationToken.None));
 
-    /// <summary>Still applies valid automatic fixes to compiler errors.</summary>
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task PreservesValidCompilerFix(bool tryNoopFirst)
-    {
-        using AdhocWorkspace workspace = new();
-        CompilerFix provider = new("valid");
-        CodeFixProvider[] providers = tryNoopFirst ? [new CompilerFix("noop"), provider] : [provider];
-        Project result = await CodeFixRunner.Fix(CreateProject(workspace), [new MethodSpacingAnalyzer()], providers, CancellationToken.None);
-        Compilation? compilation = await result.GetCompilationAsync();
-        Assert.NotNull(compilation);
-        Assert.DoesNotContain(compilation.GetDiagnostics(), diagnostic => diagnostic.Id == "CS0122");
-        Assert.Equal(1, provider.Attempts);
+        Assert.Contains(expectedSubstring: "CS0122", exception.Message, StringComparison.Ordinal);
+        Assert.Matches(expectedRegexPattern: @"Example\.cs\([1-9][0-9]*,[1-9][0-9]*\): error CS0122", exception.Message);
+        Assert.Contains(expectedSubstring: "Attempt accessibility repair", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(expectedSubstring: "64 fix passes", exception.Message, StringComparison.Ordinal);
+        Assert.InRange(provider.Attempts, low: 1, high: 3);
     }
 
     private static Project CreateProject(AdhocWorkspace workspace)
     {
-        return workspace.AddProject("Progress", LanguageNames.CSharp)
+        return workspace.AddProject(name: "Progress", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument("Example.cs", SourceText.From("class Hidden { private static int Value; } class Consumer { int Read() => Hidden.Value; }"), filePath: "Example.cs").Project;
+            .AddDocument(
+                name: "Example.cs",
+                SourceText.From(text: "class Hidden { private static int Value; } class Consumer { int Read() => Hidden.Value; }"),
+                filePath: "Example.cs"
+            ).Project;
     }
 
     private sealed class CompilerFix(string mode) : CodeFixProvider
@@ -68,22 +75,30 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
-            context.RegisterCodeFix(CodeAction.Create("Attempt accessibility repair", async cancellationToken =>
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    title: "Attempt accessibility repair",
+                    async cancellationToken =>
             {
-                SourceText text = await context.Document.GetTextAsync(cancellationToken);
+                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
                 string source = text.ToString();
+
                 string changed = mode switch
                 {
-                    "valid" => source.Replace("private", "public", StringComparison.Ordinal),
-                    "whitespace" => source.Replace("class Hidden", "class  Hidden", StringComparison.Ordinal),
-                    "cycle" => source.Contains("class Consumer", StringComparison.Ordinal)
-                        ? source.Replace("class Consumer", "class Alternate", StringComparison.Ordinal)
-                        : source.Replace("class Alternate", "class Consumer", StringComparison.Ordinal),
+                    "valid" => source.Replace(oldValue: "private", newValue: "public", StringComparison.Ordinal),
+                    "whitespace" => source.Replace(oldValue: "class Hidden", newValue: "class  Hidden", StringComparison.Ordinal),
+                    "cycle" => source.Contains(value: "class Consumer", StringComparison.Ordinal)
+                        ? source.Replace(oldValue: "class Consumer", newValue: "class Alternate", StringComparison.Ordinal)
+                        : source.Replace(oldValue: "class Alternate", newValue: "class Consumer", StringComparison.Ordinal),
                     _ => source,
                 };
 
                 return context.Document.WithText(SourceText.From(changed));
-            }), context.Diagnostics);
+            }
+                ),
+                context.Diagnostics
+            );
+
             return Task.CompletedTask;
         }
     }

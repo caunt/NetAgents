@@ -50,29 +50,24 @@ internal static class CodeFixRunner
             foreach (Document document in project.Documents)
             {
                 SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-                state.Append(document.Id).Append(':').Append(text.Length).Append(':').Append(text);
+                state = state.Append(document.Id).Append(value: ':').Append(text.Length).Append(value: ':').Append(text);
             }
 
             string fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(state.ToString())));
 
             if (!states.Add(fingerprint))
-                throw Failure("repeated a project state without stabilizing", attempt, diagnostics);
+                throw Failure(reason: "repeated a project state without stabilizing", attempt, diagnostics);
 
             (Project? fixedProject, string? attemptedAction) = await ApplyAvailableFix(project, diagnostics, providers, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             attempt = attemptedAction;
 
             if (fixedProject is null)
-            {
-                if (attempt is not null)
-                    throw Failure("made no progress", attempt, diagnostics);
-
-                return project;
-            }
+                return attempt is not null ? throw Failure(reason: "made no progress", attempt, diagnostics) : project;
 
             project = fixedProject;
         }
 
-        throw Failure("did not stabilize after 64 fix passes", attempt, diagnostics);
+        throw Failure(reason: "did not stabilize after 64 fix passes", attempt, diagnostics);
     }
 
     private static async Task<(Project? Project, string? Attempt)> ApplyAvailableFix(
@@ -164,8 +159,13 @@ internal static class CodeFixRunner
 
     private static InvalidOperationException Failure(string reason, string? attempt, ImmutableArray<Diagnostic> diagnostics)
     {
-        string errors = string.Join(Environment.NewLine, diagnostics.Where(static diagnostic =>
-            diagnostic.Severity == DiagnosticSeverity.Error && diagnostic.Id.StartsWith("CS", StringComparison.Ordinal)));
+        string errors = string.Join(
+            Environment.NewLine,
+            diagnostics.Where(
+                static diagnostic =>
+            diagnostic.Severity == DiagnosticSeverity.Error && diagnostic.Id.StartsWith(value: "CS", StringComparison.Ordinal)
+            )
+        );
 
         return new InvalidOperationException($"Automatic formatting {reason}. Attempted code action: {attempt}{Environment.NewLine}{errors}");
     }
