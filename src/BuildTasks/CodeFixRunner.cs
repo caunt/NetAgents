@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using System.Security.Cryptography;
+using System.Text;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
@@ -28,6 +30,10 @@ internal static class CodeFixRunner
                 editable = editable.Add(document.Id);
         }
 
+        HashSet<string> states = [];
+        string? attempt = null;
+        ImmutableArray<Diagnostic> diagnostics = [];
+
         for (int pass = 0; pass < 64; pass++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -36,21 +42,40 @@ internal static class CodeFixRunner
             Compilation compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
                 ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
-            ImmutableArray<Diagnostic> diagnostics = await compilation.WithAnalyzers(analyzers, project.AnalyzerOptions)
+            diagnostics = await compilation.WithAnalyzers(analyzers, project.AnalyzerOptions)
                 .GetAllDiagnosticsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            Project? fixedProject = await ApplyAvailableFix(project, diagnostics, providers, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            StringBuilder state = new();
+
+            foreach (Document document in project.Documents)
+            {
+                SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                state.Append(document.Id).Append(':').Append(text.Length).Append(':').Append(text);
+            }
+
+            string fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(state.ToString())));
+
+            if (!states.Add(fingerprint))
+                throw Failure("repeated a project state without stabilizing", attempt, diagnostics);
+
+            (Project? fixedProject, string? attemptedAction) = await ApplyAvailableFix(project, diagnostics, providers, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            attempt = attemptedAction;
 
             if (fixedProject is null)
+            {
+                if (attempt is not null)
+                    throw Failure("made no progress", attempt, diagnostics);
+
                 return project;
+            }
 
             project = fixedProject;
         }
 
-        throw new InvalidOperationException(message: "Automatic formatting did not stabilize after 64 fix passes. Resolve conflicting code fixes before rebuilding.");
+        throw Failure("did not stabilize after 64 fix passes", attempt, diagnostics);
     }
 
-    private static async Task<Project?> ApplyAvailableFix(
+    private static async Task<(Project? Project, string? Attempt)> ApplyAvailableFix(
         Project project,
         ImmutableArray<Diagnostic> diagnostics,
         CodeFixProvider[] providers,
@@ -58,6 +83,8 @@ internal static class CodeFixRunner
         CancellationToken cancellationToken
     )
     {
+        string? attempt = null;
+
         foreach (Diagnostic diagnostic in diagnostics.ToArray().OrderBy(static diagnostic => diagnostic.Id, StringComparer.Ordinal))
         {
             Document? document = diagnostic.Location.SourceTree is null ? null : project.GetDocument(diagnostic.Location.SourceTree);
@@ -116,6 +143,8 @@ internal static class CodeFixRunner
                     if (!supported)
                         continue;
 
+                    attempt = $"{diagnostic} — code action '{selected.Title}'";
+
                     foreach (DocumentId identifier in changedDocuments)
                     {
                         Document beforeDocument = project.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The original document is missing.");
@@ -124,13 +153,21 @@ internal static class CodeFixRunner
                         SourceText after = await afterDocument.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
                         if (!before.ContentEquals(after))
-                            return updated;
+                            return (updated, attempt);
                     }
                 }
             }
         }
 
-        return null;
+        return (null, attempt);
+    }
+
+    private static InvalidOperationException Failure(string reason, string? attempt, ImmutableArray<Diagnostic> diagnostics)
+    {
+        string errors = string.Join(Environment.NewLine, diagnostics.Where(static diagnostic =>
+            diagnostic.Severity == DiagnosticSeverity.Error && diagnostic.Id.StartsWith("CS", StringComparison.Ordinal)));
+
+        return new InvalidOperationException($"Automatic formatting {reason}. Attempted code action: {attempt}{Environment.NewLine}{errors}");
     }
 
     private static async Task<Project> FormatWhitespace(Project project, ImmutableHashSet<DocumentId> editable, CancellationToken cancellationToken)

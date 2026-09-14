@@ -9,6 +9,8 @@
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
     <ProjectReference Include="../src/NetAgents.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
     <ProjectReference Include="../src/CodeFixes/NetAgents.CodeFixes.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+    <Compile Include="../src/BuildTasks/CodeFixRunner.cs" Link="Infrastructure/CodeFixRunner.cs" />
+    <Compile Include="../src/BuildTasks/BuildDiagnostics.cs" Link="Infrastructure/BuildDiagnostics.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>
