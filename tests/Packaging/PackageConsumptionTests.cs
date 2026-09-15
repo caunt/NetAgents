@@ -470,6 +470,9 @@ public sealed class PackageConsumptionTests
             RedirectStandardError = true,
         };
 
+        // Reused MSBuild workers retain redirected pipes after the command exits.
+        process.StartInfo.Environment[key: "MSBUILDDISABLENODEREUSE"] = "1";
+
         foreach (string argument in arguments)
             process.StartInfo.ArgumentList.Add(argument);
 
