@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -63,6 +64,21 @@ internal static class CodeFixRunner
 
             if (fixedProject is null)
                 return attempt is not null ? throw Failure(reason: "made no progress", attempt, diagnostics) : project;
+
+            Compilation candidate = await fixedProject.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+                ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
+
+            Dictionary<(string Identifier, string Message, string Path), int> existingErrors = compilation.GetDiagnostics(cancellationToken)
+                .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+                .CountBy(ErrorKey).ToDictionary();
+
+            ImmutableArray<Diagnostic> introducedErrors = [.. candidate.GetDiagnostics(cancellationToken)
+                .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+                .GroupBy(ErrorKey)
+                .SelectMany(group => group.Skip(existingErrors.GetValueOrDefault(group.Key)))];
+
+            if (!introducedErrors.IsEmpty)
+                throw Failure(reason: "introduced compiler errors", attempt, introducedErrors);
 
             project = fixedProject;
         }
@@ -155,6 +171,11 @@ internal static class CodeFixRunner
         }
 
         return (null, attempt);
+    }
+
+    private static (string Identifier, string Message, string Path) ErrorKey(Diagnostic diagnostic)
+    {
+        return (diagnostic.Id, diagnostic.GetMessage(CultureInfo.InvariantCulture), diagnostic.Location.SourceTree?.FilePath ?? string.Empty);
     }
 
     private static InvalidOperationException Failure(string reason, string? attempt, ImmutableArray<Diagnostic> diagnostics)

@@ -16,6 +16,25 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 public sealed class CodeFixRunnerTests
 {
 
+    /// <summary>Allows existing compiler errors to move when a fix changes preceding text.</summary>
+    [Fact]
+    public async Task PreservesMovedCompilerError()
+    {
+        using AdhocWorkspace workspace = new();
+
+        Project project = CreateProject(workspace);
+        project = project.Documents.Single().WithText(SourceText.From(text: "class Example { void Run() { int marker = 0; Missing(); } }")).Project;
+        ReplacementFix provider = new(source: "class Example { void Run() { Missing(); } }");
+
+        Project result = await CodeFixRunner.Fix(project, [], [provider], CancellationToken.None);
+        Compilation? compilation = await result.GetCompilationAsync();
+
+        Assert.NotNull(compilation);
+        Diagnostic error = Assert.Single(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        Assert.Equal(expected: "CS0103", error.Id);
+        Assert.Equal(expected: 1, provider.Attempts);
+    }
+
     /// <summary>Still applies valid automatic fixes to compiler errors.</summary>
     [Theory]
     [InlineData("valid")]
@@ -31,6 +50,30 @@ public sealed class CodeFixRunnerTests
         Assert.NotNull(compilation);
         Assert.DoesNotContain(compilation.GetDiagnostics().ToArray(), static diagnostic => diagnostic.Id == "CS0122");
         Assert.Equal(expected: 1, provider.Attempts);
+    }
+
+    /// <summary>Rejects new compiler errors before accepting an automatic fix.</summary>
+    [Theory]
+    [InlineData("", "0 = 1;", "CS0131")]
+    [InlineData("Missing();", "0 = 1;", "CS0131")]
+    [InlineData("Missing();", "Missing(); Missing();", "CS0103")]
+    public async Task RejectsCompilerBreakingFix(string before, string after, string diagnosticIdentifier)
+    {
+        using AdhocWorkspace workspace = new();
+
+        Project project = CreateProject(workspace);
+        Document document = project.Documents.Single();
+        string source = $"class Example {{ void Run() {{ int marker = 0; {before} }} }}";
+        project = document.WithText(SourceText.From(source)).Project;
+        ReplacementFix provider = new($"class Example {{ void Run() {{ {after} }} }}");
+
+        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => CodeFixRunner.Fix(project, [], [provider], CancellationToken.None));
+
+        Assert.Contains(expectedSubstring: "introduced compiler errors", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "Replace method body", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(diagnosticIdentifier, exception.Message, StringComparison.Ordinal);
+        Assert.Equal(expected: 1, provider.Attempts);
+        Assert.Equal(source, (await project.Documents.Single().GetTextAsync()).ToString());
     }
 
     /// <summary>Reports stalled actions without exhausting the pass limit.</summary>
@@ -96,6 +139,24 @@ public sealed class CodeFixRunnerTests
                 return context.Document.WithText(SourceText.From(changed));
             }
                 ),
+                context.Diagnostics
+            );
+
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class ReplacementFix(string source) : CodeFixProvider
+    {
+        public int Attempts { get; private set; }
+
+        public override ImmutableArray<string> FixableDiagnosticIds => ["CS0219"];
+
+        public override Task RegisterCodeFixesAsync(CodeFixContext context)
+        {
+            Attempts++;
+            context.RegisterCodeFix(
+                CodeAction.Create(title: "Replace method body", cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
                 context.Diagnostics
             );
 
