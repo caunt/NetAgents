@@ -93,7 +93,7 @@ public sealed class CodeFixRunnerTests
         Assert.Contains(expectedSubstring: "CS0122", exception.Message, StringComparison.Ordinal);
         Assert.Matches(expectedRegexPattern: @"Example\.cs\([1-9][0-9]*,[1-9][0-9]*\): error CS0122", exception.Message);
         Assert.Contains(expectedSubstring: "Attempt accessibility repair", exception.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain(expectedSubstring: "64 fix passes", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(expectedSubstring: "fix passes", exception.Message, StringComparison.Ordinal);
         Assert.InRange(provider.Attempts, low: 1, high: 3);
     }
 

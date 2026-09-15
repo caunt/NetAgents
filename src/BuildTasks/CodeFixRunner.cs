@@ -37,7 +37,7 @@ internal static class CodeFixRunner
         string? attempt = null;
         ImmutableArray<Diagnostic> diagnostics = [];
 
-        for (int pass = 0; pass < 64; pass++)
+        while (!cancellationToken.IsCancellationRequested)
         {
             cancellationToken.ThrowIfCancellationRequested();
             project = await FormatWhitespace(project, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -61,7 +61,8 @@ internal static class CodeFixRunner
             if (!states.Add(fingerprint))
                 throw Failure(reason: "repeated a project state without stabilizing", attempt, diagnostics);
 
-            (Project? fixedProject, string? attemptedAction) = await ApplyAvailableFix(project, diagnostics, providers, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            (Project? fixedProject, string? attemptedAction) = await ApplyAvailableFix(project, diagnostics, analyzers, providers, editable, cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
             attempt = attemptedAction;
 
             if (fixedProject is null)
@@ -93,18 +94,22 @@ internal static class CodeFixRunner
             project = fixedProject;
         }
 
-        throw Failure(reason: "did not stabilize after 64 fix passes", attempt, diagnostics);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        throw new InvalidOperationException(message: "The formatting operation ended without completing.");
     }
 
     private static async Task<(Project? Project, string? Attempt)> ApplyAvailableFix(
         Project project,
         ImmutableArray<Diagnostic> diagnostics,
+        ImmutableArray<DiagnosticAnalyzer> analyzers,
         CodeFixProvider[] providers,
         ImmutableHashSet<DocumentId> editable,
         CancellationToken cancellationToken
     )
     {
         string? attempt = null;
+        HashSet<string> rejectedFixAllActions = [];
         (Project? collisionProject, string? collisionAttempt) = await AvoidNamingCollisions(project, diagnostics, editable, cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -138,6 +143,13 @@ internal static class CodeFixRunner
                     bool canFixProject = fixAllProvider is not null && selected.EquivalenceKey is not null
                         && fixAllProvider.GetSupportedFixAllScopes().Contains(FixAllScope.Project);
 
+                    string? fixAllKey = canFixProject
+                        ? $"{provider.GetType().FullName}|{selected.EquivalenceKey}"
+                        : null;
+
+                    if (fixAllKey is not null && rejectedFixAllActions.Contains(fixAllKey))
+                        continue;
+
                     if (canFixProject && fixAllProvider is not null)
                     {
                         FixAllContext context = new(
@@ -170,6 +182,26 @@ internal static class CodeFixRunner
                         continue;
 
                     attempt = $"{diagnostic} — code action '{selected.Title}'";
+                    updated = await ReparseChangedDocuments(project, updated, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                    ImmutableArray<Diagnostic> introducedCompilerErrors = await GetIntroducedErrors(updated, diagnostics, analyzers, compilerOnly: true, cancellationToken)
+                        .ConfigureAwait(continueOnCapturedContext: false);
+
+                    if (!introducedCompilerErrors.IsEmpty)
+                        throw Failure(reason: "introduced compiler errors", attempt, introducedCompilerErrors);
+
+                    ImmutableArray<Diagnostic> introducedErrors = diagnostic.Severity == DiagnosticSeverity.Error
+                        ? []
+                        : await GetIntroducedErrors(updated, diagnostics, analyzers, compilerOnly: false, cancellationToken)
+                            .ConfigureAwait(continueOnCapturedContext: false);
+
+                    if (!introducedErrors.IsEmpty)
+                    {
+                        if (fixAllKey is not null && !rejectedFixAllActions.Add(fixAllKey))
+                            throw new InvalidOperationException(message: "The rejected formatting action was already recorded.");
+
+                        continue;
+                    }
 
                     foreach (DocumentId identifier in changedDocuments)
                     {
@@ -185,7 +217,9 @@ internal static class CodeFixRunner
             }
         }
 
-        return (null, attempt);
+        return diagnostics.Any(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            ? (null, attempt)
+            : (null, null);
     }
 
     private static async Task<Project?> AvoidNamingCollision(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
@@ -307,5 +341,43 @@ internal static class CodeFixRunner
         }
 
         return project;
+    }
+
+    private static async Task<ImmutableArray<Diagnostic>> GetIntroducedErrors(
+        Project after,
+        ImmutableArray<Diagnostic> beforeDiagnostics,
+        ImmutableArray<DiagnosticAnalyzer> analyzers,
+        bool compilerOnly,
+        CancellationToken cancellationToken
+    )
+    {
+        Compilation compilation = await after.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+            ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
+
+        ImmutableArray<Diagnostic> afterDiagnostics = await compilation.WithAnalyzers(analyzers, after.AnalyzerOptions)
+            .GetAllDiagnosticsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+        Dictionary<(string Identifier, string Message, string Path), int> existingErrors = beforeDiagnostics
+            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            .CountBy(ErrorKey).ToDictionary();
+
+        return [.. afterDiagnostics
+            .Where(
+                diagnostic => diagnostic.Severity == DiagnosticSeverity.Error && (!compilerOnly || diagnostic.Id.StartsWith(value: "CS", StringComparison.Ordinal))
+            )
+            .GroupBy(ErrorKey)
+            .SelectMany(group => group.Skip(existingErrors.GetValueOrDefault(group.Key)))];
+    }
+
+    private static async Task<Project> ReparseChangedDocuments(Project before, Project after, CancellationToken cancellationToken)
+    {
+        foreach (DocumentId identifier in after.GetChanges(before).GetChangedDocuments())
+        {
+            Document document = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
+            SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            after = document.WithText(SourceText.From(text.ToString(), text.Encoding, text.ChecksumAlgorithm)).Project;
+        }
+
+        return after;
     }
 }

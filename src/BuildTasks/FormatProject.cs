@@ -78,7 +78,6 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
         {
             try
             {
-                _cancellation.CancelAfter(TimeSpan.FromMinutes(minutes: 5));
                 AsyncContext.Run(() => ProjectFormatter.Format(this, _cancellation.Token));
 
                 return true;

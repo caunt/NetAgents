@@ -135,6 +135,15 @@ public sealed class PackageConsumptionTests
             Assert.Equal(simplifiedAssignments, await File.ReadAllTextAsync(sourcePath));
 
             const string tupleMethod = """
+                    private static (int X, int Y) ResolveCoordinates() => (1, 2);
+
+                    private static int SubtractCoordinates()
+                    {
+                        var firstPosition = ResolveCoordinates();
+                        var secondPosition = ResolveCoordinates();
+                        return firstPosition.X - secondPosition.X + firstPosition.Y - secondPosition.Y;
+                    }
+
                     /// <summary>Resolves habitat bounds.</summary>
                     /// <param name="recipientName">The habitat name.</param>
                     /// <returns>The habitat and its dimensions.</returns>
@@ -153,16 +162,24 @@ public sealed class PackageConsumptionTests
                 )
                 .Replace(
                     oldValue: "return recipientName;",
-                    newValue: "System.ArgumentNullException.ThrowIfNull(recipientName);\nvar bounds = Resolve(recipientName);\nvar habitat = bounds.Habitat;\nvar width = bounds.Width;\nvar height = bounds.Height;\nvar habitatValue = string.Empty;\nreturn string.Concat(habitat, habitatValue, new string(c: ' ', width + height));",
+                    newValue: "System.ArgumentNullException.ThrowIfNull(recipientName);\nvar bounds = Resolve(recipientName);\nvar habitat = bounds.Habitat;\nvar width = bounds.Width;\nvar height = bounds.Height;\nvar habitatValue = string.Empty;\nvar coordinateOffset = SubtractCoordinates();\nreturn string.Concat(habitat, habitatValue, new string(c: ' ', width + height + coordinateOffset));",
                     StringComparison.Ordinal
                 );
 
             await File.WriteAllTextAsync(sourcePath, tupleSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             string renamedTuple = await File.ReadAllTextAsync(sourcePath);
-            Assert.Contains(expectedSubstring: "string habitat = habitatValueValue;", renamedTuple, StringComparison.Ordinal);
-            Assert.Contains(expectedSubstring: "int width = widthValue;", renamedTuple, StringComparison.Ordinal);
-            Assert.Contains(expectedSubstring: "int height = heightValue;", renamedTuple, StringComparison.Ordinal);
+            Assert.Contains(
+                expectedSubstring: "(string Habitat, int Width, int Height) bounds = Resolve(recipientName);",
+                renamedTuple,
+                StringComparison.Ordinal
+            );
+            Assert.Contains(expectedSubstring: "string habitat = bounds.Habitat;", renamedTuple, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "int width = bounds.Width;", renamedTuple, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "int height = bounds.Height;", renamedTuple, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "(int X, int Y) firstPosition = ResolveCoordinates();", renamedTuple, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "(int X, int Y) secondPosition = ResolveCoordinates();", renamedTuple, StringComparison.Ordinal);
+            Assert.DoesNotContain(expectedSubstring: "(int x, int y)", renamedTuple, StringComparison.Ordinal);
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             Assert.Equal(renamedTuple, await File.ReadAllTextAsync(sourcePath));
 
