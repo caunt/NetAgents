@@ -6,8 +6,10 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Formatting;
+using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.Text;
 
 namespace NetAgents.BuildTasks;
@@ -65,6 +67,14 @@ internal static class CodeFixRunner
             if (fixedProject is null)
                 return attempt is not null ? throw Failure(reason: "made no progress", attempt, diagnostics) : project;
 
+            // Synthetic code-action trees can bind differently from their emitted C# source.
+            foreach (DocumentId identifier in fixedProject.GetChanges(project).GetChangedDocuments())
+            {
+                Document document = fixedProject.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
+                SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                fixedProject = document.WithText(SourceText.From(text.ToString(), text.Encoding, text.ChecksumAlgorithm)).Project;
+            }
+
             Compilation candidate = await fixedProject.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
                 ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
@@ -105,6 +115,14 @@ internal static class CodeFixRunner
 
             if (!canFix || document is null)
                 continue;
+
+            if (diagnostic.Id == "IDE1006")
+            {
+                Project? renamed = await AvoidNamingCollision(document, diagnostic, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                if (renamed is not null)
+                    return (renamed, $"{diagnostic} — rename local to avoid a naming-style collision");
+            }
 
             foreach (CodeFixProvider provider in providers.Where(provider => provider.FixableDiagnosticIds.Contains(diagnostic.Id)))
             {
@@ -171,6 +189,41 @@ internal static class CodeFixRunner
         }
 
         return (null, attempt);
+    }
+
+    private static async Task<Project?> AvoidNamingCollision(Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
+    {
+        SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+            ?? throw new InvalidOperationException(message: "The naming document has no syntax root.");
+
+        SemanticModel model = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+            ?? throw new InvalidOperationException(message: "The naming document has no semantic model.");
+
+        if (model.GetDeclaredSymbol(root.FindNode(diagnostic.Location.SourceSpan), cancellationToken) is not ILocalSymbol local)
+            return null;
+
+        // ponytail: handles case-only collisions; extend the comparison if other naming transformations need repair.
+        bool collision = model.LookupSymbols(diagnostic.Location.SourceSpan.Start).Any(
+            symbol =>
+            symbol is ILocalSymbol or IParameterSymbol && !SymbolEqualityComparer.Default.Equals(symbol, local)
+                && string.Equals(symbol.Name, local.Name, StringComparison.OrdinalIgnoreCase)
+        );
+
+        if (!collision)
+            return null;
+
+        HashSet<string> identifiers = root.DescendantTokens().Where(static token => token.IsKind(SyntaxKind.IdentifierToken))
+            .Select(static token => token.ValueText).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        string name = local.Name + "Value";
+
+        while (identifiers.Contains(name))
+            name += "Value";
+
+        Solution renamed = await Renamer.RenameSymbolAsync(document.Project.Solution, local, new SymbolRenameOptions(), name, cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        return renamed.GetProject(document.Project.Id);
     }
 
     private static (string Identifier, string Message, string Path) ErrorKey(Diagnostic diagnostic)

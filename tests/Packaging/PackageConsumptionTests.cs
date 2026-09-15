@@ -108,6 +108,64 @@ public sealed class PackageConsumptionTests
             Assert.Equal(formatted, await File.ReadAllTextAsync(sourcePath));
             Assert.Equal(modification, File.GetLastWriteTimeUtc(sourcePath));
 
+            string conditionalAssignments = ValidSource
+                .Replace(
+                    oldValue: "<param name=\"recipientName\">The name to return.</param>",
+                    newValue: "<param name=\"builder\">The optional builder.</param>\n    /// <param name=\"length\">The required length.</param>",
+                    StringComparison.Ordinal
+                )
+                .Replace(oldValue: "    /// <returns>The supplied name.</returns>\n", newValue: string.Empty, StringComparison.Ordinal)
+                .Replace(
+                    oldValue: "string CreateGreeting(string recipientName)",
+                    newValue: "void UpdateLength(System.Text.StringBuilder? builder, int length)",
+                    StringComparison.Ordinal
+                )
+                .Replace(
+                    oldValue: "return recipientName;",
+                    newValue: "if (builder is not null)\n            builder.Length = length;\n        if (builder is not null)\n            builder.Capacity = length;",
+                    StringComparison.Ordinal
+                );
+
+            await File.WriteAllTextAsync(sourcePath, conditionalAssignments);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            string simplifiedAssignments = await File.ReadAllTextAsync(sourcePath);
+            Assert.Contains(expectedSubstring: "builder?.Length = length;", simplifiedAssignments, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "builder?.Capacity = length;", simplifiedAssignments, StringComparison.Ordinal);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            Assert.Equal(simplifiedAssignments, await File.ReadAllTextAsync(sourcePath));
+
+            const string tupleMethod = """
+                    /// <summary>Resolves habitat bounds.</summary>
+                    /// <param name="recipientName">The habitat name.</param>
+                    /// <returns>The habitat and its dimensions.</returns>
+                    internal static (string Habitat, int Width, int Height) Resolve(string recipientName)
+                    {
+                        return (recipientName, recipientName.Length, recipientName.Length);
+                    }
+
+                """;
+
+            string tupleSource = ValidSource
+                .Replace(
+                    oldValue: "    /// <summary>Returns the supplied recipient name.</summary>",
+                    tupleMethod + "    /// <summary>Returns the supplied recipient name.</summary>",
+                    StringComparison.Ordinal
+                )
+                .Replace(
+                    oldValue: "return recipientName;",
+                    newValue: "System.ArgumentNullException.ThrowIfNull(recipientName);\nvar bounds = Resolve(recipientName);\nvar habitat = bounds.Habitat;\nvar width = bounds.Width;\nvar height = bounds.Height;\nvar habitatValue = string.Empty;\nreturn string.Concat(habitat, habitatValue, new string(c: ' ', width + height));",
+                    StringComparison.Ordinal
+                );
+
+            await File.WriteAllTextAsync(sourcePath, tupleSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            string renamedTuple = await File.ReadAllTextAsync(sourcePath);
+            Assert.Contains(expectedSubstring: "string habitat = habitatValueValue;", renamedTuple, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "int width = widthValue;", renamedTuple, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "int height = heightValue;", renamedTuple, StringComparison.Ordinal);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            Assert.Equal(renamedTuple, await File.ReadAllTextAsync(sourcePath));
+
             string longName = new(c: 'p', count: 130);
 
             string longSource = ValidSource.Replace(oldValue: "return recipientName;", newValue: "return string.Concat(recipientName, string.Empty);", StringComparison.Ordinal)
