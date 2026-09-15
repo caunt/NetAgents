@@ -105,6 +105,11 @@ internal static class CodeFixRunner
     )
     {
         string? attempt = null;
+        (Project? collisionProject, string? collisionAttempt) = await AvoidNamingCollisions(project, diagnostics, editable, cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        if (collisionProject is not null)
+            return (collisionProject, collisionAttempt);
 
         foreach (Diagnostic diagnostic in diagnostics.ToArray().OrderBy(static diagnostic => diagnostic.Id, StringComparer.Ordinal))
         {
@@ -115,14 +120,6 @@ internal static class CodeFixRunner
 
             if (!canFix || document is null)
                 continue;
-
-            if (diagnostic.Id == "IDE1006")
-            {
-                Project? renamed = await AvoidNamingCollision(document, diagnostic, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-
-                if (renamed is not null)
-                    return (renamed, $"{diagnostic} — rename local to avoid a naming-style collision");
-            }
 
             foreach (CodeFixProvider provider in providers.Where(provider => provider.FixableDiagnosticIds.Contains(diagnostic.Id)))
             {
@@ -191,7 +188,7 @@ internal static class CodeFixRunner
         return (null, attempt);
     }
 
-    private static async Task<Project?> AvoidNamingCollision(Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
+    private static async Task<Project?> AvoidNamingCollision(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
     {
         SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The naming document has no syntax root.");
@@ -199,11 +196,11 @@ internal static class CodeFixRunner
         SemanticModel model = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The naming document has no semantic model.");
 
-        if (model.GetDeclaredSymbol(root.FindNode(diagnostic.Location.SourceSpan), cancellationToken) is not ILocalSymbol local)
+        if (model.GetDeclaredSymbol(root.FindNode(diagnosticSpan), cancellationToken) is not ILocalSymbol local)
             return null;
 
         // ponytail: handles case-only collisions; extend the comparison if other naming transformations need repair.
-        bool collision = model.LookupSymbols(diagnostic.Location.SourceSpan.Start).Any(
+        bool collision = model.LookupSymbols(diagnosticSpan.Start).Any(
             symbol =>
             symbol is ILocalSymbol or IParameterSymbol && !SymbolEqualityComparer.Default.Equals(symbol, local)
                 && string.Equals(symbol.Name, local.Name, StringComparison.OrdinalIgnoreCase)
@@ -224,6 +221,49 @@ internal static class CodeFixRunner
             .ConfigureAwait(continueOnCapturedContext: false);
 
         return renamed.GetProject(document.Project.Id);
+    }
+
+    private static async Task<(Project? Project, string? Attempt)> AvoidNamingCollisions(
+        Project project,
+        ImmutableArray<Diagnostic> diagnostics,
+        ImmutableHashSet<DocumentId> editable,
+        CancellationToken cancellationToken
+    )
+    {
+        List<(DocumentId Document, TextSpan SourceSpan, Diagnostic Diagnostic)> candidates = [];
+
+        foreach (Diagnostic diagnostic in diagnostics)
+        {
+            Document? document = diagnostic.Id == "IDE1006" && diagnostic.Location.SourceTree is not null
+                ? project.GetDocument(diagnostic.Location.SourceTree)
+                : null;
+
+            if (document is not null && editable.Contains(document.Id))
+                candidates.Add((document.Id, diagnostic.Location.SourceSpan, diagnostic));
+        }
+
+        Project updated = project;
+        Diagnostic? first = null;
+
+        foreach (
+            (DocumentId Document, TextSpan SourceSpan, Diagnostic Diagnostic) candidate in candidates
+                .OrderBy(static candidate => candidate.Document.Id)
+                .ThenByDescending(static candidate => candidate.SourceSpan.Start)
+        )
+        {
+            Document document = updated.GetDocument(candidate.Document) ?? throw new InvalidOperationException(message: "The naming document is missing.");
+            Project? renamed = await AvoidNamingCollision(document, candidate.SourceSpan, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            if (renamed is null)
+                continue;
+
+            updated = renamed;
+            first ??= candidate.Diagnostic;
+        }
+
+        return first is null
+            ? (null, null)
+            : (updated, $"{first} — rename colliding locals before applying naming-style fixes");
     }
 
     private static (string Identifier, string Message, string Path) ErrorKey(Diagnostic diagnostic)

@@ -166,6 +166,32 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             Assert.Equal(renamedTuple, await File.ReadAllTextAsync(sourcePath));
 
+            string manyTupleMethods = string.Join(
+                separator: Environment.NewLine,
+                Enumerable.Range(start: 0, count: 70).Select(
+                    static index => $$"""
+                        internal static (string Habitat, int Width, int Height) ResolveBounds{{index}}(string value) =>
+                            (value, value.Length, value.Length);
+
+                        private static string ConsumeBounds{{index}}(string value)
+                        {
+                            var bounds = ResolveBounds{{index}}(value);
+                            var habitat = bounds.Habitat;
+                            var width = bounds.Width;
+                            var height = bounds.Height;
+                            return string.Concat(habitat, new string(c: ' ', width + height));
+                        }
+                    """
+                )
+            );
+
+            string manyTupleSource = ValidSource.Replace(oldValue: "    }\n}\n", newValue: $"    }}\n\n{manyTupleMethods}\n}}\n", StringComparison.Ordinal);
+            await File.WriteAllTextAsync(sourcePath, manyTupleSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            string renamedManyTuples = await File.ReadAllTextAsync(sourcePath);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            Assert.Equal(renamedManyTuples, await File.ReadAllTextAsync(sourcePath));
+
             string longName = new(c: 'p', count: 130);
 
             string longSource = ValidSource.Replace(oldValue: "return recipientName;", newValue: "return string.Concat(recipientName, string.Empty);", StringComparison.Ordinal)
