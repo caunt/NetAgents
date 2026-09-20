@@ -204,6 +204,24 @@ public sealed class CodeFixRunnerTests
         Assert.InRange(provider.Attempts, low: 1, high: 3);
     }
 
+    /// <summary>Drops a suggestion's compiler-breaking action instead of failing an otherwise clean build.</summary>
+    [Fact]
+    public async Task SkipsCompilerBreakingSuggestionFix()
+    {
+        using AdhocWorkspace workspace = new();
+
+        // CS8019 is a hidden compiler suggestion, so nothing about this document has to be repaired.
+        Project project = CreateProject(workspace);
+        const string source = "using System;\nclass Example { int Read() => 0; }";
+        project = project.Documents.Single().WithText(SourceText.From(source)).Project;
+        SuggestionFix provider = new(source: "using System;\nclass Example { int Read() => \"text\"; }");
+
+        Project result = await CodeFixRunner.Fix(project, [], [provider], CancellationToken.None);
+
+        Assert.Equal(source, (await result.Documents.Single().GetTextAsync()).ToString());
+        Assert.InRange(provider.Attempts, low: 1, high: 2);
+    }
+
     /// <summary>Skips a failing provider while another provider still repairs the compiler error.</summary>
     /// <param name="stage">The provider stage that fails.</param>
     [Theory]
@@ -286,6 +304,25 @@ public sealed class CodeFixRunnerTests
             Attempts++;
             context.RegisterCodeFix(
                 CodeAction.Create(title: "Replace method body", cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
+                context.Diagnostics
+            );
+
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>Offers a suggestion fix that replaces the document with uncompilable source.</summary>
+    private sealed class SuggestionFix(string source) : CodeFixProvider
+    {
+        public int Attempts { get; private set; }
+
+        public override ImmutableArray<string> FixableDiagnosticIds => ["CS8019"];
+
+        public override Task RegisterCodeFixesAsync(CodeFixContext context)
+        {
+            Attempts++;
+            context.RegisterCodeFix(
+                CodeAction.Create(title: "Replace suggestion body", cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
                 context.Diagnostics
             );
 

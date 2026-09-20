@@ -184,7 +184,11 @@ internal static class CodeFixRunner
 
                     ImmutableArray<Diagnostic> introducedCompilerErrors = [.. introducedErrors.Where(IsCompilerError)];
 
-                    if (!introducedCompilerErrors.IsEmpty)
+                    // A hidden or info diagnostic is a suggestion the compiler never fails for, so a broken
+                    // action offered for one is dropped below instead of taking an otherwise clean build down.
+                    bool optional = diagnostic.Severity < DiagnosticSeverity.Warning;
+
+                    if (!introducedCompilerErrors.IsEmpty && !optional)
                         throw Failure(reason: "introduced compiler errors", attempt, introducedCompilerErrors);
 
                     // An error already fails the build, so only lower severities must avoid new analyzer errors.
