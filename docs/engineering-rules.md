@@ -15,7 +15,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | Diagnostic | Meaning |
 | --- | --- |
 | NETAGENTS0001 | Reject implicit and explicit boxing conversions, including nullable values, enums, interface conversions, and unconstrained generics. |
-| NETAGENTS0002 | Reject explicit `object`/`dynamic` type uses, untyped arrays/generic collections, and untyped values returned by calls, fields, properties, indexing, and await. |
+| NETAGENTS0002 | Reject explicit `object`/`dynamic` type uses, untyped arrays/generic collections, and untyped values returned by calls, fields, properties, indexing, and await. Overrides and explicit interface implementations keep the prescribed parameter and result types of the signature they inherit; their bodies are still checked. |
 | NETAGENTS0003 | Reject C# `lock` statements. |
 | NETAGENTS0004 | Reject catch blocks containing no executable statements, including comment-only blocks. |
 | NETAGENTS0005 | Reject single-letter declarations, uppercase acronyms, and known abbreviated identifier words. Standard `I…` and `T…` prefixes and the .NET `Async` naming convention (for example, `ReadAsync`) are supported. |
@@ -23,7 +23,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0007 | Reject the postfix null-forgiving operator. |
 | NETAGENTS0008 | Reject literal-true `while`/`do` conditions and conditionless or literal-true `for` loops. |
 | NETAGENTS0009 | Require parameter names for inline literal/default arguments in methods, constructors, delegates, and indexers, including signed/parenthesized literals. For expanded `params`, pass a named collection. Attributes use separate language syntax. |
-| NETAGENTS0010 | Require authored source files to contain fewer than 1,000 lines. |
+| NETAGENTS0010 | Require authored source files to contain fewer than 1,000 lines. The required final newline terminates the last line instead of starting another one. |
 | NETAGENTS0011 | Reject type names matching containing namespace segments or feature directories below the project root. |
 | NETAGENTS0012 | Reject framework synchronization types and blocking task/thread waits, including aliases, static imports, and explicit awaiter `GetResult` calls. |
 | NETAGENTS0013 | Reject changes to the effective shared configuration and diagnostic severities. |
@@ -121,7 +121,8 @@ The naming vocabulary includes `args`, `cfg`, `ctx`, `config`, `dto`, `dsp`,
 `http`, `id`, `json`, `msg`, `sdr`, `sql`, `tmp`, `url`, and other common shortened
 words; see `Naming/DescriptiveNameAnalyzer.cs` for the complete list.
 Framework-owned overrides and explicit interface implementations are exempt
-from renaming their prescribed member names. Referencing existing framework
+from renaming their prescribed member names, and `NETAGENTS0002` likewise
+accepts the `object` parameters and results those signatures prescribe. Referencing existing framework
 names does not require renaming framework APIs.
 
 ## Shared editor configuration
