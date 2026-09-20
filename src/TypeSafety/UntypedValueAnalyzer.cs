@@ -45,6 +45,9 @@ public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule)
 
     private static void AnalyzeTypeName(SyntaxNodeAnalysisContext context)
     {
+        if (HasPrescribedSignature(context))
+            return;
+
         // Bind symbols so names such as 'value.ToString' are not mistaken for type declarations.
         ISymbol? symbol = context.SemanticModel.GetSymbolInfo(context.Node, context.CancellationToken).Symbol;
         ITypeSymbol? type = symbol as ITypeSymbol;
@@ -82,5 +85,27 @@ public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule)
         }
 
         return false;
+    }
+
+    private static bool HasPrescribedSignature(SyntaxNodeAnalysisContext context)
+    {
+        SyntaxNode? declaration = context.Node;
+
+        while (declaration is TypeSyntax)
+            declaration = declaration.Parent;
+
+        // Overrides and explicit implementations inherit their parameter and result types; bodies stay strict.
+        MemberDeclarationSyntax? member = declaration switch
+        {
+            ParameterSyntax parameter => parameter.Parent?.Parent as MemberDeclarationSyntax,
+            MemberDeclarationSyntax owner => owner,
+            _ => null,
+        };
+
+        return member is not null
+            && context.SemanticModel.GetDeclaredSymbol(member, context.CancellationToken)
+                is { IsOverride: true }
+                or IMethodSymbol { ExplicitInterfaceImplementations.Length: > 0 }
+                or IPropertySymbol { ExplicitInterfaceImplementations.Length: > 0 };
     }
 }
