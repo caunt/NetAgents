@@ -57,7 +57,21 @@ internal static class MemberOrdering
             }
         }
 
+        // Blank line separators belong to the slot in the file, not to the member that used to occupy it.
+        for (int index = 0; index < sorted.Length; index++)
+            sorted[index] = WithSlotSeparator(sorted[index], members[index]);
+
         return SyntaxFactory.List(sorted);
+    }
+
+    private static int CountSeparator(SyntaxTriviaList trivia)
+    {
+        int count = 0;
+
+        while (count < trivia.Count && (trivia[count].IsKind(SyntaxKind.WhitespaceTrivia) || trivia[count].IsKind(SyntaxKind.EndOfLineTrivia)))
+            count++;
+
+        return count;
     }
 
     private static int GetKind(MemberDeclarationSyntax member)
@@ -149,5 +163,22 @@ internal static class MemberOrdering
     private static bool IsStorage(MemberDeclarationSyntax member)
     {
         return member is BaseFieldDeclarationSyntax or PropertyDeclarationSyntax;
+    }
+
+    private static MemberDeclarationSyntax WithSlotSeparator(MemberDeclarationSyntax member, MemberDeclarationSyntax slot)
+    {
+        SyntaxTriviaList trivia = member.GetLeadingTrivia();
+        SyntaxTriviaList separator = slot.GetLeadingTrivia();
+        int adopted = CountSeparator(separator);
+        int discarded = CountSeparator(trivia);
+        List<SyntaxTrivia> replacement = [];
+
+        for (int index = 0; index < adopted; index++)
+            replacement.Add(separator[index]);
+
+        for (int index = discarded; index < trivia.Count; index++)
+            replacement.Add(trivia[index]);
+
+        return member.WithLeadingTrivia(replacement);
     }
 }
