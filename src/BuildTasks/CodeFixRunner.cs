@@ -179,7 +179,12 @@ internal static class CodeFixRunner
                     if (!supported)
                         continue;
 
-                    attempt = $"{diagnostic} — code action '{selected.Title}'";
+                    string description = $"{diagnostic} — code action '{selected.Title}'";
+
+                    // Only a diagnostic that still fails the build explains a run that stopped. An action
+                    // offered for a suggestion is dropped below, so naming it would blame an unrelated rule.
+                    if (diagnostic.Severity == DiagnosticSeverity.Error)
+                        attempt = description;
 
                     // Comparing text first keeps an action that rewrites nothing off the analyzer path.
                     if (!await HasTextChanges(project, updated, changedDocuments, cancellationToken).ConfigureAwait(continueOnCapturedContext: false))
@@ -197,7 +202,7 @@ internal static class CodeFixRunner
                     bool optional = diagnostic.Severity < DiagnosticSeverity.Warning;
 
                     if (!introducedCompilerErrors.IsEmpty && !optional)
-                        throw Failure(reason: "introduced compiler errors", attempt, introducedCompilerErrors);
+                        throw Failure(reason: "introduced compiler errors", description, introducedCompilerErrors);
 
                     // An error already fails the build, so only lower severities must avoid new analyzer errors.
                     if (diagnostic.Severity != DiagnosticSeverity.Error && !introducedErrors.IsEmpty)
@@ -208,14 +213,12 @@ internal static class CodeFixRunner
                         continue;
                     }
 
-                    return (updated, attempt);
+                    return (updated, description);
                 }
             }
         }
 
-        return diagnostics.Any(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-            ? (null, attempt)
-            : (null, null);
+        return (null, attempt);
     }
 
     private static async Task<Project?> AvoidNamingCollision(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
@@ -316,10 +319,23 @@ internal static class CodeFixRunner
 
     private static InvalidOperationException Failure(string reason, string? attempt, ImmutableArray<Diagnostic> diagnostics)
     {
-        // Oscillating analyzer fixes are the usual cause, so every error is listed, not just compiler errors.
-        string errors = string.Join(Environment.NewLine, diagnostics.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        List<string> lines = [$"Automatic formatting {reason}."];
 
-        return new InvalidOperationException($"Automatic formatting {reason}. Attempted code action: {attempt}{Environment.NewLine}{errors}");
+        if (attempt is not null)
+            lines.Add("Attempted code action: " + attempt);
+
+        // Oscillating analyzer fixes are the usual cause, so every blocking error is listed, not just
+        // compiler errors. The formatting compilation escalates everything, so only in-source errors
+        // qualify: reference remarks the consumer build never fails for would bury the real blockers.
+        lines.AddRange(
+            diagnostics.Where(IsBlockingError)
+                .OrderBy(static diagnostic => diagnostic.Location.SourceTree?.FilePath ?? string.Empty, StringComparer.Ordinal)
+                .ThenBy(static diagnostic => diagnostic.Location.SourceSpan.Start)
+                .Select(static diagnostic => diagnostic.ToString())
+        );
+
+        // An empty segment would reach MSBuild as a second error with no message at all.
+        return new InvalidOperationException(string.Join(Environment.NewLine, lines));
     }
 
     private static async Task<Project> FormatWhitespace(Project project, ImmutableHashSet<DocumentId> editable, CancellationToken cancellationToken)

@@ -211,6 +211,25 @@ public sealed class CodeFixRunnerTests
         Assert.Equal(expected: "class Clean\n{\n}\n", (await formatted.Documents.Single().GetTextAsync()).ToString());
     }
 
+    /// <summary>Never blames a dropped suggestion for a run the blocking errors ended.</summary>
+    [Fact]
+    public async Task ReportsBlockedDiagnosticsWhenSuggestionStalls()
+    {
+        using AdhocWorkspace workspace = new();
+
+        // CS8019 is a hidden suggestion, so the action offered for it never explains a stopped run.
+        Project project = CreateProject(workspace);
+        const string source = "using System;\nclass Hidden { private static int Value; }\nclass Consumer { int Read() => Hidden.Value; }\n";
+        project = project.Documents.Single().WithText(SourceText.From(source)).Project;
+        StalledSuggestionFix provider = new();
+
+        (Project blocked, ImmutableArray<Diagnostic> remaining) = await CodeFixRunner.Fix(project, [], [provider], CancellationToken.None);
+
+        Assert.Equal(expected: "CS0122", remaining.Single().Id);
+        Assert.InRange(provider.Attempts, low: 1, high: 3);
+        Assert.Contains(expectedSubstring: "using System;", (await blocked.Documents.Single().GetTextAsync()).ToString(), StringComparison.Ordinal);
+    }
+
     /// <summary>Reports stalled actions without exhausting the pass limit.</summary>
     [Theory]
     [InlineData("noop")]
@@ -229,6 +248,10 @@ public sealed class CodeFixRunnerTests
         Assert.Matches(expectedRegexPattern: @"Example\.cs\([1-9][0-9]*,[1-9][0-9]*\): error CS0122", exception.Message);
         Assert.Contains(expectedSubstring: "Attempt accessibility repair", exception.Message, StringComparison.Ordinal);
         Assert.DoesNotContain(expectedSubstring: "fix passes", exception.Message, StringComparison.Ordinal);
+
+        // A blank segment reaches MSBuild as a second build error carrying no message at all.
+        Assert.DoesNotContain(Environment.NewLine + Environment.NewLine, exception.Message, StringComparison.Ordinal);
+        Assert.False(exception.Message.EndsWith(Environment.NewLine, StringComparison.Ordinal));
         Assert.InRange(provider.Attempts, low: 1, high: 3);
     }
 
@@ -332,6 +355,33 @@ public sealed class CodeFixRunnerTests
             Attempts++;
             context.RegisterCodeFix(
                 CodeAction.Create(title: "Replace method body", cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
+                context.Diagnostics
+            );
+
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>Offers a suggestion fix that rewrites nothing, leaving the run without progress.</summary>
+    private sealed class StalledSuggestionFix : CodeFixProvider
+    {
+        public int Attempts { get; private set; }
+
+        public override ImmutableArray<string> FixableDiagnosticIds => ["CS8019"];
+
+        public override Task RegisterCodeFixesAsync(CodeFixContext context)
+        {
+            Attempts++;
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    title: "Keep the unnecessary using",
+                    async cancellationToken =>
+            {
+                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                return context.Document.WithText(SourceText.From(text.ToString()));
+            }
+                ),
                 context.Diagnostics
             );
 
