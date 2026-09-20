@@ -32,6 +32,8 @@
       <NetAgentsEditorConfiguration>$([System.Text.RegularExpressions.Regex]::Replace('$(NetAgentsEditorConfiguration)', '(?m)^(dotnet_naming_symbols\.type_parameters\.applicable_kinds\s*=\s*)namespace\s*$', '${1}type_parameter'))</NetAgentsEditorConfiguration>
       <!-- The SDK gates unused-assignment analysis on the option's own severity. -->
       <NetAgentsEditorConfiguration>$([System.Text.RegularExpressions.Regex]::Replace('$(NetAgentsEditorConfiguration)', '(?m)^(csharp_style_unused_value_assignment_preference\s*=\s*[^:\r\n]+)(?::[^\r\n]+)?$', '${1}:error'))</NetAgentsEditorConfiguration>
+      <!-- The final newline is policy and is appended below, so the template's preference is dropped rather than shadowed. -->
+      <NetAgentsEditorConfiguration>$([System.Text.RegularExpressions.Regex]::Replace('$(NetAgentsEditorConfiguration)', '(?m)^insert_final_newline\s*=[^\r\n]*(?:\r?\n|$)', ''))</NetAgentsEditorConfiguration>
       <!-- NETAGENTS0017 adds and removes braces using body lines and conditional-chain consistency. -->
       <NetAgentsEditorConfiguration>$([System.Text.RegularExpressions.Regex]::Replace('$(NetAgentsEditorConfiguration)', '(?m)^csharp_prefer_braces\s*=[^\r\n]*$', 'csharp_prefer_braces = false:silent'))</NetAgentsEditorConfiguration>
     </PropertyGroup>

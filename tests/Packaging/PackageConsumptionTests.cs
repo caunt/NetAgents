@@ -634,6 +634,20 @@ public sealed class PackageConsumptionTests
         using StreamReader embeddedReader = new(embeddedStream);
 
         string embeddedConfiguration = await embeddedReader.ReadToEndAsync().ConfigureAwait(continueOnCapturedContext: false);
+
+        // One global config must not define a key twice; the effective value would depend on parse order.
+        List<string> configurationKeys = [];
+
+        foreach (string line in embeddedConfiguration.Split(separator: '\n'))
+        {
+            int separatorIndex = line.IndexOf(value: '=', StringComparison.Ordinal);
+
+            if (separatorIndex > 0)
+                configurationKeys.Add(line[..separatorIndex].Trim());
+        }
+
+        Assert.Equal(configurationKeys.Count, configurationKeys.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+
         ZipArchive package = await ZipFile.OpenReadAsync(packagePath).ConfigureAwait(continueOnCapturedContext: false);
 
         await using (package.ConfigureAwait(continueOnCapturedContext: false))
