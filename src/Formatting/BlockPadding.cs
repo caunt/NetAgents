@@ -28,7 +28,7 @@ internal static class BlockPadding
                 continue;
 
             removals.Add(span);
-            changes.Add(token.Span, new TextChange(span, newText: string.Empty));
+            changes.Add(token.Span, new TextChange(span, string.Empty));
         }
 
         return changes.ToImmutable();
@@ -77,6 +77,6 @@ internal static class BlockPadding
     private static TextSpan? GetRemoval(List<SyntaxTrivia> endings)
     {
         // The first line ending closes the brace line; every later one is padding.
-        return endings.Count < 2 ? null : TextSpan.FromBounds(endings[index: 0].Span.End, endings[index: endings.Count - 1].Span.End);
+        return endings.Count < 2 ? null : TextSpan.FromBounds(endings[index: 0].Span.End, endings[endings.Count - 1].Span.End);
     }
 }

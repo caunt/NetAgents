@@ -25,10 +25,10 @@ public sealed class DirectoryFileCountAnalyzerTests
 
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(analyzer, files));
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, diagnostic.Id);
-        Assert.Equal(expected: "Features/Source00.cs", actual: diagnostic.Location.SourceTree?.FilePath);
+        Assert.Equal(expected: "Features/Source00.cs", diagnostic.Location.SourceTree?.FilePath);
         Assert.Equal(
             expected: "Directory 'Features' contains 17 authored C# files (maximum 16); organize these files into subdirectories with narrower responsibilities",
-            actual: diagnostic.GetMessage(CultureInfo.InvariantCulture)
+            diagnostic.GetMessage(CultureInfo.InvariantCulture)
         );
     }
 
@@ -131,7 +131,7 @@ public sealed class DirectoryFileCountAnalyzerTests
     {
         SyntaxTree[] files = [.. CreateFiles(directory: "Features/Buying", count: 17), .. CreateFiles(directory: "Features/Selling", count: 20)];
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DirectoryFileCountAnalyzer(), files.Reverse());
-        Assert.Equal(expected: 2, actual: diagnostics.Length);
+        Assert.Equal(expected: 2, diagnostics.Length);
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Location.SourceTree?.FilePath == "Features/Buying/Source00.cs");
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Location.SourceTree?.FilePath == "Features/Selling/Source00.cs");
     }

@@ -9,6 +9,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
     <ProjectReference Include="../BuildTasks/NetAgents.BuildTasks.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" PrivateAssets="all" />
     <Compile Include="../Ordering/MemberOrdering.cs" Link="Ordering/MemberOrdering.cs" />
+    <Compile Include="../Readability/ExplicitLiteralArgumentName.cs" Link="Readability/ExplicitLiteralArgumentName.cs" />
     <Compile Include="../Formatting/LayoutLimits.cs" Link="Formatting/LayoutLimits.cs" />
     <Compile Include="../Formatting/ArgumentLayout.cs" Link="Formatting/ArgumentLayout.cs" />
     <Compile Include="../Formatting/BlockPadding.cs" Link="Formatting/BlockPadding.cs" />

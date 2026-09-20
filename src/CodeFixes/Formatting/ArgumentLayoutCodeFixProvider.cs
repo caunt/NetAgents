@@ -51,8 +51,8 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
             context.RegisterCodeFix(
                 CodeAction.Create(
                     title: "Fix argument and parameter layout",
-                    createChangedDocument: cancellationToken => FixArguments(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    equivalenceKey: nameof(ArgumentLayoutCodeFixProvider)
+                    cancellationToken => FixArguments(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+                    nameof(ArgumentLayoutCodeFixProvider)
                 ),
                 diagnostic
             );

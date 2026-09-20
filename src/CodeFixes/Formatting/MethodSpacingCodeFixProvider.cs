@@ -36,8 +36,8 @@ public sealed class MethodSpacingCodeFixProvider : CodeFixProvider
             context.RegisterCodeFix(
                 CodeAction.Create(
                     title: "Insert blank line between method declarations",
-                    createChangedDocument: cancellationToken => InsertBlankLine(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    equivalenceKey: nameof(MethodSpacingCodeFixProvider)
+                    cancellationToken => InsertBlankLine(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+                    nameof(MethodSpacingCodeFixProvider)
                 ),
                 diagnostic
             );

@@ -22,7 +22,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0006 | Require one top-level type per file with the matching case-sensitive file name. Appropriate nested types are allowed. |
 | NETAGENTS0007 | Reject the postfix null-forgiving operator. |
 | NETAGENTS0008 | Reject literal-true `while`/`do` conditions and conditionless or literal-true `for` loops. |
-| NETAGENTS0009 | Require parameter names for inline literal/default arguments in methods, constructors, delegates, and indexers, including signed/parenthesized literals. For expanded `params`, pass a named collection. Attributes use separate language syntax. |
+| NETAGENTS0009 | Require parameter names for inline literal/default arguments in methods, constructors, delegates, and indexers, including signed/parenthesized literals, and omit names the rule does not require. For expanded `params`, pass a named collection. Attributes use their separate language syntax. Includes an automatic code fix and Fix all support. |
 | NETAGENTS0010 | Require authored source files to contain fewer than 1,000 lines. The required final newline terminates the last line instead of starting another one. |
 | NETAGENTS0011 | Reject type names matching containing namespace segments or feature directories below the project root. |
 | NETAGENTS0012 | Reject framework synchronization types and blocking task/thread waits, including aliases, static imports, and explicit awaiter `GetResult` calls. |
@@ -48,6 +48,25 @@ Use **Fix argument and parameter layout** or run:
 
 ```bash
 dotnet format analyzers --diagnostics NETAGENTS0020
+```
+
+Argument names converge on one shape: an inline literal or `default` argument carries its
+parameter name, and every other argument is positional. A name is only reported as unnecessary
+when dropping it provably keeps the same binding — each argument already sits in its own
+parameter slot, nothing is reordered, and no optional parameter is skipped — so
+`Execute(first, third: third)` keeps its name. The fix rewrites a whole argument list at once,
+re-resolves the call against the compiler before accepting the rewrite, and leaves line breaks,
+indentation, and comments alone. Expanded `params` arguments become one named collection, so
+`Log(1, 2)` becomes `Log(values: [1, 2])`; the normal form is untouched, because `Log(default)`
+passes a null array rather than a one-element one. Shapes with no safe rewrite stay reported and
+unfixed: `dynamic` calls, `__arglist`, function pointers, argument lists containing preprocessor
+directives, a `params` collapse that would drop a comment or sits inside an expression tree, and
+any rewrite that would bind to a different overload. Longer names can push a call past the
+`NETAGENTS0019` condition limit, which has no fix and needs the variable extraction described
+above. Run:
+
+```bash
+dotnet format analyzers --diagnostics NETAGENTS0009
 ```
 
 Directory limits count each distinct `.cs` file included in the project once,

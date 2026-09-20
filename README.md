@@ -41,7 +41,7 @@ dotnet build -p:NetAgentsFormatOnBuild=false
 - **Conditions:** keep conditions on one line, with at most **128 characters**. Extract longer expressions into separate variables. Ternary conditions follow this rule; their `?` and `:` branches can span multiple lines.
 - **Arguments and parameters:** keep lists on one line when their normalized contents fit within **128 characters**, excluding the surrounding delimiters. Longer lists put each item and the closing delimiter on separate lines. This applies to calls and declarations, including constructors and records.
 - **Layout:** use consistent spacing, blank lines between methods and around control flow and multiline declarations, braces based on body layout, and a final newline.
-- **Clarity:** name literal arguments and remove unused imports.
+- **Clarity:** name literal arguments, pass every other argument positionally, and remove unused imports.
 
 ## 🗂️ Member order
 

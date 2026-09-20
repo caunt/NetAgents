@@ -117,7 +117,7 @@ internal static class ProjectFormatter
 
             string[] segments = logicalPath.Replace(oldChar: '\\', newChar: '/').Split(separator: '/');
             string[] folders = segments[0] == ".." ? [] : [.. segments.Take(segments.Length - 1)];
-            solution = solution.AddDocument(DocumentId.CreateNewId(projectIdentifier), Path.GetFileName(path), text, folders, filePath: path);
+            solution = solution.AddDocument(DocumentId.CreateNewId(projectIdentifier), Path.GetFileName(path), text, folders, path);
         }
 
         foreach (ITaskItem configuration in inputs.ConfigurationFiles)

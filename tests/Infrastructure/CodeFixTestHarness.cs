@@ -11,13 +11,34 @@ using Microsoft.CodeAnalysis.Text;
 
 using NetAgents.Analyzers.CodeFixes.Formatting;
 using NetAgents.Analyzers.CodeFixes.Ordering;
+using NetAgents.Analyzers.CodeFixes.Readability;
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Ordering;
+using NetAgents.Analyzers.Readability;
 
 namespace NetAgents.Analyzers.Tests.Infrastructure;
 
 internal static class CodeFixTestHarness
 {
+    public static async Task AssertNoLiteralArgumentNameFix(string source)
+    {
+        using AdhocWorkspace workspace = new();
+
+        Document document = CreateDocument(workspace, source);
+
+        ImmutableArray<Diagnostic> diagnostics = await GetDiagnostics(document, new ExplicitLiteralArgumentNameAnalyzer())
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        Assert.False(diagnostics.IsEmpty);
+        ExplicitLiteralArgumentNameCodeFixProvider provider = new();
+        List<CodeAction> actions = [];
+
+        foreach (Diagnostic diagnostic in diagnostics)
+            await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)).ConfigureAwait(continueOnCapturedContext: false);
+
+        Assert.Empty(actions);
+    }
+
     public static async Task<string> FixArguments(string source, bool fixAll)
     {
         return await Fix(source, new ArgumentLayoutAnalyzer(), new ArgumentLayoutCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
@@ -31,6 +52,12 @@ internal static class CodeFixTestHarness
     public static async Task<string> FixBraces(string source, bool fixAll)
     {
         return await Fix(source, new ControlFlowBracesAnalyzer(), new ControlFlowBracesCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixLiteralArgumentNames(string source, bool fixAll)
+    {
+        return await Fix(source, new ExplicitLiteralArgumentNameAnalyzer(), new ExplicitLiteralArgumentNameCodeFixProvider(), fixAll)
+            .ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<string> FixMemberOrdering(string source, bool fixAll)
@@ -58,11 +85,9 @@ internal static class CodeFixTestHarness
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 
-    private static async Task<string> Fix(string source, DiagnosticAnalyzer analyzer, CodeFixProvider provider, bool fixAll)
+    private static Document CreateDocument(AdhocWorkspace workspace, string source)
     {
-        using AdhocWorkspace workspace = new();
-
-        SyntaxNode sourceRoot = await CSharpSyntaxTree.ParseText(source).GetRootAsync().ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode sourceRoot = CSharpSyntaxTree.ParseText(source).GetRoot();
         OutputKind outputKind = sourceRoot.ChildNodes().OfType<GlobalStatementSyntax>().Any() ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary;
 
         Project project = workspace.AddProject(name: "CodeFixTests", LanguageNames.CSharp)
@@ -71,7 +96,15 @@ internal static class CodeFixTestHarness
             .AddMetadataReferences(AnalyzerTestHarness.References);
 
         Assert.True(workspace.TryApplyChanges(project.Solution));
-        Document document = workspace.AddDocument(project.Id, name: "ExampleType.cs", SourceText.From(source, Encoding.UTF8));
+
+        return workspace.AddDocument(project.Id, name: "ExampleType.cs", SourceText.From(source, Encoding.UTF8));
+    }
+
+    private static async Task<string> Fix(string source, DiagnosticAnalyzer analyzer, CodeFixProvider provider, bool fixAll)
+    {
+        using AdhocWorkspace workspace = new();
+
+        Document document = CreateDocument(workspace, source);
         ImmutableArray<Diagnostic> diagnostics = await GetDiagnostics(document, analyzer).ConfigureAwait(continueOnCapturedContext: false);
 
         Assert.False(diagnostics.IsEmpty);

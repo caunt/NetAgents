@@ -38,8 +38,8 @@ public sealed class MemberOrderingCodeFixProvider : CodeFixProvider
             context.RegisterCodeFix(
                 CodeAction.Create(
                     title: "Sort type members",
-                    createChangedDocument: cancellationToken => SortMembers(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    equivalenceKey: nameof(MemberOrderingCodeFixProvider)
+                    cancellationToken => SortMembers(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+                    nameof(MemberOrderingCodeFixProvider)
                 ),
                 diagnostic
             );

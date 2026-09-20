@@ -44,8 +44,8 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
             context.RegisterCodeFix(
                 CodeAction.Create(
                     title: "Fix body braces",
-                    createChangedDocument: cancellationToken => FixBraces(context.Document, [diagnostic], fixAll: false, cancellationToken),
-                    equivalenceKey: nameof(ControlFlowBracesCodeFixProvider)
+                    cancellationToken => FixBraces(context.Document, [diagnostic], fixAll: false, cancellationToken),
+                    nameof(ControlFlowBracesCodeFixProvider)
                 ),
                 diagnostic
             );

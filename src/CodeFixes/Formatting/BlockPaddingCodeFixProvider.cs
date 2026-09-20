@@ -36,8 +36,8 @@ public sealed class BlockPaddingCodeFixProvider : CodeFixProvider
             context.RegisterCodeFix(
                 CodeAction.Create(
                     title: "Remove blank line at block edge",
-                    createChangedDocument: cancellationToken => RemoveBlankLine(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    equivalenceKey: nameof(BlockPaddingCodeFixProvider)
+                    cancellationToken => RemoveBlankLine(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+                    nameof(BlockPaddingCodeFixProvider)
                 ),
                 diagnostic
             );

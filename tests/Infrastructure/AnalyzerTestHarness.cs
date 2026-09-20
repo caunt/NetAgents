@@ -18,7 +18,7 @@ internal static class AnalyzerTestHarness
 
     public static Task<Diagnostic[]> Analyze(DiagnosticAnalyzer analyzer, string source, string fileName = "ExampleType.cs", bool allowUnsafeCode = false)
     {
-        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, options: CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp14), path: fileName);
+        SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp14), fileName);
 
         return Analyze(analyzer, [syntaxTree], allowUnsafeCode);
     }
@@ -35,8 +35,8 @@ internal static class AnalyzerTestHarness
         CSharpCompilation compilation = CSharpCompilation.Create(
             assemblyName: "AnalyzerTestAssembly",
             syntaxTrees,
-            references: References,
-            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: allowUnsafeCode)
+            References,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: allowUnsafeCode)
         );
 
         Diagnostic[] compilerErrors = [.. compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)];

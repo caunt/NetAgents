@@ -79,7 +79,7 @@ public sealed class StatementSpacingAnalyzerTests
         Assert.Equal(StatementSpacingAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
         Assert.Equal(
             expected: "numbers",
-            actual: source.Substring(Assert.Single(diagnostics).Location.SourceSpan.Start, Assert.Single(diagnostics).Location.SourceSpan.Length)
+            source.Substring(Assert.Single(diagnostics).Location.SourceSpan.Start, Assert.Single(diagnostics).Location.SourceSpan.Length)
         );
     }
 

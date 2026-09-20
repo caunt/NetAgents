@@ -12,7 +12,7 @@ NETAGENTS0005 | Naming | Error | Abbreviated identifiers
 NETAGENTS0006 | Structure | Error | Type/file structure
 NETAGENTS0007 | TypeSafety | Error | Null-forgiving operators
 NETAGENTS0008 | Concurrency | Error | Unconditional loops
-NETAGENTS0009 | Readability | Error | Named literal arguments
+NETAGENTS0009 | Readability | Error | Explicit literal argument names
 NETAGENTS0010 | Structure | Error | Source file length
 NETAGENTS0011 | Naming | Error | Type containment collisions
 NETAGENTS0012 | Concurrency | Error | Framework synchronization and blocking waits

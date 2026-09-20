@@ -55,7 +55,7 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
 
             if (isDiagnosticSeverity)
             {
-                string diagnosticIdentifier = requiredOption.Key.Substring(startIndex: 18, length: requiredOption.Key.Length - 18 - 9);
+                string diagnosticIdentifier = requiredOption.Key.Substring(startIndex: 18, requiredOption.Key.Length - 18 - 9);
 
                 ReportDiagnostic expectedSeverity = requiredOption.Value switch
                 {
@@ -110,7 +110,7 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
             if (separatorIndex < 0)
                 continue;
 
-            string key = trimmedLine.Substring(startIndex: 0, length: separatorIndex).Trim();
+            string key = trimmedLine.Substring(startIndex: 0, separatorIndex).Trim();
             string value = trimmedLine.Substring(separatorIndex + 1).Trim();
 
             if (key is not "is_global" and not "global_level" && value.Length > 0)

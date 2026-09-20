@@ -44,7 +44,7 @@ public abstract class PolicyAnalyzer(DiagnosticDescriptor rule) : DiagnosticAnal
             && rule.CustomTags.Contains(WellKnownDiagnosticTags.NotConfigurable, StringComparer.Ordinal);
 
         return !isMandatoryError
-            ? throw new ArgumentException(message: "Policy diagnostics must be enabled, non-configurable errors.", paramName: nameof(rule))
+            ? throw new ArgumentException(message: "Policy diagnostics must be enabled, non-configurable errors.", nameof(rule))
             : rule;
     }
 }

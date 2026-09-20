@@ -33,7 +33,7 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
         customTags: [WellKnownDiagnosticTags.NotConfigurable]
     );
 
-    private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+", options: RegexOptions.CultureInvariant);
+    private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+", RegexOptions.CultureInvariant);
 
     private static readonly ImmutableHashSet<string> AbbreviatedWords = ImmutableHashSet.Create(
         StringComparer.OrdinalIgnoreCase,

@@ -169,8 +169,8 @@ public sealed class ControlFlowBracesCodeFixTests
             }
             """;
 
-        string expected = source.Replace(oldValue: "        {\n", newValue: string.Empty, StringComparison.Ordinal)
-            .Replace(oldValue: "        }\n", newValue: string.Empty, StringComparison.Ordinal);
+        string expected = source.Replace(oldValue: "        {\n", string.Empty, StringComparison.Ordinal)
+            .Replace(oldValue: "        }\n", string.Empty, StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixBraces(source, fixAll: true));
     }
@@ -201,7 +201,7 @@ public sealed class ControlFlowBracesCodeFixTests
         foreach (string comment in new[] { "loop", "opening", "body", "decrement", "closing", "condition", "explanation", "result" })
             Assert.Contains("// " + comment + lineEnding, result, StringComparison.Ordinal);
 
-        Assert.DoesNotContain(expectedSubstring: "\n", result.Replace(lineEnding, newValue: string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        Assert.DoesNotContain(expectedSubstring: "\n", result.Replace(lineEnding, string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
         Assert.Empty(await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), result));
     }
 
@@ -267,8 +267,8 @@ public sealed class ControlFlowBracesCodeFixTests
             }
             """;
 
-        string expected = source.Replace(oldValue: "        {\n", newValue: string.Empty, StringComparison.Ordinal)
-            .Replace(oldValue: "        }\n", newValue: string.Empty, StringComparison.Ordinal);
+        string expected = source.Replace(oldValue: "        {\n", string.Empty, StringComparison.Ordinal)
+            .Replace(oldValue: "        }\n", string.Empty, StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixBraces(source, fixAll: true));
     }
@@ -304,10 +304,10 @@ public sealed class ControlFlowBracesCodeFixTests
             }
             """;
 
-        string expected = source.Replace(oldValue: "        {\n", newValue: string.Empty, StringComparison.Ordinal)
+        string expected = source.Replace(oldValue: "        {\n", string.Empty, StringComparison.Ordinal)
             .Replace(
-                oldValue: "        }" + suffix + "\n",
-                newValue: suffix.Length == 0 ? string.Empty : "        " + suffix.TrimStart() + "\n",
+                "        }" + suffix + "\n",
+                suffix.Length == 0 ? string.Empty : "        " + suffix.TrimStart() + "\n",
                 StringComparison.Ordinal
             );
 

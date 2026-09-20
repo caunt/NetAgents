@@ -1,17 +1,14 @@
-using System.Collections.Immutable;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Operations;
 
 using NetAgents.Analyzers.Diagnostics;
 
 namespace NetAgents.Analyzers.Readability;
 
 /// <summary>
-/// Requires named arguments for inline literals and default values.
+/// Requires named arguments for inline literals and default values, and positional arguments elsewhere.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
@@ -19,12 +16,12 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
     /// </summary>
-    public const string RuleIdentifier = "NETAGENTS0009";
+    public const string RuleIdentifier = ExplicitLiteralArgumentName.RuleIdentifier;
 
     private static readonly DiagnosticDescriptor Rule = new(
         RuleIdentifier,
         title: "Literal arguments need explicit parameter names",
-        messageFormat: "Name the parameter when passing an inline literal argument",
+        messageFormat: "Name inline literal and default arguments, and pass every other argument positionally",
         category: "Readability",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
@@ -40,48 +37,8 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
     private static void AnalyzeArgument(SyntaxNodeAnalysisContext context)
     {
         ArgumentSyntax argument = (ArgumentSyntax)context.Node;
-        ExpressionSyntax expression = argument.Expression;
 
-        // Signs and parentheses nest in either order, so unwrap until neither remains.
-        while (expression is ParenthesizedExpressionSyntax or PrefixUnaryExpressionSyntax)
-        {
-            expression = expression is ParenthesizedExpressionSyntax parenthesizedExpression
-                ? parenthesizedExpression.Expression
-                : ((PrefixUnaryExpressionSyntax)expression).Operand;
-        }
-
-        if (argument.NameColon is not null || expression is not LiteralExpressionSyntax and not DefaultExpressionSyntax)
-            return;
-
-        IParameterSymbol? parameter = ResolveParameter(argument, context);
-
-        if (parameter is not null)
+        if (ExplicitLiteralArgumentName.IsViolation(argument, context.SemanticModel, context.CancellationToken))
             context.ReportDiagnostic(Diagnostic.Create(Rule, argument.GetLocation()));
-    }
-
-    private static IParameterSymbol? ResolveParameter(ArgumentSyntax argument, SyntaxNodeAnalysisContext context)
-    {
-        if (context.SemanticModel.GetOperation(argument, context.CancellationToken) is IArgumentOperation operation)
-            return operation.Parameter;
-
-        if (argument.Parent is not BaseArgumentListSyntax argumentList || argumentList.Parent is null)
-            return null;
-
-        ISymbol? invokedSymbol = context.SemanticModel.GetSymbolInfo(argumentList.Parent, context.CancellationToken).Symbol;
-
-        ImmutableArray<IParameterSymbol> parameters = invokedSymbol switch
-        {
-            IMethodSymbol method => method.Parameters,
-            IPropertySymbol property => property.Parameters,
-            _ => [],
-        };
-
-        int argumentIndex = argumentList.Arguments.IndexOf(argument);
-
-        return argumentIndex < parameters.Length
-            ? parameters[argumentIndex]
-            : parameters.Length > 0 && parameters[parameters.Length - 1].IsParams
-            ? parameters[parameters.Length - 1]
-            : null;
     }
 }

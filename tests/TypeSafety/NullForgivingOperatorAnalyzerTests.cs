@@ -94,9 +94,9 @@ public sealed class NullForgivingOperatorAnalyzerTests
 
         CSharpCompilation compilation = CSharpCompilation.Create(
             assemblyName: "ExampleApplication",
-            syntaxTrees: [CSharpSyntaxTree.ParseText(source)],
-            references: AnalyzerTestHarness.References,
-            options: new CSharpCompilationOptions(OutputKind.ConsoleApplication)
+            [CSharpSyntaxTree.ParseText(source)],
+            AnalyzerTestHarness.References,
+            new CSharpCompilationOptions(OutputKind.ConsoleApplication)
         );
 
         Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));

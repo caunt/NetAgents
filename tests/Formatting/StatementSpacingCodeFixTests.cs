@@ -35,7 +35,7 @@ public sealed class StatementSpacingCodeFixTests
             "        int count = 0; // retain this comment", "        // explain the result", "        return count;", "    }", "}"]
         );
 
-        string expected = source.Replace(oldValue: "        // explain the result", newValue: lineEnding + "        // explain the result", StringComparison.Ordinal);
+        string expected = source.Replace(oldValue: "        // explain the result", lineEnding + "        // explain the result", StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixSpacing(source, fixAll: false));
     }
