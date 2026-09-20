@@ -59,7 +59,12 @@ internal static class ProjectFormatter
             typeof(Microsoft.CodeAnalysis.CSharp.Formatting.CSharpFormattingOptions).Assembly,
             .. analyzerPaths.Concat(styleFixes).Concat(featurePaths).Select(loader.LoadFromPath)];
 
-        using CompositionHost composition = new ContainerConfiguration().WithParts(assemblies.Distinct().SelectMany(GetLoadableTypes)).CreateContainer();
+        (Type[] parts, string[] skipped) = CompositionParts.Select(assemblies.Distinct());
+
+        foreach (string part in skipped)
+            inputs.Log.LogMessage(MessageImportance.Normal, $"NetAgents skips the {part} export because this build cannot load every type it declares");
+
+        using CompositionHost composition = new ContainerConfiguration().WithParts(parts).CreateContainer();
 
         using AdhocWorkspace workspace = new(MefHostServices.Create(composition));
 
@@ -182,19 +187,6 @@ internal static class ProjectFormatter
 
         // A linked file outside the project keeps its absolute path instead of a relative walk.
         return relative.StartsWith(value: "..", StringComparison.Ordinal) ? path : relative;
-    }
-
-    private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-    {
-        try
-        {
-            return assembly.GetTypes();
-        }
-        catch (ReflectionTypeLoadException exception)
-        {
-            // Analyzer assemblies can embed optional helpers for older Roslyn interfaces.
-            return exception.Types.OfType<Type>();
-        }
     }
 
     private static string GetPath(ITaskItem item)

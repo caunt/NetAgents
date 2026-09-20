@@ -523,6 +523,64 @@ public sealed class PackageConsumptionTests
         }
     }
 
+    /// <summary>
+    /// Verifies a web project formats although the SDK supplies code fixes that only load inside an IDE.
+    /// </summary>
+    [Fact]
+    public async Task PackageFormatsWebProjects()
+    {
+        DirectoryInfo workspace = Directory.CreateTempSubdirectory(prefix: "netagents-package-web-");
+
+        try
+        {
+            string packagePath = Environment.GetEnvironmentVariable(variable: "NETAGENTS_PACKAGE_PATH")
+                ?? await PackAnalyzer(workspace.FullName);
+
+            string version = VerifyPackageContents(packagePath);
+            string projectPath = Path.Combine(workspace.FullName, path2: "Consumer.csproj");
+            string sourcePath = Path.Combine(workspace.FullName, path2: "Program.cs");
+
+            // Microsoft.AspNetCore.App.CodeFixes exports a fixer whose dependency ships with Visual Studio
+            // instead of the SDK, and composing it once failed every web build before the compiler ran.
+            string projectContent = $$"""
+                <Project Sdk="Microsoft.NET.Sdk.Web">
+                  <PropertyGroup>
+                    <TargetFramework>net10.0</TargetFramework>
+                    <ImplicitUsings>enable</ImplicitUsings>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="NetAgents.Analyzers" Version="{{SecurityElement.Escape(version)}}" PrivateAssets="all" />
+                  </ItemGroup>
+                </Project>
+                """;
+
+            string sourceConfiguration = $$"""
+                <configuration><packageSources><clear />
+                <add key="local" value="{{SecurityElement.Escape(Path.GetDirectoryName(Path.GetFullPath(packagePath)))}}" />
+                </packageSources></configuration>
+                """;
+
+            await File.WriteAllTextAsync(projectPath, projectContent);
+            await File.WriteAllTextAsync(Path.Combine(workspace.FullName, path2: "NuGet.Config"), sourceConfiguration);
+            await File.WriteAllTextAsync(sourcePath, contents: "var builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\napp.Run();\n");
+            await RunDevelopmentKit(workspace.FullName, ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+
+            await RunDevelopmentKit(
+                workspace.FullName,
+                ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"],
+                forbiddenOutput: ["NetAgents automatic formatting failed"]
+            );
+
+            string formatted = await File.ReadAllTextAsync(sourcePath);
+            Assert.Contains(expectedSubstring: "WebApplicationBuilder builder = WebApplication.CreateBuilder(args);", formatted, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "WebApplication app = builder.Build();", formatted, StringComparison.Ordinal);
+        }
+        finally
+        {
+            workspace.Delete(recursive: true);
+        }
+    }
+
     private static async Task<string> PackAnalyzer(string workspacePath)
     {
         DirectoryInfo? repositoryDirectory = new(AppContext.BaseDirectory);
