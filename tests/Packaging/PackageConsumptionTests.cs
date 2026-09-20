@@ -89,7 +89,7 @@ public sealed class PackageConsumptionTests
             );
 
             await File.WriteAllTextAsync(sourcePath, source);
-            await RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+            await RunDevelopmentKit(workspace.FullName, ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
 
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
@@ -114,7 +114,7 @@ public sealed class PackageConsumptionTests
                     newValue: "<param name=\"builder\">The optional builder.</param>\n    /// <param name=\"length\">The required length.</param>",
                     StringComparison.Ordinal
                 )
-                .Replace(oldValue: "    /// <returns>The supplied name.</returns>\n", newValue: string.Empty, StringComparison.Ordinal)
+                .Replace(oldValue: "    /// <returns>The supplied name.</returns>\n", string.Empty, StringComparison.Ordinal)
                 .Replace(
                     oldValue: "string CreateGreeting(string recipientName)",
                     newValue: "void UpdateLength(System.Text.StringBuilder? builder, int length)",
@@ -133,6 +133,20 @@ public sealed class PackageConsumptionTests
             Assert.Contains(expectedSubstring: "builder?.Capacity = length;", simplifiedAssignments, StringComparison.Ordinal);
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             Assert.Equal(simplifiedAssignments, await File.ReadAllTextAsync(sourcePath));
+
+            string argumentNames = ValidSource.Replace(
+                oldValue: "return recipientName;",
+                newValue: "string padded = string.Empty.PadLeft(totalWidth: 4, ' ');\n\n        return string.Concat(str0: padded, recipientName);",
+                StringComparison.Ordinal
+            );
+
+            await File.WriteAllTextAsync(sourcePath, argumentNames);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            string namedArguments = await File.ReadAllTextAsync(sourcePath);
+            Assert.Contains(expectedSubstring: "PadLeft(totalWidth: 4, paddingChar: ' ')", namedArguments, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "string.Concat(padded, recipientName)", namedArguments, StringComparison.Ordinal);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            Assert.Equal(namedArguments, await File.ReadAllTextAsync(sourcePath));
 
             const string tupleMethod = """
                     private static (int X, int Y) ResolveCoordinates() => (1, 2);
@@ -184,7 +198,7 @@ public sealed class PackageConsumptionTests
             Assert.Equal(renamedTuple, await File.ReadAllTextAsync(sourcePath));
 
             string manyTupleMethods = string.Join(
-                separator: Environment.NewLine,
+                Environment.NewLine,
                 Enumerable.Range(start: 0, count: 70).Select(
                     static index => $$"""
                         internal static (string Habitat, int Width, int Height) ResolveBounds{{index}}(string value) =>
@@ -202,7 +216,7 @@ public sealed class PackageConsumptionTests
                 )
             );
 
-            string manyTupleSource = ValidSource.Replace(oldValue: "    }\n}\n", newValue: $"    }}\n\n{manyTupleMethods}\n}}\n", StringComparison.Ordinal);
+            string manyTupleSource = ValidSource.Replace(oldValue: "    }\n}\n", $"    }}\n\n{manyTupleMethods}\n}}\n", StringComparison.Ordinal);
             await File.WriteAllTextAsync(sourcePath, manyTupleSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             string renamedManyTuples = await File.ReadAllTextAsync(sourcePath);
@@ -256,13 +270,10 @@ public sealed class PackageConsumptionTests
 
             await File.WriteAllTextAsync(projectPath, multiTargetProject);
             await File.WriteAllTextAsync(sourcePath, conditionalSource);
-            await RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+            await RunDevelopmentKit(workspace.FullName, ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             string multiTargetSource = await File.ReadAllTextAsync(sourcePath);
-            Assert.Equal(
-                expected: 3,
-                actual: multiTargetSource.Split(separator: "string.Concat(recipientName, string.Empty)", StringSplitOptions.None).Length
-            );
+            Assert.Equal(expected: 3, multiTargetSource.Split(separator: "string.Concat(recipientName, string.Empty)", StringSplitOptions.None).Length);
             Assert.True(File.Exists(Path.Combine(workspace.FullName, path2: "bin/Debug/net10.0/Consumer.dll")));
             Assert.True(File.Exists(Path.Combine(workspace.FullName, path2: "bin/Debug/net10.0-windows/Consumer.dll")));
 
@@ -329,90 +340,26 @@ public sealed class PackageConsumptionTests
                 """;
 
             await File.WriteAllTextAsync(Path.Combine(paths: [workspace.FullName, "NuGet.Config"]), sourceConfiguration);
-            await RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(paths: [workspace.FullName, "packages"])]);
+            await RunDevelopmentKit(workspace.FullName, ["restore", projectPath, "--packages", Path.Combine(paths: [workspace.FullName, "packages"])]);
 
-            // This test exercises diagnostics before fixes; automatic builds are covered separately.
-            string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet", "-p:NetAgentsFormatOnBuild=false"];
+            // Formatting always runs, so these cases cover the violations no code fix can repair.
+            string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
             await RunDevelopmentKit(workspace.FullName, buildArguments);
             await VerifyDirectoryLimit(workspace.FullName, buildArguments);
 
-            string spacingSource = ValidSource.Replace(
-                oldValue: "return recipientName;",
-                newValue: "string greeting = recipientName;\n        if (string.IsNullOrEmpty(greeting))\n            return string.Empty;\n        return greeting;",
-                StringComparison.Ordinal
-            );
-
-            await File.WriteAllTextAsync(sourcePath, spacingSource);
-            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0016");
-            await RunDevelopmentKit(workspace.FullName, arguments: ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0016", "--no-restore"]);
-
-            string expectedSpacing = spacingSource.Replace(oldValue: "\n        if", newValue: "\n\n        if", StringComparison.Ordinal)
-                .Replace(oldValue: "\n        return greeting;", newValue: "\n\n        return greeting;", StringComparison.Ordinal);
-
-            Assert.Equal(expectedSpacing, await File.ReadAllTextAsync(sourcePath));
-            await RunDevelopmentKit(workspace.FullName, buildArguments);
-            await RunDevelopmentKit(
-                workspace.FullName,
-                arguments:
-                ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0016", "--no-restore", "--verify-no-changes"]
-            );
-
-            const string braceBody = """
-                if (string.IsNullOrEmpty(recipientName))
-                        {
-                            return string.Empty;
-                        }
-
-                        foreach (char character in recipientName)
-                        {
-                            if (char.IsWhiteSpace(character))
-                                return recipientName
-                                    .Trim();
-                        }
-
-                        return recipientName;
-                """;
-
-            string braceSource = ValidSource.Replace(oldValue: "return recipientName;", braceBody, StringComparison.Ordinal);
-            await File.WriteAllTextAsync(sourcePath, braceSource);
-            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0017");
-            await RunDevelopmentKit(workspace.FullName, arguments: ["format", "analyzers", projectPath, "--diagnostics", "NETAGENTS0017", "--no-restore"]);
-
-            string expectedBraces = braceSource.Replace(
-                oldValue: "        {\n            return string.Empty;\n        }",
-                newValue: "            return string.Empty;",
-                StringComparison.Ordinal
-            )
-                .Replace(
-                    oldValue: "            if (char.IsWhiteSpace(character))\n                return recipientName\n                    .Trim();",
-                    newValue: "            if (char.IsWhiteSpace(character))\n            {\n                return recipientName\n                    .Trim();\n            }",
-                    StringComparison.Ordinal
-                );
-
-            Assert.Equal(expectedBraces, await File.ReadAllTextAsync(sourcePath));
-            await RunDevelopmentKit(workspace.FullName, buildArguments);
-            await RunDevelopmentKit(workspace.FullName, arguments: ["format", projectPath, "--no-restore", "--verify-no-changes"]);
-            await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0017\n" + braceSource);
-            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0017");
+            // Repairable violations are covered by the automatic formatting test; this one keeps the
+            // cases that survive every available fix, so a clean build proves nothing was left unenforced.
+            await RunDevelopmentKit(workspace.FullName, ["format", projectPath, "--no-restore", "--verify-no-changes"]);
 
             string lookupSource = ValidSource.Replace(
                 oldValue: "return recipientName;",
-                newValue: "System.Collections.Generic.Dictionary<string, string> values = [];\n\n"
+                "System.Collections.Generic.Dictionary<string, string> values = [];\n\n"
                     + "        return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
                 StringComparison.Ordinal
             );
 
             await File.WriteAllTextAsync(sourcePath, lookupSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments);
-            await File.WriteAllTextAsync(
-                sourcePath,
-                lookupSource.Replace(
-                    oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
-                    newValue: "bool found = values.TryGetValue(recipientName, out string? greeting);\n\n        return greeting ?? recipientName;",
-                    StringComparison.Ordinal
-                )
-            );
-            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "IDE0059");
 
             string[] ignoredLookups =
             [
@@ -424,7 +371,7 @@ public sealed class PackageConsumptionTests
             {
                 string ignoredSource = lookupSource.Replace(
                     oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
-                    newValue: ignoredLookup + "\n\n        return greeting ?? recipientName;",
+                    ignoredLookup + "\n\n        return greeting ?? recipientName;",
                     StringComparison.Ordinal
                 );
 
@@ -448,21 +395,9 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001");
             await File.WriteAllTextAsync(
                 sourcePath,
-                ValidSource.Replace(oldValue: "        return recipientName;", newValue: "return recipientName;", StringComparison.Ordinal)
-            );
-            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "IDE0055");
-            await File.WriteAllTextAsync(sourcePath, "using System.Text;\n\n" + ValidSource);
-            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "IDE0005");
-            await File.WriteAllTextAsync(
-                sourcePath,
-                ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n", newValue: string.Empty, StringComparison.Ordinal)
+                ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n", string.Empty, StringComparison.Ordinal)
             );
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS1591");
-            await File.WriteAllTextAsync(
-                sourcePath,
-                ValidSource.Replace(oldValue: "return recipientName;", newValue: "return recipientName.ToLower();", StringComparison.Ordinal)
-            );
-            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CA1311");
             await File.WriteAllTextAsync(sourcePath, ValidSource);
 
             string editorConfigurationPath = Path.Combine(paths: [workspace.FullName, ".editorconfig"]);
@@ -512,7 +447,7 @@ public sealed class PackageConsumptionTests
                     projectPath,
                     projectContent.Replace(
                         oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
-                        newValue: $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}",
+                        $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}",
                         StringComparison.Ordinal
                     )
                 );
@@ -536,7 +471,7 @@ public sealed class PackageConsumptionTests
             ];
 
             foreach (string conflictingArgument in conflictingBuildArguments)
-                await RunDevelopmentKit(workspace.FullName, arguments: [.. buildArguments, conflictingArgument], expectedDiagnosticIdentifier: "NETAGENTS0014");
+                await RunDevelopmentKit(workspace.FullName, [.. buildArguments, conflictingArgument], expectedDiagnosticIdentifier: "NETAGENTS0014");
 
             await RunDevelopmentKit(workspace.FullName, buildArguments);
         }
@@ -562,8 +497,7 @@ public sealed class PackageConsumptionTests
         string packageDirectory = Path.Combine(paths: [workspacePath, "artifacts"]);
         await RunDevelopmentKit(
             repositoryDirectory.FullName,
-            arguments:
-        [
+                    [
             "pack", "src/NetAgents.Analyzers.csproj", "--configuration", configuration,
             "--no-build", "--no-restore", "--output", packageDirectory,
         ]
@@ -615,10 +549,10 @@ public sealed class PackageConsumptionTests
         }
 
         string output = await standardOutput.ConfigureAwait(continueOnCapturedContext: false) + await standardError.ConfigureAwait(continueOnCapturedContext: false);
-        Assert.DoesNotContain(expectedSubstring: "AD0001", actualString: output, StringComparison.Ordinal);
+        Assert.DoesNotContain(expectedSubstring: "AD0001", output, StringComparison.Ordinal);
 
         // A formatting fault must reach the log as a build error instead of aborting the task.
-        Assert.DoesNotContain(expectedSubstring: "MSB4018", actualString: output, StringComparison.Ordinal);
+        Assert.DoesNotContain(expectedSubstring: "MSB4018", output, StringComparison.Ordinal);
 
         if (expectedDiagnosticIdentifier is null)
         {
@@ -634,7 +568,7 @@ public sealed class PackageConsumptionTests
     private static async Task VerifyConfigurationMatchesTemplate(string workspacePath, string packagePath)
     {
         string templateDirectory = Path.Combine(paths: [workspacePath, "microsoft-defaults"]);
-        await RunDevelopmentKit(workspacePath, arguments: ["new", "editorconfig", "--output", templateDirectory])
+        await RunDevelopmentKit(workspacePath, ["new", "editorconfig", "--output", templateDirectory])
             .ConfigureAwait(continueOnCapturedContext: false);
         string templatePath = Path.Combine(paths: [templateDirectory, ".editorconfig"]);
         string template = await File.ReadAllTextAsync(templatePath).ConfigureAwait(continueOnCapturedContext: false);
@@ -754,7 +688,7 @@ public sealed class PackageConsumptionTests
 
         string discardedLoop = ValidSource.Replace(
             oldValue: "return recipientName;",
-            newValue: "(string First, string Second)[] greetings = [(recipientName, string.Empty)];\n\n"
+            "(string First, string Second)[] greetings = [(recipientName, string.Empty)];\n\n"
                 + "        foreach ((string greeting, string _) in greetings)\n            recipientName = greeting;\n\n        return recipientName;",
             StringComparison.Ordinal
         );
@@ -789,7 +723,7 @@ public sealed class PackageConsumptionTests
 
         Assert.Equal(
             expected: 2,
-            actual: package.Entries.Count(
+            package.Entries.Count(
                 static entry => entry.FullName.StartsWith(value: "analyzers/", StringComparison.Ordinal)
             && entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal)
             )

@@ -7,7 +7,7 @@
   </PropertyGroup>
   <UsingTask TaskName="NetAgents.BuildTasks.FormatProject" AssemblyFile="$(NetAgentsBuildTaskPath)" />
   <Target Name="FormatNetAgentsConsumerSource" BeforeTargets="CoreCompile" DependsOnTargets="ValidateNetAgentsConsumerPolicy"
-          Condition="'$(DesignTimeBuild)' != 'true' and '$(NetAgentsFormatOnBuild)' != 'false' and ('$(NetAgentsRepositoryBuild)' != 'true' or Exists('$(NetAgentsRepositoryTaskSource)'))">
+          Condition="'$(DesignTimeBuild)' != 'true' and ('$(NetAgentsRepositoryBuild)' != 'true' or Exists('$(NetAgentsRepositoryTaskSource)'))">
     <ItemGroup>
       <NetAgentsFormattingAnalyzers Include="@(Analyzer)" />
       <NetAgentsFormattingAnalyzers Include="$(NetAgentsCodeFixAssemblyPath)"

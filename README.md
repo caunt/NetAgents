@@ -30,12 +30,6 @@ On each build, NetAgents:
 
 **Builds can change your source files.** Review those changes before committing. Some violations require a manual fix; IDE quick fixes and `dotnet format` are also available.
 
-To check the rules without changing files:
-
-```bash
-dotnet build -p:NetAgentsFormatOnBuild=false
-```
-
 ## 📏 Formatting rules
 
 - **Conditions:** keep conditions on one line, with at most **128 characters**. Extract longer expressions into separate variables. Ternary conditions follow this rule; their `?` and `:` branches can span multiple lines.
