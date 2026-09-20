@@ -19,6 +19,10 @@ public sealed class ArgumentLayoutAnalyzerTests
     [InlineData("public class ExampleType { public void Execute(string value, int count) { Execute(value, count); } }")]
     [InlineData("public class ExampleType { public void Execute(\n// Explanation\nstring value\n) { } }")]
     [InlineData("public class ExampleType { public void Execute(\n/* Explanation\ncontinued */ string value\n) { } }")]
+    [InlineData("public class ExampleType { public void Execute(string value) // Implements the contract\n    { } }")]
+    [InlineData(
+        "public class ExampleType { public string Execute(string value) => value.Substring(startIndex: 1) // Skips the prefix\n        .Trim(); }"
+    )]
     public async Task AcceptsValidLayouts(string source)
     {
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source));

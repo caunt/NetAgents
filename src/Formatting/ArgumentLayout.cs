@@ -86,9 +86,13 @@ internal static class ArgumentLayout
     {
         string compact = GetCompactText(list);
 
+        // Only trivia the compact text reproduces matters; trivia outside the delimiters stays where it is.
+        bool hasInlineComment = list.DescendantTrivia()
+            .Any(trivia => trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) && list.Span.Contains(trivia.SpanStart));
+
         return compact.Length - 2 > LayoutLimits.MaximumInlineLength
             || compact.IndexOfAny(['\r', '\n', '\u0085', '\u2028', '\u2029']) >= 0
-            || list.DescendantTrivia().Any(static trivia => trivia.IsKind(SyntaxKind.SingleLineCommentTrivia));
+            || hasInlineComment;
     }
 
     private static int GetLine(SourceText source, int position)
