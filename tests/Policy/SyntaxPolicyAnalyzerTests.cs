@@ -38,6 +38,22 @@ public sealed class SyntaxPolicyAnalyzerTests
     }
 
     /// <summary>
+    /// Verifies the authored source file length limit, counting the required final newline as a terminator.
+    /// </summary>
+    /// <param name="authoredLineCountText">The number of authored lines, each closed by a newline.</param>
+    [Theory]
+    [InlineData("999")]
+    [InlineData("1000")]
+    public async Task EnforcesSourceFileLengthBoundary(string authoredLineCountText)
+    {
+        int authoredLineCount = int.Parse(authoredLineCountText, System.Globalization.CultureInfo.InvariantCulture);
+        string source = "public class ExampleType { }" + new string(c: '\n', authoredLineCount);
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileLengthAnalyzer(), source);
+
+        Assert.Equal(authoredLineCount > 999 ? 1 : 0, diagnostics.Length);
+    }
+
+    /// <summary>
     /// Verifies that generated source is excluded from custom analysis.
     /// </summary>
     [Fact]
@@ -94,17 +110,6 @@ public sealed class SyntaxPolicyAnalyzerTests
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new NullForgivingOperatorAnalyzer(), source: "public class ExampleType { public string Value => null!; }");
 
         Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-    }
-
-    /// <summary>
-    /// Verifies the authored source file length limit.
-    /// </summary>
-    [Fact]
-    public async Task RejectsOversizedSourceFiles()
-    {
-        string source = "public class ExampleType { }" + new string(c: '\n', count: 999);
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileLengthAnalyzer(), source);
-        Assert.Equal(SourceFileLengthAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
 
     /// <summary>

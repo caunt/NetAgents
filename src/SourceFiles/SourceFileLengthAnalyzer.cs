@@ -35,7 +35,12 @@ public sealed class SourceFileLengthAnalyzer() : PolicyAnalyzer(Rule)
 
     private static void AnalyzeTree(SyntaxTreeAnalysisContext context)
     {
-        if (context.Tree.GetText(context.CancellationToken).Lines.Count >= 1_000)
+        TextLineCollection lines = context.Tree.GetText(context.CancellationToken).Lines;
+
+        // The required final newline closes the last authored line instead of starting another one.
+        int authoredLines = lines.Count > 0 && lines[lines.Count - 1].Span.IsEmpty ? lines.Count - 1 : lines.Count;
+
+        if (authoredLines >= 1_000)
             context.ReportDiagnostic(Diagnostic.Create(Rule, Location.Create(context.Tree, new TextSpan(start: 0, length: 0))));
     }
 }
