@@ -8,7 +8,6 @@ namespace NetAgents.Analyzers.Tests.TypeSafety;
 /// </summary>
 public sealed class UntypedValueAnalyzerTests
 {
-
     /// <summary>
     /// Verifies that generic collections retain their element types.
     /// </summary>

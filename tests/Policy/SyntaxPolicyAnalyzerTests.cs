@@ -12,7 +12,6 @@ namespace NetAgents.Analyzers.Tests.Policy;
 /// </summary>
 public sealed class SyntaxPolicyAnalyzerTests
 {
-
     /// <summary>
     /// Verifies that cancellation provides an accepted loop condition.
     /// </summary>

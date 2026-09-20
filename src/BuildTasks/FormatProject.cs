@@ -90,5 +90,4 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
             }
         }
     }
-
 }

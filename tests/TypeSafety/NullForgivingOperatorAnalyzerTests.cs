@@ -12,7 +12,6 @@ namespace NetAgents.Analyzers.Tests.TypeSafety;
 /// </summary>
 public sealed class NullForgivingOperatorAnalyzerTests
 {
-
     /// <summary>
     /// Verifies logical operators and generated source remain outside the rule.
     /// </summary>

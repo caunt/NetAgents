@@ -10,7 +10,6 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class ArgumentLayoutAnalyzerTests
 {
-
     /// <summary>
     /// Accepts compact lists and expanded lists whose content cannot safely occupy one line.
     /// </summary>

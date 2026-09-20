@@ -18,10 +18,14 @@ namespace NetAgents.Analyzers.Tests.Infrastructure;
 
 internal static class CodeFixTestHarness
 {
-
     public static async Task<string> FixArguments(string source, bool fixAll)
     {
         return await Fix(source, new ArgumentLayoutAnalyzer(), new ArgumentLayoutCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixBlockPadding(string source, bool fixAll)
+    {
+        return await Fix(source, new BlockPaddingAnalyzer(), new BlockPaddingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<string> FixBraces(string source, bool fixAll)

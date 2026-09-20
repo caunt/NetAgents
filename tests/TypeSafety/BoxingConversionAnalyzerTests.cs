@@ -8,7 +8,6 @@ namespace NetAgents.Analyzers.Tests.TypeSafety;
 /// </summary>
 public sealed class BoxingConversionAnalyzerTests
 {
-
     /// <summary>
     /// Verifies typed operations, interpolation, and constrained generic calls.
     /// </summary>

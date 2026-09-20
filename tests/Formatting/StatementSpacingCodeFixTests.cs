@@ -7,7 +7,6 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class StatementSpacingCodeFixTests
 {
-
     /// <summary>
     /// Verifies empty lines inside block comments do not count as statement separators.
     /// </summary>

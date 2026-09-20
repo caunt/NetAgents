@@ -11,6 +11,7 @@
     <Compile Include="../Ordering/MemberOrdering.cs" Link="Ordering/MemberOrdering.cs" />
     <Compile Include="../Formatting/LayoutLimits.cs" Link="Formatting/LayoutLimits.cs" />
     <Compile Include="../Formatting/ArgumentLayout.cs" Link="Formatting/ArgumentLayout.cs" />
+    <Compile Include="../Formatting/BlockPadding.cs" Link="Formatting/BlockPadding.cs" />
     <Compile Include="../Formatting/DeclarationSpacing.cs" Link="Formatting/DeclarationSpacing.cs" />
     <Compile Include="../Formatting/MethodSpacing.cs" Link="Formatting/MethodSpacing.cs" />
     <Compile Include="../Formatting/StatementSpacing.cs" Link="Formatting/StatementSpacing.cs" />

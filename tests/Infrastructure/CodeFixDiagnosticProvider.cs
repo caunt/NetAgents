@@ -6,7 +6,6 @@ namespace NetAgents.Analyzers.Tests.Infrastructure;
 
 internal sealed class CodeFixDiagnosticProvider(DiagnosticAnalyzer analyzer) : FixAllContext.DiagnosticProvider
 {
-
     public override async Task<IEnumerable<Diagnostic>> GetAllDiagnosticsAsync(Project project, CancellationToken cancellationToken)
     {
         List<Diagnostic> diagnostics = [];

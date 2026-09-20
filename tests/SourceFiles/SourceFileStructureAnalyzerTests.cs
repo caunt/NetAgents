@@ -8,7 +8,6 @@ namespace NetAgents.Analyzers.Tests.SourceFiles;
 /// </summary>
 public sealed class SourceFileStructureAnalyzerTests
 {
-
     /// <summary>
     /// Verifies supported top-level declarations and appropriate nested types.
     /// </summary>

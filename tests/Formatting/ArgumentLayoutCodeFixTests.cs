@@ -7,7 +7,6 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class ArgumentLayoutCodeFixTests
 {
-
     /// <summary>
     /// Collapsing a short lambda argument preserves its body and reaches a stable layout.
     /// </summary>

@@ -69,5 +69,4 @@ internal static class StatementSpacing
                     || source.Lines.GetLineFromPosition(declaration.SpanStart).LineNumber
                         != source.Lines.GetLineFromPosition(declaration.Span.End).LineNumber));
     }
-
 }

@@ -10,7 +10,6 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class ControlFlowBracesAnalyzerTests
 {
-
     /// <summary>
     /// Verifies all simple branches lose braces, while mixed chains acquire braces consistently.
     /// </summary>

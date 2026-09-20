@@ -8,7 +8,6 @@ namespace NetAgents.Analyzers.Tests.Reliability;
 /// </summary>
 public sealed class IgnoredReturnValueAnalyzerTests
 {
-
     /// <summary>
     /// Verifies that consuming a result or awaiting completion without a result is permitted.
     /// </summary>

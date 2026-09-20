@@ -10,7 +10,6 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class ConditionLayoutAnalyzerTests
 {
-
     /// <summary>
     /// Accepts short conditions and ignores unrelated multiline headers or expressions.
     /// </summary>

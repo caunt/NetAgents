@@ -11,7 +11,6 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class ControlFlowBracesCodeFixTests
 {
-
     /// <summary>
     /// Verifies a multiline branch requires braces on all branches, including single-line else bodies.
     /// </summary>

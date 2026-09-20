@@ -8,7 +8,6 @@ namespace NetAgents.Analyzers.Tests.Readability;
 /// </summary>
 public sealed class ExplicitLiteralArgumentNameAnalyzerTests
 {
-
     /// <summary>
     /// Verifies member-access arguments do not require parameter names.
     /// </summary>

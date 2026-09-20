@@ -8,7 +8,6 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class StatementSpacingAnalyzerTests
 {
-
     /// <summary>
     /// Verifies that block edges, embedded bodies, and existing blank lines remain unchanged.
     /// </summary>

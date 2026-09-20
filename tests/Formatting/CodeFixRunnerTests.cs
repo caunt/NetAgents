@@ -15,7 +15,6 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// <summary>Checks formatter progress with unresolved compiler diagnostics.</summary>
 public sealed class CodeFixRunnerTests
 {
-
     /// <summary>Allows existing compiler errors to move when a fix changes preceding text.</summary>
     [Fact]
     public async Task PreservesMovedCompilerError()

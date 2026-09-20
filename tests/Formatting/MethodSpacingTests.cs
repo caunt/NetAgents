@@ -8,7 +8,6 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// </summary>
 public sealed class MethodSpacingTests
 {
-
     /// <summary>
     /// Verifies existing separation and unrelated members are left alone.
     /// </summary>

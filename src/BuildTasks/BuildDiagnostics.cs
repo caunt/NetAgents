@@ -7,7 +7,6 @@ namespace NetAgents.BuildTasks;
 
 internal sealed class BuildDiagnostics(ImmutableArray<Diagnostic> diagnostics) : FixAllContext.DiagnosticProvider
 {
-
     public override Task<IEnumerable<Diagnostic>> GetAllDiagnosticsAsync(Project project, CancellationToken cancellationToken)
     {
         return Task.FromResult<IEnumerable<Diagnostic>>([.. diagnostics]);

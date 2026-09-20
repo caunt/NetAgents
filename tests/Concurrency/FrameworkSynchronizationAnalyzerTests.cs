@@ -8,7 +8,6 @@ namespace NetAgents.Analyzers.Tests.Concurrency;
 /// </summary>
 public sealed class FrameworkSynchronizationAnalyzerTests
 {
-
     /// <summary>
     /// Verifies that atomic operations and asynchronous task composition remain available.
     /// </summary>

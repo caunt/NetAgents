@@ -36,6 +36,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0020 | Keep argument and parameter lists on one line when their compact contents are at most 128 characters; otherwise put each item and the closing delimiter on separate lines. Includes an automatic fix and Fix All support. |
 | NETAGENTS0021 | Require a blank line between adjacent method declarations, including constructors, destructors, and operators. Includes an automatic fix and Fix All support. |
 | NETAGENTS0022 | Order type members by kind, visibility, const/static/instance, readonly, then ordinal name. Includes an automatic fix and Fix All support. |
+| NETAGENTS0023 | Forbid blank lines directly after an opening brace or before a closing brace, in every block: type bodies, method and statement blocks, accessor lists, namespaces, enums, switch bodies, initializers, lambdas, and local functions. Includes an automatic fix and Fix All support. |
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
@@ -59,13 +60,25 @@ Statement spacing covers `if`, loops, `switch`, `try`, `using` (including
 declarations), `return`, `throw`, `break`, `continue`, and `yield`. Multiline
 local declarations include chained calls, switch expressions, conditional
 expressions, and object initializers. Single-line declarations can remain
-grouped. Block edges stay unpadded: no blank line is added after `{` or before
-`}`, and unbraced bodies stay attached to their controlling statement.
-Comments and existing line endings are preserved. Use the editor's
-**Insert blank line between statements** quick fix or run:
+grouped. Block edges stay unpadded, and unbraced bodies stay attached to their
+controlling statement. Comments and existing line endings are preserved. Use the
+editor's **Insert blank line between statements** quick fix or run:
 
 ```bash
 dotnet format analyzers --diagnostics NETAGENTS0016
+```
+
+`NETAGENTS0023` enforces unpadded block edges everywhere rather than merely
+declining to add padding: a blank line directly after `{` or directly before `}`
+is an error in every block, including type bodies, method and statement blocks,
+accessor lists, namespaces, enums, switch bodies, object and collection
+initializers, lambdas, and local functions. Blank lines inside comments and
+string literals are untouched, blocks containing preprocessor directives are
+skipped, and existing line endings are preserved because the fix only deletes.
+Run:
+
+```bash
+dotnet format analyzers --diagnostics NETAGENTS0023
 ```
 
 Brace style depends on the **body**, even when a loop header spans several

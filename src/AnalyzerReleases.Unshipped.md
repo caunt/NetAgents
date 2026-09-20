@@ -25,3 +25,4 @@ NETAGENTS0019 | Formatting | Error | Single-line conditions of at most 128 chara
 NETAGENTS0020 | Formatting | Error | Single-line argument and parameter lists up to 128 characters, otherwise one item per line
 NETAGENTS0021 | Formatting | Error | Blank lines between adjacent method declarations
 NETAGENTS0022 | Ordering | Error | Order members by kind, visibility, storage, readonly modifier, and name
+NETAGENTS0023 | Formatting | Error | No blank lines directly after an opening brace or before a closing brace
