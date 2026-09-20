@@ -28,7 +28,7 @@ public sealed class CodeFixRunnerTests
             .AddDocument(name: "Example.cs", SourceText.From(text: "class Example\r\n{\r\n}"), filePath: "/Example.cs").Project
             .AddAnalyzerConfigDocument(name: ".globalconfig", SourceText.From(text: "is_global = true\ninsert_final_newline = true\n"), filePath: "/.globalconfig").Project;
 
-        Project result = await CodeFixRunner.Fix(project, [], [], CancellationToken.None);
+        Project result = (await CodeFixRunner.Fix(project, [], [], CancellationToken.None)).Project;
         SourceText text = await result.Documents.Single().GetTextAsync();
 
         Assert.EndsWith(expectedEndString: "}\r\n", text.ToString(), StringComparison.Ordinal);
@@ -45,7 +45,7 @@ public sealed class CodeFixRunnerTests
         using AdhocWorkspace workspace = new();
 
         ThrowingFix provider = new(stage);
-        Project result = await CodeFixRunner.Fix(CreateProject(workspace), [], [provider], CancellationToken.None);
+        Project result = (await CodeFixRunner.Fix(CreateProject(workspace), [], [provider], CancellationToken.None)).Project;
         Compilation? compilation = await result.GetCompilationAsync();
 
         Assert.NotNull(compilation);
@@ -70,7 +70,7 @@ public sealed class CodeFixRunnerTests
         using AdhocWorkspace workspace = new();
 
         ThrowingFix provider = new(stage);
-        Project result = await CodeFixRunner.Fix(CreateProject(workspace), [new MethodSpacingAnalyzer()], [provider], CancellationToken.None);
+        Project result = (await CodeFixRunner.Fix(CreateProject(workspace), [new MethodSpacingAnalyzer()], [provider], CancellationToken.None)).Project;
         Compilation? compilation = await result.GetCompilationAsync();
 
         Assert.NotNull(compilation);
@@ -92,7 +92,7 @@ public sealed class CodeFixRunnerTests
         Project project = CreateProject(workspace)
             .AddDocument(name: "Generated.cs", SourceText.From(generated), filePath: "Generated.cs").Project;
 
-        Project result = await CodeFixRunner.Fix(project, [], [], CancellationToken.None);
+        Project result = (await CodeFixRunner.Fix(project, [], [], CancellationToken.None)).Project;
         Document document = result.Documents.Single(static candidate => candidate.Name == "Generated.cs");
 
         Assert.Equal(generated, (await document.GetTextAsync()).ToString());
@@ -108,7 +108,7 @@ public sealed class CodeFixRunnerTests
         project = project.Documents.Single().WithText(SourceText.From(text: "class Example { void Run() { int marker = 0; Missing(); } }")).Project;
         ReplacementFix provider = new(source: "class Example { void Run() { Missing(); } }");
 
-        Project result = await CodeFixRunner.Fix(project, [], [provider], CancellationToken.None);
+        Project result = (await CodeFixRunner.Fix(project, [], [provider], CancellationToken.None)).Project;
         Compilation? compilation = await result.GetCompilationAsync();
 
         Assert.NotNull(compilation);
@@ -132,7 +132,7 @@ public sealed class CodeFixRunnerTests
         project = project.Documents.Single().WithText(SourceText.From(source)).Project;
         UnresolvedFix provider = new(diagnosticIdentifier);
 
-        Project result = await CodeFixRunner.Fix(project, [], [provider], CancellationToken.None);
+        Project result = (await CodeFixRunner.Fix(project, [], [provider], CancellationToken.None)).Project;
         Compilation? compilation = await result.GetCompilationAsync();
 
         Assert.NotNull(compilation);
@@ -152,7 +152,7 @@ public sealed class CodeFixRunnerTests
 
         CompilerFix provider = new(mode: "valid");
         CodeFixProvider[] providers = firstAction == "noop" ? [new CompilerFix(mode: "noop"), provider] : [provider];
-        Project result = await CodeFixRunner.Fix(CreateProject(workspace), [new MethodSpacingAnalyzer()], providers, CancellationToken.None);
+        Project result = (await CodeFixRunner.Fix(CreateProject(workspace), [new MethodSpacingAnalyzer()], providers, CancellationToken.None)).Project;
         Compilation? compilation = await result.GetCompilationAsync();
         Assert.NotNull(compilation);
         Assert.DoesNotContain(compilation.GetDiagnostics().ToArray(), static diagnostic => diagnostic.Id == "CS0122");
@@ -181,6 +181,34 @@ public sealed class CodeFixRunnerTests
         Assert.Contains(diagnosticIdentifier, exception.Message, StringComparison.Ordinal);
         Assert.Equal(expected: 1, provider.Attempts);
         Assert.Equal(source, (await project.Documents.Single().GetTextAsync()).ToString());
+    }
+
+    /// <summary>Reports the errors that remain so the caller can name the files it already rewrote.</summary>
+    [Fact]
+    public async Task ReportsBlockedDiagnostics()
+    {
+        using AdhocWorkspace workspace = new();
+
+        (Project blocked, ImmutableArray<Diagnostic> remaining) = await CodeFixRunner.Fix(CreateProject(workspace), [], [], CancellationToken.None);
+
+        Assert.Equal(expected: "CS0122", remaining.Single().Id);
+
+        // The unrelated whitespace repair still lands, which is what a failing build writes to disk.
+        Assert.Contains(
+            expectedSubstring: "private static int Value",
+            (await blocked.Documents.Single().GetTextAsync()).ToString(),
+            StringComparison.Ordinal
+        );
+
+        Project clean = workspace.AddProject(name: "Clean", LanguageNames.CSharp)
+            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+            .AddMetadataReferences(AnalyzerTestHarness.References)
+            .AddDocument(name: "Clean.cs", SourceText.From(text: "class Clean\n{\n}\n"), filePath: "Clean.cs").Project;
+
+        (Project formatted, ImmutableArray<Diagnostic> none) = await CodeFixRunner.Fix(clean, [], [], CancellationToken.None);
+
+        Assert.True(none.IsEmpty);
+        Assert.Equal(expected: "class Clean\n{\n}\n", (await formatted.Documents.Single().GetTextAsync()).ToString());
     }
 
     /// <summary>Reports stalled actions without exhausting the pass limit.</summary>
@@ -216,7 +244,7 @@ public sealed class CodeFixRunnerTests
         project = project.Documents.Single().WithText(SourceText.From(source)).Project;
         SuggestionFix provider = new(source: "using System;\nclass Example { int Read() => \"text\"; }");
 
-        Project result = await CodeFixRunner.Fix(project, [], [provider], CancellationToken.None);
+        Project result = (await CodeFixRunner.Fix(project, [], [provider], CancellationToken.None)).Project;
 
         Assert.Equal(source, (await result.Documents.Single().GetTextAsync()).ToString());
         Assert.InRange(provider.Attempts, low: 1, high: 2);
@@ -235,7 +263,7 @@ public sealed class CodeFixRunnerTests
         ThrowingFix throwing = new(stage);
         CompilerFix working = new(mode: "valid");
         int expectedAttempts = stage == "identifiers" ? 0 : 1;
-        Project result = await CodeFixRunner.Fix(CreateProject(workspace), [new MethodSpacingAnalyzer()], [throwing, working], CancellationToken.None);
+        Project result = (await CodeFixRunner.Fix(CreateProject(workspace), [new MethodSpacingAnalyzer()], [throwing, working], CancellationToken.None)).Project;
         Compilation? compilation = await result.GetCompilationAsync();
 
         Assert.NotNull(compilation);

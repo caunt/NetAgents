@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Composition.Hosting;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 
@@ -142,7 +143,10 @@ internal static class ProjectFormatter
 
         ImmutableArray<DiagnosticAnalyzer> analyzers = [.. original.AnalyzerReferences.SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())];
         CodeFixProvider[] providers = [.. composition.GetExports<CodeFixProvider>()];
-        Project changed = await CodeFixRunner.Fix(original, analyzers, providers, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        (Project changed, ImmutableArray<Diagnostic> blocking) = await CodeFixRunner.Fix(original, analyzers, providers, cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        List<string> rewritten = [];
 
         foreach (Document document in changed.Documents)
         {
@@ -158,8 +162,19 @@ internal static class ProjectFormatter
                     after.Encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
                     cancellationToken
                 ).ConfigureAwait(continueOnCapturedContext: false);
+                rewritten.Add(GetDisplayPath(projectDirectory, document.FilePath));
             }
         }
+
+        Report(inputs, rewritten, blocking);
+    }
+
+    private static string GetDisplayPath(string projectDirectory, string path)
+    {
+        string relative = Path.GetRelativePath(projectDirectory, path);
+
+        // A linked file outside the project keeps its absolute path instead of a relative walk.
+        return relative.StartsWith(value: "..", StringComparison.Ordinal) ? path : relative;
     }
 
     private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
@@ -185,5 +200,32 @@ internal static class ProjectFormatter
         byte[] bytes = await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         return SourceText.From(bytes, bytes.Length, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+    }
+
+    // Formatting runs before the compiler, so a build that fails afterwards still leaves these edits
+    // behind. Naming every rewritten file keeps that visible to reviewers and dirty-tree checks.
+    private static void Report(FormatProject inputs, List<string> rewritten, ImmutableArray<Diagnostic> blocking)
+    {
+        if (rewritten.Count == 0)
+            return;
+
+        foreach (string path in rewritten)
+            inputs.Log.LogMessage(MessageImportance.High, "NetAgents rewrote " + path);
+
+        if (blocking.IsEmpty)
+            return;
+
+        string[] identifiers = [.. blocking.Select(static diagnostic => diagnostic.Id).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        string files = rewritten.Count == 1 ? "file" : "files";
+        string rewriteCount = rewritten.Count.ToString(CultureInfo.InvariantCulture);
+
+        // The identifiers are what this formatter could not repair; the compiler reports the full set.
+        inputs.Log.LogMessage(
+            MessageImportance.High,
+            $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}"
+        );
+
+        foreach (string path in rewritten)
+            inputs.Log.LogMessage(MessageImportance.High, "  " + path);
     }
 }

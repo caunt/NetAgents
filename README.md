@@ -28,7 +28,7 @@ On each build, NetAgents:
 2. Checks the updated code against the shared rules.
 3. Reports any remaining violations as build errors for you to resolve.
 
-**Builds can change your source files.** Review those changes before committing. Some violations require a manual fix; IDE quick fixes and `dotnet format` are also available.
+**Builds can change your source files.** Every rewritten file is named in the build log, including when the build then fails on a violation no fix can repair. Review those changes before committing. Some violations require a manual fix; IDE quick fixes and `dotnet format` are also available.
 
 ## 📏 Formatting rules
 

@@ -23,7 +23,7 @@ internal static class CodeFixRunner
     private static readonly string[] UnresolvedSymbolErrors =
         ["CS0103", "CS0117", "CS0120", "CS0234", "CS0246", "CS0426", "CS1061", "CS7036"];
 
-    public static async Task<Project> Fix(Project project, ImmutableArray<DiagnosticAnalyzer> analyzers, CodeFixProvider[] providers, CancellationToken cancellationToken)
+    public static async Task<(Project Project, ImmutableArray<Diagnostic> Blocking)> Fix(Project project, ImmutableArray<DiagnosticAnalyzer> analyzers, CodeFixProvider[] providers, CancellationToken cancellationToken)
     {
         ImmutableHashSet<DocumentId> editable = [];
 
@@ -74,7 +74,15 @@ internal static class CodeFixRunner
             attempt = attemptedAction;
 
             if (fixedProject is null)
-                return attempt is not null ? throw Failure(reason: "made no progress", attempt, diagnostics) : project;
+            {
+                if (attempt is not null)
+                    throw Failure(reason: "made no progress", attempt, diagnostics);
+
+                // Compilation reports these from the rewritten files, so the caller can name what it wrote.
+                // Only source locations qualify: the formatter escalates every diagnostic to an error,
+                // including reference remarks the consumer build never fails for.
+                return (project, [.. diagnostics.Where(IsBlockingError)]);
+            }
 
             project = fixedProject;
         }
@@ -465,6 +473,11 @@ internal static class CodeFixRunner
         }
 
         return false;
+    }
+
+    private static bool IsBlockingError(Diagnostic diagnostic)
+    {
+        return diagnostic.Severity == DiagnosticSeverity.Error && diagnostic.Location.IsInSource;
     }
 
     private static bool IsCompilerError(Diagnostic diagnostic)

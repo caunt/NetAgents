@@ -248,6 +248,39 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS0103", withoutShell: true);
             Assert.Equal(expectedUnresolved, await File.ReadAllTextAsync(sourcePath));
 
+            // Formatting runs before compilation, so a build that fails afterwards still rewrites the
+            // file. The log names every rewritten path so a dirty tree is never a surprise (#11).
+            string relativeSourcePath = Path.Combine(path1: "Features", path2: "ExampleService.cs");
+            string[] reportingArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "minimal"];
+
+            await File.WriteAllTextAsync(sourcePath, source);
+            await RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["NetAgents rewrote " + relativeSourcePath], withoutShell: true);
+
+            // A rebuild that changes nothing stays silent.
+            await RunDevelopmentKit(workspace.FullName, reportingArguments, forbiddenOutput: ["NetAgents rewrote"], withoutShell: true);
+
+            string blockedSource = ValidSource.Replace(
+                oldValue: "return recipientName;",
+                newValue: "recipientName.Trim();\n\n        return string.Concat(\nrecipientName,\nstring.Empty\n);",
+                StringComparison.Ordinal
+            );
+
+            await File.WriteAllTextAsync(sourcePath, blockedSource);
+            await RunDevelopmentKit(
+                workspace.FullName,
+                reportingArguments,
+                expectedDiagnosticIdentifier: "NETAGENTS0015",
+                expectedOutput: ["NetAgents rewrote " + relativeSourcePath, "NetAgents rewrote 1 file before this build failed on diagnostics no fix repairs: NETAGENTS0015", "NETAGENTS0015"],
+                withoutShell: true
+            );
+
+            // The failing build kept its rewrite, which is why the report has to name it.
+            Assert.Contains(
+                expectedSubstring: "string.Concat(recipientName, string.Empty)",
+                await File.ReadAllTextAsync(sourcePath),
+                StringComparison.Ordinal
+            );
+
             await File.WriteAllTextAsync(sourcePath, source);
             await RunDevelopmentKit(
                 workspace.FullName,
@@ -506,7 +539,14 @@ public sealed class PackageConsumptionTests
         return Assert.Single(Directory.EnumerateFiles(packageDirectory, searchPattern: "*.nupkg"));
     }
 
-    private static async Task RunDevelopmentKit(string workingDirectory, string[] arguments, string? expectedDiagnosticIdentifier = null, bool withoutShell = false)
+    private static async Task RunDevelopmentKit(
+        string workingDirectory,
+        string[] arguments,
+        string? expectedDiagnosticIdentifier = null,
+        string[]? expectedOutput = null,
+        string[]? forbiddenOutput = null,
+        bool withoutShell = false
+    )
     {
         using Process process = new();
 
@@ -553,6 +593,12 @@ public sealed class PackageConsumptionTests
 
         // A formatting fault must reach the log as a build error instead of aborting the task.
         Assert.DoesNotContain(expectedSubstring: "MSB4018", output, StringComparison.Ordinal);
+
+        foreach (string expected in expectedOutput ?? [])
+            Assert.Contains(expected, output, StringComparison.Ordinal);
+
+        foreach (string forbidden in forbiddenOutput ?? [])
+            Assert.DoesNotContain(forbidden, output, StringComparison.Ordinal);
 
         if (expectedDiagnosticIdentifier is null)
         {

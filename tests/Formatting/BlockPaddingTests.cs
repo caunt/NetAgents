@@ -47,12 +47,12 @@ public sealed class BlockPaddingTests
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "ExampleType.cs", SourceText.From(source)).Project;
 
-        Project result = await CodeFixRunner.Fix(
+        Project result = (await CodeFixRunner.Fix(
             project,
             [new BlockPaddingAnalyzer(), new MethodSpacingAnalyzer(), new MemberOrderingAnalyzer()],
             [new BlockPaddingCodeFixProvider(), new MethodSpacingCodeFixProvider(), new MemberOrderingCodeFixProvider()],
             CancellationToken.None
-        );
+        )).Project;
 
         string formatted = (await result.Documents.Single().GetTextAsync()).ToString();
 
