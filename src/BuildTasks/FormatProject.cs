@@ -74,20 +74,18 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
     /// <inheritdoc />
     public override bool Execute()
     {
-        using (_cancellation)
+        // Dispose() owns the source: MSBuild can still call Cancel() while this method unwinds.
+        try
         {
-            try
-            {
-                AsyncContext.Run(() => ProjectFormatter.Format(this, _cancellation.Token));
+            AsyncContext.Run(() => ProjectFormatter.Format(this, _cancellation.Token));
 
-                return true;
-            }
-            catch (Exception exception) when (exception is IOException or InvalidOperationException or OperationCanceledException)
-            {
-                Log.LogError("NetAgents automatic formatting failed: " + exception.Message);
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or OperationCanceledException)
+        {
+            Log.LogError("NetAgents automatic formatting failed: " + exception.Message);
 
-                return false;
-            }
+            return false;
         }
     }
 }
