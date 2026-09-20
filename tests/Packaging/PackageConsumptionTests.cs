@@ -506,6 +506,15 @@ public sealed class PackageConsumptionTests
             foreach (string conflictingArgument in conflictingBuildArguments)
                 await RunDevelopmentKit(workspace.FullName, [.. buildArguments, conflictingArgument], expectedDiagnosticIdentifier: "NETAGENTS0014");
 
+            // A newer SDK asks for a language version this package's Roslyn cannot parse, and the
+            // compiler, not the formatter, owns whether that version exists.
+            await RunDevelopmentKit(
+                workspace.FullName,
+                [.. buildArguments, "-p:LangVersion=15.0"],
+                expectedDiagnosticIdentifier: "CS1617",
+                forbiddenOutput: ["NetAgents automatic formatting failed"]
+            );
+
             await RunDevelopmentKit(workspace.FullName, buildArguments);
         }
         finally

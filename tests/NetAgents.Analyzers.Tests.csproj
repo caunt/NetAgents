@@ -11,6 +11,7 @@
     <ProjectReference Include="../src/CodeFixes/NetAgents.CodeFixes.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
     <Compile Include="../src/BuildTasks/CodeFixRunner.cs" Link="Infrastructure/CodeFixRunner.cs" />
     <Compile Include="../src/BuildTasks/BuildDiagnostics.cs" Link="Infrastructure/BuildDiagnostics.cs" />
+    <Compile Include="../src/BuildTasks/LanguageVersionResolver.cs" Link="Infrastructure/LanguageVersionResolver.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>

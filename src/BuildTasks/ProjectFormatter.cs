@@ -65,8 +65,15 @@ internal static class ProjectFormatter
 
         ProjectId projectIdentifier = ProjectId.CreateNewId();
 
-        if (!LanguageVersionFacts.TryParse(inputs.LanguageVersion, out LanguageVersion languageVersion))
-            throw new InvalidOperationException(message: "The configured C# language version is invalid.");
+        (LanguageVersion languageVersion, bool substituted) = LanguageVersionResolver.Resolve(inputs.LanguageVersion, inputs.ProjectPath);
+
+        if (substituted)
+        {
+            inputs.Log.LogMessage(
+                MessageImportance.Normal,
+                $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}"
+            );
+        }
 
         OutputKind outputKind = inputs.OutputType switch
         {
