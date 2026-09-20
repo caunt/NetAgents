@@ -42,11 +42,13 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
         ArgumentSyntax argument = (ArgumentSyntax)context.Node;
         ExpressionSyntax expression = argument.Expression;
 
-        while (expression is ParenthesizedExpressionSyntax parenthesizedExpression)
-            expression = parenthesizedExpression.Expression;
-
-        if (expression is PrefixUnaryExpressionSyntax prefixExpression)
-            expression = prefixExpression.Operand;
+        // Signs and parentheses nest in either order, so unwrap until neither remains.
+        while (expression is ParenthesizedExpressionSyntax or PrefixUnaryExpressionSyntax)
+        {
+            expression = expression is ParenthesizedExpressionSyntax parenthesizedExpression
+                ? parenthesizedExpression.Expression
+                : ((PrefixUnaryExpressionSyntax)expression).Operand;
+        }
 
         if (argument.NameColon is not null || expression is not LiteralExpressionSyntax and not DefaultExpressionSyntax)
             return;
