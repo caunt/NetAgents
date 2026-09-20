@@ -104,10 +104,14 @@ internal static class CodeFixTestHarness
         ApplyChangesOperation changes = Assert.Single(operations.OfType<ApplyChangesOperation>());
         Document? changedDocument = changes.ChangedSolution.GetDocument(document.Id);
         Assert.NotNull(changedDocument);
-        ImmutableArray<Diagnostic> remaining = await GetDiagnostics(changedDocument, analyzer).ConfigureAwait(continueOnCapturedContext: false);
 
+        // Only Fix all promises a clean document, so a single fix skips the extra analysis pass.
         if (fixAll)
+        {
+            ImmutableArray<Diagnostic> remaining = await GetDiagnostics(changedDocument, analyzer).ConfigureAwait(continueOnCapturedContext: false);
+
             Assert.True(remaining.IsEmpty);
+        }
 
         return (await changedDocument.GetTextAsync().ConfigureAwait(continueOnCapturedContext: false)).ToString();
     }
