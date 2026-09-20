@@ -72,6 +72,11 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
     }
 
     /// <inheritdoc />
+    [SuppressMessage(
+        "Design",
+        "CA1031",
+        Justification = "Every formatting failure must reach the log as a build error; an unhandled exception aborts the build with MSB4018 instead."
+    )]
     public override bool Execute()
     {
         // Dispose() owns the source: MSBuild can still call Cancel() while this method unwinds.
@@ -84,6 +89,13 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or OperationCanceledException)
         {
             Log.LogError("NetAgents automatic formatting failed: " + exception.Message);
+
+            return false;
+        }
+        catch (Exception exception)
+        {
+            // MSB4018 would hide the formatter behind an MSBuild task crash, so the stack is logged instead.
+            Log.LogError("NetAgents automatic formatting failed unexpectedly: " + exception.ToString());
 
             return false;
         }

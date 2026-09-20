@@ -220,6 +220,20 @@ public sealed class PackageConsumptionTests
             Assert.Contains(expectedSubstring: "CreateGreeting(\n", expanded, StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "string.Concat(\n", expanded, StringComparison.Ordinal);
 
+            // An unresolved symbol stays a compiler error: no generated declaration, no formatting failure.
+            string unresolvedSource = ValidSource.Replace(
+                oldValue: "return recipientName;",
+                newValue: "System.Console.WriteLine(payload);\n\n        return recipientName;",
+                StringComparison.Ordinal
+            );
+
+            // Unrelated fixes still apply, so the expectation is the namespace repair and nothing else.
+            string expectedUnresolved = unresolvedSource.Replace(oldValue: "namespace Consumer.Features;", newValue: "namespace CustomerApp.Features;", StringComparison.Ordinal);
+
+            await File.WriteAllTextAsync(sourcePath, unresolvedSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS0103", withoutShell: true);
+            Assert.Equal(expectedUnresolved, await File.ReadAllTextAsync(sourcePath));
+
             await File.WriteAllTextAsync(sourcePath, source);
             await RunDevelopmentKit(
                 workspace.FullName,
@@ -602,6 +616,9 @@ public sealed class PackageConsumptionTests
 
         string output = await standardOutput.ConfigureAwait(continueOnCapturedContext: false) + await standardError.ConfigureAwait(continueOnCapturedContext: false);
         Assert.DoesNotContain(expectedSubstring: "AD0001", actualString: output, StringComparison.Ordinal);
+
+        // A formatting fault must reach the log as a build error instead of aborting the task.
+        Assert.DoesNotContain(expectedSubstring: "MSB4018", actualString: output, StringComparison.Ordinal);
 
         if (expectedDiagnosticIdentifier is null)
         {

@@ -18,6 +18,11 @@ internal static class CodeFixRunner
 {
     private static readonly string[] GeneratedSuffixes = [".g.cs", ".g.i.cs", ".generated.cs", ".designer.cs"];
 
+    // Roslyn answers these errors with generate-variable, generate-method, and generate-type fixes.
+    // Declaring API the author never wrote is not formatting, so an unresolved symbol stays a compiler error.
+    private static readonly string[] UnresolvedSymbolErrors =
+        ["CS0103", "CS0117", "CS0120", "CS0234", "CS0246", "CS0426", "CS1061", "CS7036"];
+
     public static async Task<Project> Fix(Project project, ImmutableArray<DiagnosticAnalyzer> analyzers, CodeFixProvider[] providers, CancellationToken cancellationToken)
     {
         ImmutableHashSet<DocumentId> editable = [];
@@ -119,10 +124,13 @@ internal static class CodeFixRunner
             if (document is null || !editable.Contains(document.Id) || diagnostic.IsSuppressed)
                 continue;
 
-            foreach (CodeFixProvider provider in providers.Where(provider => provider.FixableDiagnosticIds.Contains(diagnostic.Id)))
+            // Every fix offered for these errors invents a declaration, so the compiler reports them untouched.
+            if (UnresolvedSymbolErrors.Contains(diagnostic.Id, StringComparer.Ordinal))
+                continue;
+
+            foreach (CodeFixProvider provider in providers.Where(provider => CanFixDiagnostic(provider, diagnostic)))
             {
-                List<CodeAction> actions = [];
-                await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), cancellationToken)).ConfigureAwait(continueOnCapturedContext: false);
+                List<CodeAction> actions = await GetCodeActions(provider, document, diagnostic, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
                 foreach (CodeAction action in actions)
                 {
@@ -131,10 +139,8 @@ internal static class CodeFixRunner
                     while (!selected.NestedActions.IsEmpty)
                         selected = selected.NestedActions[index: 0];
 
-                    FixAllProvider? fixAllProvider = provider.GetFixAllProvider();
-
-                    bool canFixProject = fixAllProvider is not null && selected.EquivalenceKey is not null
-                        && fixAllProvider.GetSupportedFixAllScopes().Contains(FixAllScope.Project);
+                    FixAllProvider? fixAllProvider = GetProjectFixAllProvider(provider);
+                    bool canFixProject = fixAllProvider is not null && selected.EquivalenceKey is not null;
 
                     string? fixAllKey = canFixProject
                         ? $"{provider.GetType().FullName}|{selected.EquivalenceKey}"
@@ -145,20 +151,11 @@ internal static class CodeFixRunner
 
                     if (canFixProject && fixAllProvider is not null)
                     {
-                        FixAllContext context = new(
-                            document,
-                            provider,
-                            FixAllScope.Project,
-                            selected.EquivalenceKey,
-                            [.. provider.FixableDiagnosticIds],
-                            new BuildDiagnostics(diagnostics),
-                            cancellationToken
-                        );
-
-                        selected = await fixAllProvider.GetFixAsync(context).ConfigureAwait(continueOnCapturedContext: false) ?? selected;
+                        selected = await GetFixAllAction(provider, fixAllProvider, document, selected, diagnostics, cancellationToken)
+                            .ConfigureAwait(continueOnCapturedContext: false) ?? selected;
                     }
 
-                    ImmutableArray<CodeActionOperation> operations = await selected.GetOperationsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                    ImmutableArray<CodeActionOperation> operations = await GetOperations(selected, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
                     ApplyChangesOperation? change = operations.OfType<ApplyChangesOperation>().FirstOrDefault();
                     Project? updated = change?.ChangedSolution.GetProject(project.Id);
 
@@ -287,6 +284,19 @@ internal static class CodeFixRunner
             : (updated, $"{first} — rename colliding locals before applying naming-style fixes");
     }
 
+    private static bool CanFixDiagnostic(CodeFixProvider provider, Diagnostic diagnostic)
+    {
+        try
+        {
+            return provider.FixableDiagnosticIds.Contains(diagnostic.Id, StringComparer.Ordinal);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // A provider compiled against another Roslyn version can fail to even list its identifiers.
+            return false;
+        }
+    }
+
     private static (string Identifier, string Message, string Path) ErrorKey(Diagnostic diagnostic)
     {
         return (diagnostic.Id, diagnostic.GetMessage(CultureInfo.InvariantCulture), diagnostic.Location.SourceTree?.FilePath ?? string.Empty);
@@ -320,6 +330,54 @@ internal static class CodeFixRunner
         }
 
         return project;
+    }
+
+    private static async Task<List<CodeAction>> GetCodeActions(CodeFixProvider provider, Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
+    {
+        List<CodeAction> actions = [];
+
+        try
+        {
+            CodeFixContext context = new(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), cancellationToken);
+            await provider.RegisterCodeFixesAsync(context).ConfigureAwait(continueOnCapturedContext: false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // Registration that fails part way leaves an arbitrary subset, so the whole provider is skipped.
+            return [];
+        }
+
+        return actions;
+    }
+
+    private static async Task<CodeAction?> GetFixAllAction(
+        CodeFixProvider provider,
+        FixAllProvider fixAllProvider,
+        Document document,
+        CodeAction selected,
+        ImmutableArray<Diagnostic> diagnostics,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            FixAllContext context = new(
+                document,
+                provider,
+                FixAllScope.Project,
+                selected.EquivalenceKey,
+                [.. provider.FixableDiagnosticIds],
+                new BuildDiagnostics(diagnostics),
+                cancellationToken
+            );
+
+            return await fixAllProvider.GetFixAsync(context).ConfigureAwait(continueOnCapturedContext: false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // A failed project-wide fix still leaves the single-document action, which the caller validates.
+            return null;
+        }
     }
 
     private static async Task<ImmutableArray<Diagnostic>> GetIntroducedErrors(
@@ -358,6 +416,35 @@ internal static class CodeFixRunner
         }
 
         return "\n";
+    }
+
+    private static async Task<ImmutableArray<CodeActionOperation>> GetOperations(CodeAction action, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await action.GetOperationsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // A lazy code action computes its edits here, which is where version skew usually throws.
+            return [];
+        }
+    }
+
+    private static FixAllProvider? GetProjectFixAllProvider(CodeFixProvider provider)
+    {
+        try
+        {
+            FixAllProvider? fixAllProvider = provider.GetFixAllProvider();
+            bool supportsProject = fixAllProvider is not null && fixAllProvider.GetSupportedFixAllScopes().Contains(FixAllScope.Project);
+
+            return supportsProject ? fixAllProvider : null;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // A provider that cannot describe its Fix all support is treated as offering none.
+            return null;
+        }
     }
 
     private static async Task<bool> HasTextChanges(Project before, Project after, DocumentId[] changedDocuments, CancellationToken cancellationToken)
