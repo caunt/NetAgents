@@ -20,6 +20,27 @@ public sealed class DescriptiveNameAnalyzerTests
     }
 
     /// <summary>
+    /// Verifies protocol and format names stay usable as the domain spells them.
+    /// </summary>
+    /// <param name="parameterName">The protocol or format parameter name to accept.</param>
+    [Theory]
+    [InlineData("httpClient")]
+    [InlineData("apiKey")]
+    [InlineData("requestUri")]
+    [InlineData("downloadUrl")]
+    [InlineData("tcpListener")]
+    [InlineData("udpEndpoint")]
+    [InlineData("xmlDocument")]
+    [InlineData("utfEncoding")]
+    [InlineData("httpsRedirect")]
+    public async Task AllowsProtocolAndFormatNames(string parameterName)
+    {
+        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), $"public class ExampleType {{ public void Execute(string {parameterName}) {{ }} }}");
+
+        Assert.Empty(diagnostics);
+    }
+
+    /// <summary>
     /// Verifies standard .NET async names are accepted without requiring expanded words.
     /// </summary>
     /// <param name="source">A declaration using the standard Async word.</param>
@@ -43,7 +64,7 @@ public sealed class DescriptiveNameAnalyzerTests
     [InlineData("ctx")]
     [InlineData("configurationDto")]
     [InlineData("requestURL")]
-    [InlineData("httpClient")]
+    [InlineData("dbConnection")]
     public async Task RejectsAbbreviatedNames(string parameterName)
     {
         Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), $"public class ExampleType {{ public void Execute(string {parameterName}) {{ }} }}");
