@@ -37,13 +37,13 @@ internal static class CodeFixRunner
         // Without a handler an analyzer that throws becomes an AD0001 this compilation escalates to an
         // error nothing can fix, and a hosted analyzer built for a newer Roslyn is where that happens.
         // Every pass of the loop below analyzes again, so an identical fault is announced once.
-        Action<Exception, DiagnosticAnalyzer, Diagnostic> onAnalyzerException = (exception, analyzer, diagnostic) =>
+        void OnAnalyzerException(Exception exception, DiagnosticAnalyzer analyzer, Diagnostic diagnostic)
         {
             string fault = $"NetAgents cannot run the {analyzer.GetType().FullName} analyzer ({diagnostic.Id}): {exception.Message}";
 
             if (reported.TryAdd(fault, value: true))
                 reportAnalyzerFault(fault);
-        };
+        }
 
         ImmutableHashSet<DocumentId> editable = [];
 
@@ -70,7 +70,7 @@ internal static class CodeFixRunner
             cancellationToken.ThrowIfCancellationRequested();
             project = await FormatWhitespace(project, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            ImmutableArray<Diagnostic> diagnostics = await GetAllDiagnostics(project, analyzers, onAnalyzerException, cancellationToken)
+            ImmutableArray<Diagnostic> diagnostics = await GetAllDiagnostics(project, analyzers, OnAnalyzerException, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             StringBuilder state = new();
@@ -86,7 +86,7 @@ internal static class CodeFixRunner
             if (!states.Add(fingerprint))
                 throw Failure(reason: "repeated a project state without stabilizing", attempt, diagnostics);
 
-            (Project? fixedProject, string? attemptedAction) = await ApplyAvailableFix(project, diagnostics, analyzers, providers, editable, onAnalyzerException, cancellationToken)
+            (Project? fixedProject, string? attemptedAction) = await ApplyAvailableFix(project, diagnostics, analyzers, providers, editable, OnAnalyzerException, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
             attempt = attemptedAction;
 
@@ -175,13 +175,24 @@ internal static class CodeFixRunner
                     if (fixAllKey is not null && rejectedFixAllActions.Contains(fixAllKey))
                         continue;
 
+                    CodeAction preferred = selected;
+
                     if (canFixProject && fixAllProvider is not null)
                     {
-                        selected = await GetFixAllAction(provider, fixAllProvider, document, selected, diagnostics, cancellationToken)
+                        preferred = await GetFixAllAction(provider, fixAllProvider, document, selected, diagnostics, cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false) ?? selected;
                     }
 
-                    ImmutableArray<CodeActionOperation> operations = await GetOperations(selected, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                    ImmutableArray<CodeActionOperation> operations = await GetOperations(preferred, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                    // A project-wide action computes its edits here too, and one that fails must not take
+                    // the single document's repair down with it.
+                    if (operations.IsEmpty && !ReferenceEquals(preferred, selected))
+                    {
+                        preferred = selected;
+                        operations = await GetOperations(selected, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                    }
+
                     ApplyChangesOperation? change = operations.OfType<ApplyChangesOperation>().FirstOrDefault();
                     Project? updated = change?.ChangedSolution.GetProject(project.Id);
 
@@ -197,7 +208,7 @@ internal static class CodeFixRunner
                     if (!supported)
                         continue;
 
-                    string description = $"{diagnostic} — code action '{selected.Title}'";
+                    string description = $"{diagnostic} — code action '{preferred.Title}'";
 
                     // Only a diagnostic that still fails the build explains a run that stopped. An action
                     // offered for a suggestion is dropped below, so naming it would blame an unrelated rule.

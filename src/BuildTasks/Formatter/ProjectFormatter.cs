@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Composition.Hosting;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 
 using Microsoft.Build.Framework;
@@ -55,9 +56,16 @@ internal static class ProjectFormatter
         string[] featurePaths = [Path.Combine(inputs.SdkAssemblyDirectory, path2: "Microsoft.CodeAnalysis.Features.dll"),
             Path.Combine(inputs.SdkAssemblyDirectory, path2: "Microsoft.CodeAnalysis.CSharp.Features.dll")];
 
+        // The SDK's feature assemblies belong to the Roslyn already hosting this engine. Loading them
+        // beside it instead of inside the analyzer loader keeps one copy of each: a second copy composes
+        // a second set of MEF exports, and Roslyn's own service lookups reject the ambiguity.
+        AssemblyLoadContext host = AssemblyLoadContext.GetLoadContext(typeof(ProjectFormatter).Assembly)
+            ?? throw new InvalidOperationException(message: "The formatting engine's assembly context is unavailable.");
+
         Assembly[] assemblies = [.. MefHostServices.DefaultAssemblies,
             typeof(Microsoft.CodeAnalysis.CSharp.Formatting.CSharpFormattingOptions).Assembly,
-            .. analyzerPaths.Concat(styleFixes).Concat(featurePaths).Select(loader.LoadFromPath)];
+            .. analyzerPaths.Concat(styleFixes).Select(loader.LoadFromPath),
+            .. featurePaths.Where(File.Exists).Select(host.LoadFromAssemblyPath)];
 
         (Type[] parts, string[] skipped) = CompositionParts.Select(assemblies.Distinct());
 

@@ -842,6 +842,7 @@ public sealed class PackageConsumptionTests
             )
         );
         Assert.NotNull(package.GetEntry(entryName: "tools/net10.0/NetAgents.BuildTasks.dll"));
+        Assert.NotNull(package.GetEntry(entryName: "tools/net10.0/NetAgents.Formatter.dll"));
         Assert.NotNull(package.GetEntry(entryName: "tools/net10.0/Microsoft.CodeAnalysis.Workspaces.dll"));
 
         ZipArchiveEntry manifestEntry = package.GetEntry(entryName: "NetAgents.Analyzers.nuspec")

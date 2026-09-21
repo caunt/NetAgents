@@ -2,8 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.Build.Framework;
 
-using Nito.AsyncEx;
-
 namespace NetAgents.BuildTasks;
 
 /// <summary>
@@ -82,7 +80,8 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
         // Dispose() owns the source: MSBuild can still call Cancel() while this method unwinds.
         try
         {
-            AsyncContext.Run(() => ProjectFormatter.Format(this, _cancellation.Token));
+            Action<FormatProject, CancellationToken> format = FormattingHost.Resolve(SdkAssemblyDirectory);
+            format(this, _cancellation.Token);
 
             return true;
         }

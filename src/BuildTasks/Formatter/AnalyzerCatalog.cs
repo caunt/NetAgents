@@ -124,23 +124,15 @@ internal static class AnalyzerCatalog
         AnalyzerFileReference reference = new(path, loader);
 
         // An assembly that carries only code fixes holds no analyzers at all, which is not a failure.
-        EventHandler<AnalyzerLoadFailureEventArgs> collect = (sender, failure) =>
+        // The handler stays attached because the reference outlives this method, and the workspace's own
+        // calls append to a list nothing reads again.
+        reference.AnalyzerLoadFailed += (sender, failure) =>
         {
             if (failure.ErrorCode != AnalyzerLoadFailureEventArgs.FailureErrorCode.NoAnalyzers)
                 failures.Add(failure);
         };
 
-        reference.AnalyzerLoadFailed += collect;
-        ImmutableArray<DiagnosticAnalyzer> loaded;
-
-        try
-        {
-            loaded = reference.GetAnalyzers(LanguageNames.CSharp);
-        }
-        finally
-        {
-            reference.AnalyzerLoadFailed -= collect;
-        }
+        ImmutableArray<DiagnosticAnalyzer> loaded = reference.GetAnalyzers(LanguageNames.CSharp);
 
         // A failure that names a type left the rest of the assembly usable; one that names none rejected
         // the assembly whole, and only then is the assembly worth hosting outside the compiler's loader.
