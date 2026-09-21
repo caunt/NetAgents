@@ -137,11 +137,11 @@ wait handles, `CountdownEvent`, and `Barrier`. `Interlocked`, `Volatile`,
 cancellation, concurrent collections, and channels remain available.
 
 The naming vocabulary includes `args`, `cfg`, `ctx`, `config`, `dto`, `dsp`,
-`id`, `json`, `msg`, `sdr`, `sql`, `tmp`, and other common shortened
-words; see `Naming/DescriptiveNameAnalyzer.cs` for the complete list. Protocol and
-format names such as `api`, `http`, `https`, `tcp`, `udp`, `uri`, `url`, `utf`, and
-`xml` are the words their domain uses and stay available, though their uppercase
-spellings (`API`, `HTTP`) remain acronyms the rule rejects.
+`msg`, `sdr`, `sql`, `tmp`, and other common shortened words; see
+`Naming/DescriptiveNameAnalyzer.cs` for the complete list. Common domain terms such as
+`id`, `ids`, `html`, `json`, `api`, `http`, `https`, `tcp`, `udp`, `uri`,
+`url`, `utf`, and `xml` stay available, though their uppercase spellings (`ID`,
+`HTML`, `JSON`, `API`, `HTTP`) remain acronyms the rule rejects.
 Framework-owned overrides and explicit interface implementations are exempt
 from renaming their prescribed member names, and `NETAGENTS0002` likewise
 accepts the `object` parameters and results those signatures prescribe. Referencing existing framework
