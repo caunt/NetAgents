@@ -7,6 +7,19 @@ internal static class CompositionParts
 {
     private const BindingFlags Declared = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
+    public static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+    {
+        try
+        {
+            return assembly.GetTypes();
+        }
+        catch (ReflectionTypeLoadException exception)
+        {
+            // Analyzer assemblies can embed optional helpers for older Roslyn interfaces.
+            return exception.Types.OfType<Type>();
+        }
+    }
+
     // The SDK hands this formatter code fixes that only run inside an IDE: the ASP.NET Core
     // AddPackageFixer needs Microsoft.CodeAnalysis.ExternalAccess.AspNetCore, which ships with Visual
     // Studio instead of the SDK. MEF instantiates every attribute of an exporting part while the
@@ -53,19 +66,6 @@ internal static class CompositionParts
         catch (Exception exception) when (IsUnresolvedMetadata(exception))
         {
             return false;
-        }
-    }
-
-    private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-    {
-        try
-        {
-            return assembly.GetTypes();
-        }
-        catch (ReflectionTypeLoadException exception)
-        {
-            // Analyzer assemblies can embed optional helpers for older Roslyn interfaces.
-            return exception.Types.OfType<Type>();
         }
     }
 

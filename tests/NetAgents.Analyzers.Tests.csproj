@@ -9,10 +9,15 @@
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
     <ProjectReference Include="../src/NetAgents.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
     <ProjectReference Include="../src/CodeFixes/NetAgents.CodeFixes.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+    <Compile Include="../src/BuildTasks/AnalyzerCatalog.cs" Link="Infrastructure/AnalyzerCatalog.cs" />
+    <Compile Include="../src/BuildTasks/AnalyzerLoader.cs" Link="Infrastructure/AnalyzerLoader.cs" />
+    <Compile Include="../src/BuildTasks/HostedAnalyzerReference.cs" Link="Infrastructure/HostedAnalyzerReference.cs" />
     <Compile Include="../src/BuildTasks/CodeFixRunner.cs" Link="Infrastructure/CodeFixRunner.cs" />
     <Compile Include="../src/BuildTasks/CompositionParts.cs" Link="Infrastructure/CompositionParts.cs" />
     <Compile Include="../src/BuildTasks/BuildDiagnostics.cs" Link="Infrastructure/BuildDiagnostics.cs" />
     <Compile Include="../src/BuildTasks/LanguageVersionResolver.cs" Link="Infrastructure/LanguageVersionResolver.cs" />
     <Using Include="Xunit" />
+    <!-- The formatter loads the code-style analyzers the building SDK supplies, so the tests need its path. -->
+    <AssemblyMetadata Include="CodeStyleDirectory" Value="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/codestyle/cs" />
   </ItemGroup>
 </Project>

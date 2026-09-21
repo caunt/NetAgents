@@ -51,6 +51,7 @@ public sealed class BlockPaddingTests
             project,
             [new BlockPaddingAnalyzer(), new MethodSpacingAnalyzer(), new MemberOrderingAnalyzer()],
             [new BlockPaddingCodeFixProvider(), new MethodSpacingCodeFixProvider(), new MemberOrderingCodeFixProvider()],
+            static fault => Assert.Fail(fault),
             CancellationToken.None
         )).Project;
 

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Security.Cryptography;
@@ -23,8 +24,27 @@ internal static class CodeFixRunner
     private static readonly string[] UnresolvedSymbolErrors =
         ["CS0103", "CS0117", "CS0120", "CS0234", "CS0246", "CS0426", "CS1061", "CS7036"];
 
-    public static async Task<(Project Project, ImmutableArray<Diagnostic> Blocking)> Fix(Project project, ImmutableArray<DiagnosticAnalyzer> analyzers, CodeFixProvider[] providers, CancellationToken cancellationToken)
+    public static async Task<(Project Project, ImmutableArray<Diagnostic> Blocking)> Fix(
+        Project project,
+        ImmutableArray<DiagnosticAnalyzer> analyzers,
+        CodeFixProvider[] providers,
+        Action<string> reportAnalyzerFault,
+        CancellationToken cancellationToken
+    )
     {
+        ConcurrentDictionary<string, bool> reported = new(StringComparer.Ordinal);
+
+        // Without a handler an analyzer that throws becomes an AD0001 this compilation escalates to an
+        // error nothing can fix, and a hosted analyzer built for a newer Roslyn is where that happens.
+        // Every pass of the loop below analyzes again, so an identical fault is announced once.
+        Action<Exception, DiagnosticAnalyzer, Diagnostic> onAnalyzerException = (exception, analyzer, diagnostic) =>
+        {
+            string fault = $"NetAgents cannot run the {analyzer.GetType().FullName} analyzer ({diagnostic.Id}): {exception.Message}";
+
+            if (reported.TryAdd(fault, value: true))
+                reportAnalyzerFault(fault);
+        };
+
         ImmutableHashSet<DocumentId> editable = [];
 
         foreach (Document document in project.Documents)
@@ -50,11 +70,8 @@ internal static class CodeFixRunner
             cancellationToken.ThrowIfCancellationRequested();
             project = await FormatWhitespace(project, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            Compilation compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
-                ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
-
-            ImmutableArray<Diagnostic> diagnostics = await compilation.WithAnalyzers(analyzers, project.AnalyzerOptions)
-                .GetAllDiagnosticsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            ImmutableArray<Diagnostic> diagnostics = await GetAllDiagnostics(project, analyzers, onAnalyzerException, cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
             StringBuilder state = new();
 
@@ -69,7 +86,7 @@ internal static class CodeFixRunner
             if (!states.Add(fingerprint))
                 throw Failure(reason: "repeated a project state without stabilizing", attempt, diagnostics);
 
-            (Project? fixedProject, string? attemptedAction) = await ApplyAvailableFix(project, diagnostics, analyzers, providers, editable, cancellationToken)
+            (Project? fixedProject, string? attemptedAction) = await ApplyAvailableFix(project, diagnostics, analyzers, providers, editable, onAnalyzerException, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
             attempt = attemptedAction;
 
@@ -98,6 +115,7 @@ internal static class CodeFixRunner
         ImmutableArray<DiagnosticAnalyzer> analyzers,
         CodeFixProvider[] providers,
         ImmutableHashSet<DocumentId> editable,
+        Action<Exception, DiagnosticAnalyzer, Diagnostic> onAnalyzerException,
         CancellationToken cancellationToken
     )
     {
@@ -110,7 +128,7 @@ internal static class CodeFixRunner
         {
             Project renamed = await ReparseChangedDocuments(project, collisionProject, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            ImmutableArray<Diagnostic> renameErrors = await GetIntroducedErrors(renamed, diagnostics, analyzers, cancellationToken)
+            ImmutableArray<Diagnostic> renameErrors = await GetIntroducedErrors(renamed, diagnostics, analyzers, onAnalyzerException, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             ImmutableArray<Diagnostic> renameCompilerErrors = [.. renameErrors.Where(IsCompilerError)];
@@ -192,7 +210,7 @@ internal static class CodeFixRunner
 
                     updated = await ReparseChangedDocuments(project, updated, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-                    ImmutableArray<Diagnostic> introducedErrors = await GetIntroducedErrors(updated, diagnostics, analyzers, cancellationToken)
+                    ImmutableArray<Diagnostic> introducedErrors = await GetIntroducedErrors(updated, diagnostics, analyzers, onAnalyzerException, cancellationToken)
                         .ConfigureAwait(continueOnCapturedContext: false);
 
                     ImmutableArray<Diagnostic> introducedCompilerErrors = [.. introducedErrors.Where(IsCompilerError)];
@@ -360,6 +378,22 @@ internal static class CodeFixRunner
         return project;
     }
 
+    private static async Task<ImmutableArray<Diagnostic>> GetAllDiagnostics(
+        Project project,
+        ImmutableArray<DiagnosticAnalyzer> analyzers,
+        Action<Exception, DiagnosticAnalyzer, Diagnostic> onAnalyzerException,
+        CancellationToken cancellationToken
+    )
+    {
+        Compilation compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+            ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
+
+        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException, concurrentAnalysis: true, logAnalyzerExecutionTime: false);
+
+        return await compilation.WithAnalyzers(analyzers, options).GetAllDiagnosticsAsync(cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     private static async Task<List<CodeAction>> GetCodeActions(CodeFixProvider provider, Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
     {
         List<CodeAction> actions = [];
@@ -412,14 +446,12 @@ internal static class CodeFixRunner
         Project after,
         ImmutableArray<Diagnostic> beforeDiagnostics,
         ImmutableArray<DiagnosticAnalyzer> analyzers,
+        Action<Exception, DiagnosticAnalyzer, Diagnostic> onAnalyzerException,
         CancellationToken cancellationToken
     )
     {
-        Compilation compilation = await after.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
-            ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
-
-        ImmutableArray<Diagnostic> afterDiagnostics = await compilation.WithAnalyzers(analyzers, after.AnalyzerOptions)
-            .GetAllDiagnosticsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> afterDiagnostics = await GetAllDiagnostics(after, analyzers, onAnalyzerException, cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         Dictionary<(string Identifier, string Message, string Path), int> existingErrors = beforeDiagnostics
             .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)

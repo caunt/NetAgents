@@ -100,6 +100,16 @@ internal static class ProjectFormatter
             generalDiagnosticOption: ReportDiagnostic.Error
         );
 
+        (AnalyzerReference[] references, string[] hosted, string[] unavailable) = AnalyzerCatalog.Load(analyzerPaths, loader);
+
+        // Hosting them keeps the enforcement the consumer configured, so this stays out of a normal log.
+        foreach (string announcement in hosted)
+            inputs.Log.LogMessage(MessageImportance.Normal, announcement);
+
+        // An analyzer the formatter cannot run is enforcement the consumer configured and does not get.
+        foreach (string failure in unavailable)
+            inputs.Log.LogWarning(failure);
+
         ProjectInfo information = ProjectInfo.Create(
             projectIdentifier,
             VersionStamp.Create(),
@@ -110,7 +120,7 @@ internal static class ProjectFormatter
             compilationOptions: compilationOptions,
             parseOptions: parseOptions,
             metadataReferences: inputs.References.Select(CreateReference),
-            analyzerReferences: analyzerPaths.Select(path => new AnalyzerFileReference(path, loader))
+            analyzerReferences: references
         );
 
         Project initial = workspace.CurrentSolution.AddProject(information).GetProject(projectIdentifier)
@@ -155,7 +165,8 @@ internal static class ProjectFormatter
 
         ImmutableArray<DiagnosticAnalyzer> analyzers = [.. original.AnalyzerReferences.SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())];
         CodeFixProvider[] providers = [.. composition.GetExports<CodeFixProvider>()];
-        (Project changed, ImmutableArray<Diagnostic> blocking) = await CodeFixRunner.Fix(original, analyzers, providers, cancellationToken)
+        (Project changed, ImmutableArray<Diagnostic> blocking) = await CodeFixRunner
+            .Fix(original, analyzers, providers, fault => inputs.Log.LogWarning(fault), cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         List<string> rewritten = [];
