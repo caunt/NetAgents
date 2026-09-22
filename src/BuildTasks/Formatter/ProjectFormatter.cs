@@ -67,20 +67,20 @@ internal static class ProjectFormatter
             .. analyzerPaths.Concat(styleFixes).Select(loader.LoadFromPath),
             .. featurePaths.Where(File.Exists).Select(host.LoadFromAssemblyPath)];
 
-        (Type[] parts, string[] skipped) = CompositionParts.Select(assemblies.Distinct());
+        CompositionParts.CompositionSelection compositionParts = CompositionParts.Select(assemblies.Distinct());
 
-        foreach (string part in skipped)
+        foreach (string part in compositionParts.Skipped)
             inputs.Log.LogMessage(MessageImportance.Normal, $"NetAgents skips the {part} export because this build cannot load every type it declares");
 
-        using CompositionHost composition = new ContainerConfiguration().WithParts(parts).CreateContainer();
+        using CompositionHost composition = new ContainerConfiguration().WithParts(compositionParts.Types).CreateContainer();
 
         using AdhocWorkspace workspace = new(MefHostServices.Create(composition));
 
         ProjectId projectIdentifier = ProjectId.CreateNewId();
 
-        (LanguageVersion languageVersion, bool substituted) = LanguageVersionResolver.Resolve(inputs.LanguageVersion, inputs.ProjectPath);
+        LanguageVersionResolver.LanguageVersionResolution languageVersion = LanguageVersionResolver.Resolve(inputs.LanguageVersion, inputs.ProjectPath);
 
-        if (substituted)
+        if (languageVersion.Substituted)
         {
             inputs.Log.LogMessage(
                 MessageImportance.Normal,
@@ -96,7 +96,7 @@ internal static class ProjectFormatter
         };
 
         CSharpParseOptions parseOptions = new(
-            languageVersion,
+            languageVersion.Version,
             DocumentationMode.Diagnose,
             preprocessorSymbols: inputs.DefineConstants.Split([';', ','], StringSplitOptions.RemoveEmptyEntries)
         );
@@ -108,14 +108,14 @@ internal static class ProjectFormatter
             generalDiagnosticOption: ReportDiagnostic.Error
         );
 
-        (AnalyzerReference[] references, string[] hosted, string[] unavailable) = AnalyzerCatalog.Load(analyzerPaths, loader);
+        AnalyzerCatalog.AnalyzerLoadingResult analyzerCatalog = AnalyzerCatalog.Load(analyzerPaths, loader);
 
         // Hosting them keeps the enforcement the consumer configured, so this stays out of a normal log.
-        foreach (string announcement in hosted)
+        foreach (string announcement in analyzerCatalog.Hosted)
             inputs.Log.LogMessage(MessageImportance.Normal, announcement);
 
         // An analyzer the formatter cannot run is enforcement the consumer configured and does not get.
-        foreach (string failure in unavailable)
+        foreach (string failure in analyzerCatalog.Unavailable)
             inputs.Log.LogWarning(failure);
 
         ProjectInfo information = ProjectInfo.Create(
@@ -128,7 +128,7 @@ internal static class ProjectFormatter
             compilationOptions: compilationOptions,
             parseOptions: parseOptions,
             metadataReferences: inputs.References.Select(CreateReference),
-            analyzerReferences: references
+            analyzerReferences: analyzerCatalog.References
         );
 
         Project initial = workspace.CurrentSolution.AddProject(information).GetProject(projectIdentifier)
@@ -173,13 +173,14 @@ internal static class ProjectFormatter
 
         ImmutableArray<DiagnosticAnalyzer> analyzers = [.. original.AnalyzerReferences.SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())];
         CodeFixProvider[] providers = [.. composition.GetExports<CodeFixProvider>()];
-        (Project changed, ImmutableArray<Diagnostic> blocking) = await CodeFixRunner
+
+        CodeFixRunner.CodeFixResult codeFixes = await CodeFixRunner
             .Fix(original, analyzers, providers, fault => inputs.Log.LogWarning(fault), cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         List<string> rewritten = [];
 
-        foreach (Document document in changed.Documents)
+        foreach (Document document in codeFixes.Project.Documents)
         {
             Document previous = original.GetDocument(document.Id) ?? throw new InvalidOperationException(message: "A code fix unexpectedly added a document.");
             SourceText before = await previous.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -197,7 +198,7 @@ internal static class ProjectFormatter
             }
         }
 
-        Report(inputs, rewritten, blocking);
+        Report(inputs, rewritten, codeFixes.Blocking);
     }
 
     private static string GetDisplayPath(string projectDirectory, string path)

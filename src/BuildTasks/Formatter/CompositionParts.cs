@@ -25,7 +25,7 @@ internal static class CompositionParts
     // Studio instead of the SDK. MEF instantiates every attribute of an exporting part while the
     // container composes, so resolving that fixer's async state machine threw before any consumer source
     // was formatted. Repeating the same reflection here drops the single unusable export instead.
-    public static (Type[] Types, string[] Skipped) Select(IEnumerable<Assembly> assemblies)
+    public static CompositionSelection Select(IEnumerable<Assembly> assemblies)
     {
         List<Type> composable = [];
         List<string> skipped = [];
@@ -38,7 +38,7 @@ internal static class CompositionParts
                 skipped.Add(type.FullName ?? type.Name);
         }
 
-        return ([.. composable], [.. skipped]);
+        return new([.. composable], [.. skipped]);
     }
 
     private static bool CanCompose(Type type)
@@ -74,4 +74,6 @@ internal static class CompositionParts
         return exception is TypeLoadException or FileNotFoundException or FileLoadException
             or BadImageFormatException or MissingMemberException or CustomAttributeFormatException;
     }
+
+    internal sealed record CompositionSelection(Type[] Types, string[] Skipped);
 }

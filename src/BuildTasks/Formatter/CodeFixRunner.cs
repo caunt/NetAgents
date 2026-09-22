@@ -24,7 +24,7 @@ internal static class CodeFixRunner
     private static readonly string[] UnresolvedSymbolErrors =
         ["CS0103", "CS0117", "CS0120", "CS0234", "CS0246", "CS0426", "CS1061", "CS7036"];
 
-    public static async Task<(Project Project, ImmutableArray<Diagnostic> Blocking)> Fix(
+    public static async Task<CodeFixResult> Fix(
         Project project,
         ImmutableArray<DiagnosticAnalyzer> analyzers,
         CodeFixProvider[] providers,
@@ -86,11 +86,12 @@ internal static class CodeFixRunner
             if (!states.Add(fingerprint))
                 throw Failure(reason: "repeated a project state without stabilizing", attempt, diagnostics);
 
-            (Project? fixedProject, string? attemptedAction) = await ApplyAvailableFix(project, diagnostics, analyzers, providers, editable, OnAnalyzerException, cancellationToken)
+            CodeActionApplication application = await ApplyAvailableFix(project, diagnostics, analyzers, providers, editable, OnAnalyzerException, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
-            attempt = attemptedAction;
 
-            if (fixedProject is null)
+            attempt = application.Attempt;
+
+            if (application.Project is null)
             {
                 if (attempt is not null)
                     throw Failure(reason: "made no progress", attempt, diagnostics);
@@ -98,10 +99,10 @@ internal static class CodeFixRunner
                 // Compilation reports these from the rewritten files, so the caller can name what it wrote.
                 // Only source locations qualify: the formatter escalates every diagnostic to an error,
                 // including reference remarks the consumer build never fails for.
-                return (project, [.. diagnostics.Where(IsBlockingError)]);
+                return new(project, [.. diagnostics.Where(IsBlockingError)]);
             }
 
-            project = fixedProject;
+            project = application.Project;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -109,7 +110,7 @@ internal static class CodeFixRunner
         throw new InvalidOperationException(message: "The formatting operation ended without completing.");
     }
 
-    private static async Task<(Project? Project, string? Attempt)> ApplyAvailableFix(
+    private static async Task<CodeActionApplication> ApplyAvailableFix(
         Project project,
         ImmutableArray<Diagnostic> diagnostics,
         ImmutableArray<DiagnosticAnalyzer> analyzers,
@@ -121,12 +122,13 @@ internal static class CodeFixRunner
     {
         string? attempt = null;
         HashSet<string> rejectedFixAllActions = [];
-        (Project? collisionProject, string? collisionAttempt) = await AvoidNamingCollisions(project, diagnostics, editable, cancellationToken)
+
+        CodeActionApplication collision = await AvoidNamingCollisions(project, diagnostics, editable, cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        if (collisionProject is not null)
+        if (collision.Project is not null)
         {
-            Project renamed = await ReparseChangedDocuments(project, collisionProject, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            Project renamed = await ReparseChangedDocuments(project, collision.Project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             ImmutableArray<Diagnostic> renameErrors = await GetIntroducedErrors(renamed, diagnostics, analyzers, onAnalyzerException, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
@@ -134,8 +136,8 @@ internal static class CodeFixRunner
             ImmutableArray<Diagnostic> renameCompilerErrors = [.. renameErrors.Where(IsCompilerError)];
 
             return renameCompilerErrors.IsEmpty
-                ? (renamed, collisionAttempt)
-                : throw Failure(reason: "introduced compiler errors", collisionAttempt, renameCompilerErrors);
+                ? new(renamed, collision.Attempt)
+                : throw Failure(reason: "introduced compiler errors", collision.Attempt, renameCompilerErrors);
         }
 
         // A total order keeps the chosen fix identical across runs despite parallel analyzer output.
@@ -242,12 +244,12 @@ internal static class CodeFixRunner
                         continue;
                     }
 
-                    return (updated, description);
+                    return new(updated, description);
                 }
             }
         }
 
-        return (null, attempt);
+        return new(Project: null, attempt);
     }
 
     private static async Task<Project?> AvoidNamingCollision(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
@@ -285,7 +287,7 @@ internal static class CodeFixRunner
         return renamed.GetProject(document.Project.Id);
     }
 
-    private static async Task<(Project? Project, string? Attempt)> AvoidNamingCollisions(
+    private static async Task<CodeActionApplication> AvoidNamingCollisions(
         Project project,
         ImmutableArray<Diagnostic> diagnostics,
         ImmutableHashSet<DocumentId> editable,
@@ -324,8 +326,8 @@ internal static class CodeFixRunner
         }
 
         return first is null
-            ? (null, null)
-            : (updated, $"{first} — rename colliding locals before applying naming-style fixes");
+            ? new(Project: null, Attempt: null)
+            : new(updated, $"{first} — rename colliding locals before applying naming-style fixes");
     }
 
     private static bool CanFixDiagnostic(CodeFixProvider provider, Diagnostic diagnostic)
@@ -341,9 +343,9 @@ internal static class CodeFixRunner
         }
     }
 
-    private static (string Identifier, string Message, string Path) ErrorKey(Diagnostic diagnostic)
+    private static DiagnosticIdentity ErrorKey(Diagnostic diagnostic)
     {
-        return (diagnostic.Id, diagnostic.GetMessage(CultureInfo.InvariantCulture), diagnostic.Location.SourceTree?.FilePath ?? string.Empty);
+        return new(diagnostic.Id, diagnostic.GetMessage(CultureInfo.InvariantCulture), diagnostic.Location.SourceTree?.FilePath ?? string.Empty);
     }
 
     private static InvalidOperationException Failure(string reason, string? attempt, ImmutableArray<Diagnostic> diagnostics)
@@ -464,7 +466,7 @@ internal static class CodeFixRunner
         ImmutableArray<Diagnostic> afterDiagnostics = await GetAllDiagnostics(after, analyzers, onAnalyzerException, cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        Dictionary<(string Identifier, string Message, string Path), int> existingErrors = beforeDiagnostics
+        Dictionary<DiagnosticIdentity, int> existingErrors = beforeDiagnostics
             .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .CountBy(ErrorKey).ToDictionary();
 
@@ -555,4 +557,10 @@ internal static class CodeFixRunner
 
         return after;
     }
+
+    private readonly record struct DiagnosticIdentity(string Identifier, string Message, string Path);
+
+    internal sealed record CodeFixResult(Project Project, ImmutableArray<Diagnostic> Blocking);
+
+    private sealed record CodeActionApplication(Project? Project, string? Attempt);
 }

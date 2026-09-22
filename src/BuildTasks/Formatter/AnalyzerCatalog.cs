@@ -13,7 +13,7 @@ internal static class AnalyzerCatalog
     // Instantiates the C# analyzers an assembly declares without consulting the compiler version it was
     // built against. Every analyzer that cannot be built, or cannot describe its diagnostics, is named; an
     // assembly no runtime can load at all is left to the caller, which already reports why.
-    public static (bool Read, ImmutableArray<DiagnosticAnalyzer> Analyzers, string[] Unavailable) Host(string path, AnalyzerLoader loader)
+    public static AnalyzerHostingResult Host(string path, AnalyzerLoader loader)
     {
         List<DiagnosticAnalyzer> analyzers = [];
         List<string> unavailable = [];
@@ -27,7 +27,7 @@ internal static class AnalyzerCatalog
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             // The caller already reports why the compiler's own loader refused the whole assembly.
-            return (false, [], []);
+            return new(Read: false, [], []);
         }
 
         foreach (Type type in declared)
@@ -49,7 +49,7 @@ internal static class AnalyzerCatalog
             }
         }
 
-        return (true, [.. analyzers], [.. unavailable]);
+        return new(Read: true, [.. analyzers], [.. unavailable]);
     }
 
     // Roslyn refuses an analyzer assembly that references a newer compiler than the host and announces
@@ -59,7 +59,7 @@ internal static class AnalyzerCatalog
     // reported as errors afterwards. The referenced version is metadata rather than a proven
     // incompatibility, and AnalyzerLoader already binds an analyzer's compiler references to the hosted
     // copy, so a refused assembly's analyzers are constructed here instead of dropped.
-    public static (AnalyzerReference[] References, string[] Hosted, string[] Unavailable) Load(string[] analyzerPaths, AnalyzerLoader loader)
+    public static AnalyzerLoadingResult Load(string[] analyzerPaths, AnalyzerLoader loader)
     {
         List<AnalyzerReference> references = [];
         List<string> hosted = [];
@@ -67,16 +67,16 @@ internal static class AnalyzerCatalog
 
         foreach (string path in analyzerPaths)
         {
-            (AnalyzerReference reference, string? announcement, string[] failures) = Load(path, loader);
-            references.Add(reference);
+            AnalyzerReferenceLoadingResult result = Load(path, loader);
+            references.Add(result.Reference);
 
-            if (announcement is not null)
-                hosted.Add(announcement);
+            if (result.Hosted is not null)
+                hosted.Add(result.Hosted);
 
-            unavailable.AddRange(failures);
+            unavailable.AddRange(result.Unavailable);
         }
 
-        return ([.. references], [.. hosted], [.. unavailable]);
+        return new([.. references], [.. hosted], [.. unavailable]);
     }
 
     private static DiagnosticAnalyzer Create(Type type)
@@ -118,7 +118,7 @@ internal static class AnalyzerCatalog
         return attribute is not null && attribute.Languages.Contains(LanguageNames.CSharp, StringComparer.Ordinal);
     }
 
-    private static (AnalyzerReference Reference, string? Hosted, string[] Unavailable) Load(string path, AnalyzerLoader loader)
+    private static AnalyzerReferenceLoadingResult Load(string path, AnalyzerLoader loader)
     {
         List<AnalyzerLoadFailureEventArgs> failures = [];
         AnalyzerFileReference reference = new(path, loader);
@@ -139,27 +139,33 @@ internal static class AnalyzerCatalog
         AnalyzerLoadFailureEventArgs[] rejections = [.. failures.Where(static failure => failure.TypeName is null)];
 
         if (rejections.Length == 0 || !loaded.IsEmpty)
-            return (reference, null, [.. failures.Select(failure => Describe(path, failure))]);
+            return new(reference, Hosted: null, [.. failures.Select(failure => Describe(path, failure))]);
 
-        (bool read, ImmutableArray<DiagnosticAnalyzer> analyzers, string[] unavailable) = Host(path, loader);
+        AnalyzerHostingResult result = Host(path, loader);
 
-        if (analyzers.IsEmpty)
+        if (result.Analyzers.IsEmpty)
         {
             // An assembly no runtime can read is enforcement lost; one that carries source generators and
             // no analyzer at all, as the Razor compiler does, costs this formatter nothing to skip.
-            string[] refused = read ? [] : [.. rejections.Select(failure => Describe(path, failure))];
+            string[] refused = result.Read ? [] : [.. rejections.Select(failure => Describe(path, failure))];
 
-            return (reference, null, [.. refused, .. unavailable]);
+            return new(reference, Hosted: null, [.. refused, .. result.Unavailable]);
         }
 
-        string count = analyzers.Length.ToString(CultureInfo.InvariantCulture);
-        string rules = analyzers.Length == 1 ? "analyzer" : "analyzers";
+        string count = result.Analyzers.Length.ToString(CultureInfo.InvariantCulture);
+        string rules = result.Analyzers.Length == 1 ? "analyzer" : "analyzers";
         string reasons = string.Join(separator: ", ", rejections.Select(Explain));
 
-        return (
-            new HostedAnalyzerReference(path, analyzers),
+        return new(
+            new HostedAnalyzerReference(path, result.Analyzers),
             $"NetAgents hosts {count} {rules} from {Path.GetFileName(path)} that this formatter's Roslyn refused: {reasons}",
-            unavailable
+            result.Unavailable
         );
     }
+
+    internal sealed record AnalyzerHostingResult(bool Read, ImmutableArray<DiagnosticAnalyzer> Analyzers, string[] Unavailable);
+
+    internal sealed record AnalyzerLoadingResult(AnalyzerReference[] References, string[] Hosted, string[] Unavailable);
+
+    private sealed record AnalyzerReferenceLoadingResult(AnalyzerReference Reference, string? Hosted, string[] Unavailable);
 }

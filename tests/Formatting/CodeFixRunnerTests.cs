@@ -189,14 +189,14 @@ public sealed class CodeFixRunnerTests
     {
         using AdhocWorkspace workspace = new();
 
-        (Project blocked, ImmutableArray<Diagnostic> remaining) = await CodeFixRunner.Fix(CreateProject(workspace), [], [], static fault => Assert.Fail(fault), CancellationToken.None);
+        CodeFixRunner.CodeFixResult blockedResult = await CodeFixRunner.Fix(CreateProject(workspace), [], [], static fault => Assert.Fail(fault), CancellationToken.None);
 
-        Assert.Equal(expected: "CS0122", remaining.Single().Id);
+        Assert.Equal(expected: "CS0122", blockedResult.Blocking.Single().Id);
 
         // The unrelated whitespace repair still lands, which is what a failing build writes to disk.
         Assert.Contains(
             expectedSubstring: "private static int Value",
-            (await blocked.Documents.Single().GetTextAsync()).ToString(),
+            (await blockedResult.Project.Documents.Single().GetTextAsync()).ToString(),
             StringComparison.Ordinal
         );
 
@@ -205,10 +205,10 @@ public sealed class CodeFixRunnerTests
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Clean.cs", SourceText.From(text: "class Clean\n{\n}\n"), filePath: "Clean.cs").Project;
 
-        (Project formatted, ImmutableArray<Diagnostic> none) = await CodeFixRunner.Fix(clean, [], [], static fault => Assert.Fail(fault), CancellationToken.None);
+        CodeFixRunner.CodeFixResult cleanResult = await CodeFixRunner.Fix(clean, [], [], static fault => Assert.Fail(fault), CancellationToken.None);
 
-        Assert.True(none.IsEmpty);
-        Assert.Equal(expected: "class Clean\n{\n}\n", (await formatted.Documents.Single().GetTextAsync()).ToString());
+        Assert.True(cleanResult.Blocking.IsEmpty);
+        Assert.Equal(expected: "class Clean\n{\n}\n", (await cleanResult.Project.Documents.Single().GetTextAsync()).ToString());
     }
 
     /// <summary>Never blames a dropped suggestion for a run the blocking errors ended.</summary>
@@ -223,11 +223,15 @@ public sealed class CodeFixRunnerTests
         project = project.Documents.Single().WithText(SourceText.From(source)).Project;
         StalledSuggestionFix provider = new();
 
-        (Project blocked, ImmutableArray<Diagnostic> remaining) = await CodeFixRunner.Fix(project, [], [provider], static fault => Assert.Fail(fault), CancellationToken.None);
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, [], [provider], static fault => Assert.Fail(fault), CancellationToken.None);
 
-        Assert.Equal(expected: "CS0122", remaining.Single().Id);
+        Assert.Equal(expected: "CS0122", result.Blocking.Single().Id);
         Assert.InRange(provider.Attempts, low: 1, high: 3);
-        Assert.Contains(expectedSubstring: "using System;", (await blocked.Documents.Single().GetTextAsync()).ToString(), StringComparison.Ordinal);
+        Assert.Contains(
+            expectedSubstring: "using System;",
+            (await result.Project.Documents.Single().GetTextAsync()).ToString(),
+            StringComparison.Ordinal
+        );
     }
 
     /// <summary>Reports stalled actions without exhausting the pass limit.</summary>

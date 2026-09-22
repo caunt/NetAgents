@@ -88,12 +88,12 @@ public sealed class CompositionPartsTests
             Exception failure = Assert.ThrowsAny<Exception>(() => Compose(parts.GetTypes()));
             Assert.Contains(expectedSubstring: "Absent", failure.ToString(), StringComparison.Ordinal);
 
-            (Type[] composable, string[] skipped) = CompositionParts.Select([parts]);
+            CompositionParts.CompositionSelection selection = CompositionParts.Select([parts]);
 
-            Assert.Equal(expected: "BrokenPart", Assert.Single(skipped));
-            Assert.Contains(composable, static type => type.Name == "HealthyPart");
-            Assert.DoesNotContain(composable, static type => type.Name == "BrokenPart");
-            ICloneable composed = Assert.Single(Compose(composable));
+            Assert.Equal(expected: "BrokenPart", Assert.Single(selection.Skipped));
+            Assert.Contains(selection.Types, static type => type.Name == "HealthyPart");
+            Assert.DoesNotContain(selection.Types, static type => type.Name == "BrokenPart");
+            ICloneable composed = Assert.Single(Compose(selection.Types));
             Assert.Equal(expected: "HealthyPart", composed.GetType().Name);
         }
         finally

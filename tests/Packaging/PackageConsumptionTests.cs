@@ -148,22 +148,24 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             Assert.Equal(namedArguments, await File.ReadAllTextAsync(sourcePath));
 
-            const string tupleMethod = """
-                    private static (int X, int Y) ResolveCoordinates() => (1, 2);
-
+            const string tupleLocals = """
                     private static int SubtractCoordinates()
                     {
-                        var firstPosition = ResolveCoordinates();
-                        var secondPosition = ResolveCoordinates();
+                        var firstPosition = (X: 1, Y: 2);
+                        var secondPosition = (X: 1, Y: 2);
                         return firstPosition.X - secondPosition.X + firstPosition.Y - secondPosition.Y;
                     }
 
                     /// <summary>Resolves habitat bounds.</summary>
                     /// <param name="recipientName">The habitat name.</param>
-                    /// <returns>The habitat and its dimensions.</returns>
-                    internal static (string Habitat, int Width, int Height) Resolve(string recipientName)
+                    /// <returns>The formatted habitat bounds.</returns>
+                    internal static string Resolve(string recipientName)
                     {
-                        return (recipientName, recipientName.Length, recipientName.Length);
+                        var bounds = (Habitat: recipientName, Width: recipientName.Length, Height: recipientName.Length);
+                        var habitat = bounds.Habitat;
+                        var width = bounds.Width;
+                        var height = bounds.Height;
+                        return string.Concat(habitat, new string(c: ' ', width + height));
                     }
 
                 """;
@@ -171,12 +173,12 @@ public sealed class PackageConsumptionTests
             string tupleSource = ValidSource
                 .Replace(
                     oldValue: "    /// <summary>Returns the supplied recipient name.</summary>",
-                    tupleMethod + "    /// <summary>Returns the supplied recipient name.</summary>",
+                    tupleLocals + "    /// <summary>Returns the supplied recipient name.</summary>",
                     StringComparison.Ordinal
                 )
                 .Replace(
                     oldValue: "return recipientName;",
-                    newValue: "System.ArgumentNullException.ThrowIfNull(recipientName);\nvar bounds = Resolve(recipientName);\nvar habitat = bounds.Habitat;\nvar width = bounds.Width;\nvar height = bounds.Height;\nvar habitatValue = string.Empty;\nvar coordinateOffset = SubtractCoordinates();\nreturn string.Concat(habitat, habitatValue, new string(c: ' ', width + height + coordinateOffset));",
+                    newValue: "System.ArgumentNullException.ThrowIfNull(recipientName);\nvar habitat = Resolve(recipientName);\nvar coordinateOffset = SubtractCoordinates();\nreturn string.Concat(habitat, new string(c: ' ', coordinateOffset));",
                     StringComparison.Ordinal
                 );
 
@@ -184,15 +186,15 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             string renamedTuple = await File.ReadAllTextAsync(sourcePath);
             Assert.Contains(
-                expectedSubstring: "(string Habitat, int Width, int Height) bounds = Resolve(recipientName);",
+                expectedSubstring: "(string Habitat, int Width, int Height) bounds = (Habitat: recipientName, Width: recipientName.Length, Height: recipientName.Length);",
                 renamedTuple,
                 StringComparison.Ordinal
             );
             Assert.Contains(expectedSubstring: "string habitat = bounds.Habitat;", renamedTuple, StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "int width = bounds.Width;", renamedTuple, StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "int height = bounds.Height;", renamedTuple, StringComparison.Ordinal);
-            Assert.Contains(expectedSubstring: "(int X, int Y) firstPosition = ResolveCoordinates();", renamedTuple, StringComparison.Ordinal);
-            Assert.Contains(expectedSubstring: "(int X, int Y) secondPosition = ResolveCoordinates();", renamedTuple, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "(int X, int Y) firstPosition = (X: 1, Y: 2);", renamedTuple, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "(int X, int Y) secondPosition = (X: 1, Y: 2);", renamedTuple, StringComparison.Ordinal);
             Assert.DoesNotContain(expectedSubstring: "(int x, int y)", renamedTuple, StringComparison.Ordinal);
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             Assert.Equal(renamedTuple, await File.ReadAllTextAsync(sourcePath));
@@ -201,12 +203,9 @@ public sealed class PackageConsumptionTests
                 Environment.NewLine,
                 Enumerable.Range(start: 0, count: 70).Select(
                     static index => $$"""
-                        internal static (string Habitat, int Width, int Height) ResolveBounds{{index}}(string value) =>
-                            (value, value.Length, value.Length);
-
-                        private static string ConsumeBounds{{index}}(string value)
+                        internal static string ResolveBounds{{index}}(string value)
                         {
-                            var bounds = ResolveBounds{{index}}(value);
+                            var bounds = (Habitat: value, Width: value.Length, Height: value.Length);
                             var habitat = bounds.Habitat;
                             var width = bounds.Width;
                             var height = bounds.Height;
@@ -426,6 +425,23 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001");
             await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0001\n" + boxingSource);
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001");
+
+            string tupleResultSource = ValidSource
+                .Replace(
+                    oldValue: "string CreateGreeting(string recipientName)",
+                    newValue: "System.Threading.Tasks.Task<(string Greeting, bool Created)> CreateGreeting(string recipientName)",
+                    StringComparison.Ordinal
+                )
+                .Replace(
+                    oldValue: "return recipientName;",
+                    newValue: "return System.Threading.Tasks.Task.FromResult((recipientName, true));",
+                    StringComparison.Ordinal
+                );
+
+            await File.WriteAllTextAsync(sourcePath, tupleResultSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0024");
+            await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0024\n" + tupleResultSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0024");
             await File.WriteAllTextAsync(
                 sourcePath,
                 ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n", string.Empty, StringComparison.Ordinal)
@@ -444,6 +460,7 @@ public sealed class PackageConsumptionTests
                 "dotnet_diagnostic.NETAGENTS0015.severity = none",
                 "dotnet_diagnostic.NETAGENTS0017.severity = none",
                 "dotnet_diagnostic.NETAGENTS0018.severity = none",
+                "dotnet_diagnostic.NETAGENTS0024.severity = none",
                 "dotnet_diagnostic.IDE0005.severity = none",
                 "dotnet_diagnostic.IDE0059.severity = none",
                 "dotnet_diagnostic.CS1591.severity = none",
@@ -497,6 +514,7 @@ public sealed class PackageConsumptionTests
                 "-p:SkipGlobalAnalyzerConfigForPackage=true",
                 "-p:NoWarn=NETAGENTS0001",
                 "-p:NoWarn=NETAGENTS0015",
+                "-p:NoWarn=NETAGENTS0024",
                 "-p:NoWarn=1591",
                 "-p:WarningsNotAsErrors=CS1591",
                 "-p:NoWarn=IDE0005",

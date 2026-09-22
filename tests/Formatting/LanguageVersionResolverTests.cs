@@ -15,10 +15,10 @@ public sealed class LanguageVersionResolverTests
     {
         foreach (LanguageVersion supported in Enum.GetValues<LanguageVersion>())
         {
-            (LanguageVersion version, bool substituted) = LanguageVersionResolver.Resolve(supported.ToDisplayString(), ProjectPath);
+            LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(supported.ToDisplayString(), ProjectPath);
 
-            Assert.Equal(supported, version);
-            Assert.False(substituted);
+            Assert.Equal(supported, resolution.Version);
+            Assert.False(resolution.Substituted);
         }
     }
 
@@ -54,10 +54,10 @@ public sealed class LanguageVersionResolverTests
     {
         foreach (string configured in (string[])["", "   ", "\r\n "])
         {
-            (LanguageVersion version, bool substituted) = LanguageVersionResolver.Resolve(configured, ProjectPath);
+            LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(configured, ProjectPath);
 
-            Assert.Equal(LanguageVersion.Default, version);
-            Assert.False(substituted);
+            Assert.Equal(LanguageVersion.Default, resolution.Version);
+            Assert.False(resolution.Substituted);
         }
     }
 
@@ -68,19 +68,19 @@ public sealed class LanguageVersionResolverTests
         // The .NET 11 SDK fills LangVersion with 15.0, which this package's Roslyn cannot parse.
         foreach (string configured in (string[])["15.0", "15", "16.0", "99.9"])
         {
-            (LanguageVersion version, bool substituted) = LanguageVersionResolver.Resolve(configured, ProjectPath);
+            LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(configured, ProjectPath);
 
-            Assert.Equal(LanguageVersion.Preview, version);
-            Assert.True(substituted);
+            Assert.Equal(LanguageVersion.Preview, resolution.Version);
+            Assert.True(resolution.Substituted);
         }
     }
 
-    // Assert.Throws boxes a value-typed result, so the resolved tuple never leaves this method.
+    // Assert.Throws boxes returned values, so the resolution never leaves this method.
     private static void ResolveWithoutResult(string configured)
     {
-        (LanguageVersion version, bool substituted) = LanguageVersionResolver.Resolve(configured, ProjectPath);
+        LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(configured, ProjectPath);
 
-        Assert.Equal(LanguageVersion.Default, version);
-        Assert.False(substituted);
+        Assert.Equal(LanguageVersion.Default, resolution.Version);
+        Assert.False(resolution.Substituted);
     }
 }

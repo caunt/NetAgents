@@ -37,6 +37,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0021 | Require a blank line between adjacent method declarations, including constructors, destructors, and operators. Includes an automatic fix and Fix All support. |
 | NETAGENTS0022 | Order type members by kind, visibility, const/static/instance, readonly, then ordinal name. Includes an automatic fix and Fix All support. |
 | NETAGENTS0023 | Forbid blank lines directly after an opening brace or before a closing brace, in every block: type bodies, method and statement blocks, accessor lists, namespaces, enums, switch bodies, initializers, lambdas, and local functions. Includes an automatic fix and Fix All support. |
+| NETAGENTS0024 | Reject tuple result contracts, including C# tuples, `System.ValueTuple`, `System.Tuple`, and tuples nested inside asynchronous or other wrapper types. Return a dedicated named record, class, or struct instead. |
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
@@ -135,6 +136,16 @@ Framework synchronization bans cover `Lock`, `Monitor`, `Semaphore`,
 `SemaphoreSlim`, `Mutex`, reader/writer locks, spin locks/waits, reset events,
 wait handles, `CountdownEvent`, and `Barrier`. `Interlocked`, `Volatile`,
 cancellation, concurrent collections, and channels remain available.
+
+Result contracts use dedicated named types rather than tuples. This applies to methods,
+local functions, properties, indexers, delegates, operators, function pointers, and
+anonymous functions, including inferred lambda results and tuples nested inside
+`Task`, `ValueTask`, collections, arrays, or custom generic wrappers. Overrides and
+interface implementations may keep tuple results prescribed by their inherited
+contracts. Tuple parameters, fields, locals, arguments, and deconstruction remain
+available, as does consuming a tuple returned by a dependency without returning it
+again. Choosing the appropriate result type is a design decision, so this rule has no
+automatic fix.
 
 The naming vocabulary includes `args`, `cfg`, `ctx`, `config`, `dto`, `dsp`,
 `msg`, `sdr`, `sql`, `tmp`, and other common shortened words; see
