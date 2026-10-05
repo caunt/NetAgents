@@ -40,7 +40,7 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
         items: [        "args", "auth", "cfg", "config", "ctx", "db", "doc", "docs", "dto", "dsp",
         "env", "info", "init", "io", "ip", "max", "min",
         "msg", "num", "opts", "param", "params", "prev", "proc", "ptr", "req", "res", "sdr", "sql",
-        "temp", "tmp", "ui", "utils", "var"]
+        "temp", "tmp", "ui", "utils"]
     );
 
     /// <inheritdoc />
