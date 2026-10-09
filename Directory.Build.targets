@@ -78,13 +78,18 @@
     <NetAgentsFormatterDirectory>$(MSBuildThisFileDirectory)artifacts/formatter/$(Configuration)/$(NetAgentsFormatterStamp)/</NetAgentsFormatterDirectory>
     <NetAgentsBuildTaskPath>$(NetAgentsFormatterDirectory)NetAgents.BuildTasks.dll</NetAgentsBuildTaskPath>
   </PropertyGroup>
-  <Target Name="PrepareNetAgentsRepositoryFormatter" BeforeTargets="FormatNetAgentsConsumerSource"
+  <Target Name="PrepareNetAgentsRepositoryFormatter" BeforeTargets="_FormatNetAgentsSource"
           Condition="'$(DesignTimeBuild)' != 'true' and Exists('$(NetAgentsRepositoryTaskSource)')">
     <ItemGroup>
       <NetAgentsFormatterFiles Include="$(MSBuildThisFileDirectory)src/BuildTasks/Formatter/bin/$(Configuration)/net10.0/*.dll;$(MSBuildThisFileDirectory)src/BuildTasks/Formatter/bin/$(Configuration)/net10.0/*.deps.json" />
+      <NetAgentsFormattingAnalyzers Include="$(NetAgentsCodeFixAssemblyPath)" Condition="Exists('$(NetAgentsCodeFixAssemblyPath)')" />
     </ItemGroup>
     <Copy SourceFiles="@(NetAgentsFormatterFiles)" DestinationFolder="$(NetAgentsFormatterDirectory)"
           Condition="!Exists('$(NetAgentsBuildTaskPath)')" />
   </Target>
   <Import Project="$(MSBuildThisFileDirectory)src/Packaging/NetAgents.Analyzers.targets" />
+  <!-- Only repository builds bootstrap without formatting until the local formatter exists. -->
+  <Target Name="FormatNetAgentsConsumerSource" BeforeTargets="CoreCompile"
+          DependsOnTargets="ValidateNetAgentsConsumerPolicy;_FormatNetAgentsSource"
+          Condition="'$(DesignTimeBuild)' != 'true' and Exists('$(NetAgentsRepositoryTaskSource)')" />
 </Project>

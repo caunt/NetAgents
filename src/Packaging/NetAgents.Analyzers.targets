@@ -9,12 +9,12 @@
     <NetAgentsRoslynDirectory Condition="'$(NetAgentsRoslynDirectory)' == ''">$(MSBuildToolsPath)/DotnetTools/dotnet-format</NetAgentsRoslynDirectory>
   </PropertyGroup>
   <UsingTask TaskName="NetAgents.BuildTasks.FormatProject" AssemblyFile="$(NetAgentsBuildTaskPath)" />
-  <Target Name="FormatNetAgentsConsumerSource" BeforeTargets="CoreCompile" DependsOnTargets="ValidateNetAgentsConsumerPolicy"
-          Condition="'$(DesignTimeBuild)' != 'true' and ('$(NetAgentsRepositoryBuild)' != 'true' or Exists('$(NetAgentsRepositoryTaskSource)'))">
+  <Target Name="FormatNetAgentsConsumerSource" BeforeTargets="CoreCompile"
+          DependsOnTargets="ValidateNetAgentsConsumerPolicy;_FormatNetAgentsSource"
+          Condition="'$(DesignTimeBuild)' != 'true'" />
+  <Target Name="_FormatNetAgentsSource">
     <ItemGroup>
       <NetAgentsFormattingAnalyzers Include="@(Analyzer)" />
-      <NetAgentsFormattingAnalyzers Include="$(NetAgentsCodeFixAssemblyPath)"
-                                    Condition="'$(NetAgentsRepositoryBuild)' == 'true' and Exists('$(NetAgentsCodeFixAssemblyPath)')" />
       <NetAgentsFormattingBuildFiles Include="$(MSBuildProjectFullPath);$(MSBuildAllProjects);$(ProjectAssetsFile);$(CodeAnalysisRuleSet);$(AssemblyOriginatorKeyFile);@(CustomAdditionalCompileInputs)" />
       <NetAgentsFormattingBuildProperties Include="Compiler">
         <TargetFramework>$(TargetFramework)</TargetFramework>
