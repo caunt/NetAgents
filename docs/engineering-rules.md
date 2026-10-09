@@ -8,6 +8,8 @@ The task applies supported project-wide fixes (or individual fixes when necessar
 
 Formatting runs on every build that is not a design-time IDE build, and there is no property that turns it off. This repository uses the same task, with an isolated copy of the locally built task to allow it to rebuild itself. On the first clean checkout, the task project must bootstrap before the formatter becomes available.
 
+Source parsing errors stop formatting before analyzers or code-fix providers are loaded, with the source paths and compiler diagnostics reported immediately. Correct the syntax before the build applies style fixes. On valid syntax, fixes for warnings and errors run before optional suggestions. Each candidate is formatted before validation, and the accepted project's diagnostics carry into the next pass. Compiler-breaking candidates are rejected before running analyzers; a rejected optional candidate can reuse its validation only when its complete source state is unchanged and the rejecting errors are still new relative to the current project. Changes to another file require validation again. Progress messages name each pass and action and include elapsed time.
+
 ## Diagnostics
 
 Every custom diagnostic is an error and is marked non-configurable.

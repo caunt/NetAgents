@@ -92,6 +92,7 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspace.FullName, ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
 
+            await VerifySyntaxErrors(workspace.FullName, sourcePath, projectPath);
             await RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             string formatted = await File.ReadAllTextAsync(sourcePath);
             Assert.Contains(expectedSubstring: "namespace CustomerApp.Features;", formatted, StringComparison.Ordinal);
@@ -872,5 +873,41 @@ public sealed class PackageConsumptionTests
         Assert.DoesNotContain(manifest.Descendants(), static element => element.Name.LocalName == "dependency");
 
         return manifest.Descendants().Single(static element => element.Name.LocalName == "version").Value;
+    }
+
+    private static async Task VerifySyntaxErrors(string workspacePath, string sourcePath, string projectPath)
+    {
+        const string malformed = """
+            internal static class BrokenSwitch
+            {
+                internal static void Run(int command)
+                {
+                    switch (command)
+                    {
+                        case 0:
+                            {
+                                break;
+                        case 1:
+                                break;
+                            }
+                    }
+                }
+            }
+            """;
+
+        string brokenPath = Path.Combine(workspacePath, path2: "BrokenSwitch.cs");
+        string original = await File.ReadAllTextAsync(sourcePath).ConfigureAwait(continueOnCapturedContext: false);
+        await File.WriteAllTextAsync(brokenPath, malformed).ConfigureAwait(continueOnCapturedContext: false);
+        await RunDevelopmentKit(
+            workspacePath,
+            ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "normal"],
+            expectedDiagnosticIdentifier: "CS1513",
+            ["checking source syntax", "source contains syntax errors"],
+            ["loading analyzers and code-fix providers", "NetAgents rewrote"]
+        ).ConfigureAwait(continueOnCapturedContext: false);
+
+        Assert.Equal(original, await File.ReadAllTextAsync(sourcePath).ConfigureAwait(continueOnCapturedContext: false));
+        Assert.Equal(malformed, await File.ReadAllTextAsync(brokenPath).ConfigureAwait(continueOnCapturedContext: false));
+        File.Delete(brokenPath);
     }
 }

@@ -13,6 +13,9 @@
     <Compile Include="../src/BuildTasks/Formatter/AnalyzerLoader.cs" Link="Infrastructure/AnalyzerLoader.cs" />
     <Compile Include="../src/BuildTasks/Formatter/HostedAnalyzerReference.cs" Link="Infrastructure/HostedAnalyzerReference.cs" />
     <Compile Include="../src/BuildTasks/Formatter/CodeFixRunner.cs" Link="Infrastructure/CodeFixRunner.cs" />
+    <Compile Include="../src/BuildTasks/Formatter/FormattingAnalysis.cs" Link="Infrastructure/FormattingAnalysis.cs" />
+    <Compile Include="../src/BuildTasks/Formatter/FormattingProgress.cs" Link="Infrastructure/FormattingProgress.cs" />
+    <Compile Include="../src/BuildTasks/Formatter/FormattingSyntax.cs" Link="Infrastructure/FormattingSyntax.cs" />
     <Compile Include="../src/BuildTasks/Formatter/CompositionParts.cs" Link="Infrastructure/CompositionParts.cs" />
     <Compile Include="../src/BuildTasks/Formatter/BuildDiagnostics.cs" Link="Infrastructure/BuildDiagnostics.cs" />
     <Compile Include="../src/BuildTasks/Formatter/LanguageVersionResolver.cs" Link="Infrastructure/LanguageVersionResolver.cs" />

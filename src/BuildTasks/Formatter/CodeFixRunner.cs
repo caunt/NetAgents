@@ -1,8 +1,5 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
@@ -29,14 +26,15 @@ internal static class CodeFixRunner
         ImmutableArray<DiagnosticAnalyzer> analyzers,
         CodeFixProvider[] providers,
         Action<string> reportAnalyzerFault,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        FormattingProgress? progress = null
     )
     {
         ConcurrentDictionary<string, bool> reported = new(StringComparer.Ordinal);
 
         // Without a handler an analyzer that throws becomes an AD0001 this compilation escalates to an
         // error nothing can fix, and a hosted analyzer built for a newer Roslyn is where that happens.
-        // Every pass of the loop below analyzes again, so an identical fault is announced once.
+        // Several candidate projects can invoke the same analyzer, so an identical fault is announced once.
         void OnAnalyzerException(Exception exception, DiagnosticAnalyzer analyzer, Diagnostic diagnostic)
         {
             string fault = $"NetAgents cannot run the {analyzer.GetType().FullName} analyzer ({diagnostic.Id}): {exception.Message}";
@@ -45,6 +43,11 @@ internal static class CodeFixRunner
                 reportAnalyzerFault(fault);
         }
 
+        progress ??= new(project.Name, report: null);
+        progress.Report(activity: "checking source syntax");
+        await FormattingSyntax.Verify(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+        FormattingAnalysis analysis = new(analyzers, OnAnalyzerException, progress);
         ImmutableHashSet<DocumentId> editable = [];
 
         foreach (Document document in project.Documents)
@@ -64,29 +67,20 @@ internal static class CodeFixRunner
 
         HashSet<string> states = [];
         string? attempt = null;
+        progress.Report(activity: "formatting whitespace");
+        project = await FormatWhitespace(project, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> diagnostics = await analysis.GetDiagnostics(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         while (!cancellationToken.IsCancellationRequested)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            project = await FormatWhitespace(project, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-
-            ImmutableArray<Diagnostic> diagnostics = await GetAllDiagnostics(project, analyzers, OnAnalyzerException, cancellationToken)
-                .ConfigureAwait(continueOnCapturedContext: false);
-
-            StringBuilder state = new();
-
-            foreach (Document document in project.Documents)
-            {
-                SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-                state = state.Append(document.Id).Append(value: ':').Append(text.Length).Append(value: ':').Append(text);
-            }
-
-            string fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(state.ToString())));
+            progress.NextPass();
+            string fingerprint = await FormattingAnalysis.Fingerprint(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             if (!states.Add(fingerprint))
                 throw Failure(reason: "repeated a project state without stabilizing", attempt, diagnostics);
 
-            CodeActionApplication application = await ApplyAvailableFix(project, diagnostics, analyzers, providers, editable, OnAnalyzerException, cancellationToken)
+            CodeActionApplication application = await ApplyAvailableFix(project, diagnostics, providers, editable, analysis, progress, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             attempt = application.Attempt;
@@ -99,10 +93,13 @@ internal static class CodeFixRunner
                 // Compilation reports these from the rewritten files, so the caller can name what it wrote.
                 // Only source locations qualify: the formatter escalates every diagnostic to an error,
                 // including reference remarks the consumer build never fails for.
+                progress.Report(activity: "finished applying available fixes");
+
                 return new(project, [.. diagnostics.Where(IsBlockingError)]);
             }
 
             project = application.Project;
+            diagnostics = application.Diagnostics;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -113,10 +110,10 @@ internal static class CodeFixRunner
     private static async Task<CodeActionApplication> ApplyAvailableFix(
         Project project,
         ImmutableArray<Diagnostic> diagnostics,
-        ImmutableArray<DiagnosticAnalyzer> analyzers,
         CodeFixProvider[] providers,
         ImmutableHashSet<DocumentId> editable,
-        Action<Exception, DiagnosticAnalyzer, Diagnostic> onAnalyzerException,
+        FormattingAnalysis analysis,
+        FormattingProgress progress,
         CancellationToken cancellationToken
     )
     {
@@ -128,20 +125,23 @@ internal static class CodeFixRunner
 
         if (collision.Project is not null)
         {
-            Project renamed = await ReparseChangedDocuments(project, collision.Project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            progress.Report(activity: "validating naming collision repair");
+            Project renamed = await PrepareCandidate(project, collision.Project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            ImmutableArray<Diagnostic> renameErrors = await GetIntroducedErrors(renamed, diagnostics, analyzers, onAnalyzerException, cancellationToken)
+            FormattingAnalysis.ValidationResult validation = await analysis.Validate(renamed, diagnostics, actionKey: "naming collisions", optional: false, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            ImmutableArray<Diagnostic> renameCompilerErrors = [.. renameErrors.Where(IsCompilerError)];
+            ImmutableArray<Diagnostic> renameCompilerErrors = [.. validation.IntroducedErrors.Where(IsCompilerError)];
 
             return renameCompilerErrors.IsEmpty
-                ? new(renamed, collision.Attempt)
+                ? new(renamed, collision.Attempt, validation.Diagnostics)
                 : throw Failure(reason: "introduced compiler errors", collision.Attempt, renameCompilerErrors);
         }
 
         // A total order keeps the chosen fix identical across runs despite parallel analyzer output.
-        IOrderedEnumerable<Diagnostic> ordered = diagnostics.ToArray().OrderBy(static diagnostic => diagnostic.Id, StringComparer.Ordinal)
+        IOrderedEnumerable<Diagnostic> ordered = diagnostics.ToArray()
+            .OrderByDescending(static diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning)
+            .ThenBy(static diagnostic => diagnostic.Id, StringComparer.Ordinal)
             .ThenBy(static diagnostic => diagnostic.Location.SourceTree?.FilePath ?? string.Empty, StringComparer.Ordinal)
             .ThenBy(static diagnostic => diagnostic.Location.SourceSpan.Start);
 
@@ -178,6 +178,7 @@ internal static class CodeFixRunner
                         continue;
 
                     CodeAction preferred = selected;
+                    progress.Report($"preparing {diagnostic.Id} action '{selected.Title}' ({provider.GetType().Name})");
 
                     if (canFixProject && fixAllProvider is not null)
                     {
@@ -204,8 +205,7 @@ internal static class CodeFixRunner
                     ProjectChanges differences = updated.GetChanges(project);
                     DocumentId[] changedDocuments = [.. differences.GetChangedDocuments()];
 
-                    bool supported = changedDocuments.All(editable.Contains)
-                        && !differences.GetAddedDocuments().Any() && !differences.GetRemovedDocuments().Any();
+                    bool supported = changedDocuments.All(editable.Contains) && SupportsDocumentChanges(project, updated, differences);
 
                     if (!supported)
                         continue;
@@ -221,16 +221,22 @@ internal static class CodeFixRunner
                     if (!await HasTextChanges(project, updated, changedDocuments, cancellationToken).ConfigureAwait(continueOnCapturedContext: false))
                         continue;
 
-                    updated = await ReparseChangedDocuments(project, updated, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-
-                    ImmutableArray<Diagnostic> introducedErrors = await GetIntroducedErrors(updated, diagnostics, analyzers, onAnalyzerException, cancellationToken)
-                        .ConfigureAwait(continueOnCapturedContext: false);
-
-                    ImmutableArray<Diagnostic> introducedCompilerErrors = [.. introducedErrors.Where(IsCompilerError)];
-
                     // A hidden or info diagnostic is a suggestion the compiler never fails for, so a broken
                     // action offered for one is dropped below instead of taking an otherwise clean build down.
                     bool optional = diagnostic.Severity < DiagnosticSeverity.Warning;
+                    updated = await PrepareCandidate(project, updated, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                    if (!await HasTextChanges(project, updated, changedDocuments, cancellationToken).ConfigureAwait(continueOnCapturedContext: false))
+                        continue;
+
+                    string actionKey = fixAllKey ?? $"{provider.GetType().FullName}|{selected.EquivalenceKey ?? selected.Title}";
+                    progress.Report($"validating {diagnostic.Id} action '{preferred.Title}'");
+
+                    FormattingAnalysis.ValidationResult validation = await analysis.Validate(updated, diagnostics, actionKey, optional, cancellationToken)
+                        .ConfigureAwait(continueOnCapturedContext: false);
+
+                    ImmutableArray<Diagnostic> introducedErrors = validation.IntroducedErrors;
+                    ImmutableArray<Diagnostic> introducedCompilerErrors = [.. introducedErrors.Where(IsCompilerError)];
 
                     if (!introducedCompilerErrors.IsEmpty && !optional)
                         throw Failure(reason: "introduced compiler errors", description, introducedCompilerErrors);
@@ -241,10 +247,14 @@ internal static class CodeFixRunner
                         if (fixAllKey is not null && !rejectedFixAllActions.Add(fixAllKey))
                             throw new InvalidOperationException(message: "The rejected formatting action was already recorded.");
 
+                        progress.Report($"rejected {diagnostic.Id} action '{preferred.Title}' because it introduces errors");
+
                         continue;
                     }
 
-                    return new(updated, description);
+                    progress.Report($"accepted {diagnostic.Id} action '{preferred.Title}'");
+
+                    return new(updated, description, validation.Diagnostics);
                 }
             }
         }
@@ -343,11 +353,6 @@ internal static class CodeFixRunner
         }
     }
 
-    private static DiagnosticIdentity ErrorKey(Diagnostic diagnostic)
-    {
-        return new(diagnostic.Id, diagnostic.GetMessage(CultureInfo.InvariantCulture), diagnostic.Location.SourceTree?.FilePath ?? string.Empty);
-    }
-
     private static InvalidOperationException Failure(string reason, string? attempt, ImmutableArray<Diagnostic> diagnostics)
     {
         List<string> lines = [$"Automatic formatting {reason}."];
@@ -389,22 +394,6 @@ internal static class CodeFixRunner
         }
 
         return project;
-    }
-
-    private static async Task<ImmutableArray<Diagnostic>> GetAllDiagnostics(
-        Project project,
-        ImmutableArray<DiagnosticAnalyzer> analyzers,
-        Action<Exception, DiagnosticAnalyzer, Diagnostic> onAnalyzerException,
-        CancellationToken cancellationToken
-    )
-    {
-        Compilation compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
-            ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
-
-        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException, concurrentAnalysis: true, logAnalyzerExecutionTime: false);
-
-        return await compilation.WithAnalyzers(analyzers, options).GetAllDiagnosticsAsync(cancellationToken)
-            .ConfigureAwait(continueOnCapturedContext: false);
     }
 
     private static async Task<List<CodeAction>> GetCodeActions(CodeFixProvider provider, Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
@@ -453,27 +442,6 @@ internal static class CodeFixRunner
             // A failed project-wide fix still leaves the single-document action, which the caller validates.
             return null;
         }
-    }
-
-    private static async Task<ImmutableArray<Diagnostic>> GetIntroducedErrors(
-        Project after,
-        ImmutableArray<Diagnostic> beforeDiagnostics,
-        ImmutableArray<DiagnosticAnalyzer> analyzers,
-        Action<Exception, DiagnosticAnalyzer, Diagnostic> onAnalyzerException,
-        CancellationToken cancellationToken
-    )
-    {
-        ImmutableArray<Diagnostic> afterDiagnostics = await GetAllDiagnostics(after, analyzers, onAnalyzerException, cancellationToken)
-            .ConfigureAwait(continueOnCapturedContext: false);
-
-        Dictionary<DiagnosticIdentity, int> existingErrors = beforeDiagnostics
-            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-            .CountBy(ErrorKey).ToDictionary();
-
-        return [.. afterDiagnostics
-            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-            .GroupBy(ErrorKey)
-            .SelectMany(group => group.Skip(existingErrors.GetValueOrDefault(group.Key)))];
     }
 
     private static string GetLineEnding(SourceText text, AnalyzerConfigOptions options)
@@ -546,6 +514,16 @@ internal static class CodeFixRunner
         return diagnostic.Id.StartsWith(value: "CS", StringComparison.Ordinal);
     }
 
+    private static async Task<Project> PrepareCandidate(Project before, Project after, CancellationToken cancellationToken)
+    {
+        ImmutableHashSet<DocumentId> changed = [.. after.GetChanges(before).GetChangedDocuments()];
+        Project formatted = await FormatWhitespace(after, changed, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+        // Validate the exact text the next pass will use. Keeping this project and its diagnostics
+        // together preserves diagnostic locations and avoids analyzing the accepted state again.
+        return await ReparseChangedDocuments(before, formatted, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     private static async Task<Project> ReparseChangedDocuments(Project before, Project after, CancellationToken cancellationToken)
     {
         foreach (DocumentId identifier in after.GetChanges(before).GetChangedDocuments())
@@ -558,9 +536,36 @@ internal static class CodeFixRunner
         return after;
     }
 
-    private readonly record struct DiagnosticIdentity(string Identifier, string Message, string Path);
+    private static bool SupportsDocumentChanges(Project before, Project after, ProjectChanges differences)
+    {
+        foreach (DocumentId identifier in differences.GetChangedDocuments())
+        {
+            Document original = before.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The original document is missing.");
+            Document updated = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
+
+            bool sameIdentity = original.Name == updated.Name && original.FilePath == updated.FilePath
+                && original.SourceCodeKind == updated.SourceCodeKind && original.Folders.SequenceEqual(updated.Folders);
+
+            if (!sameIdentity)
+                return false;
+        }
+
+        // Project-system edits are not source formatting. Fixed non-source inputs also make a
+        // complete source fingerprint sufficient for the rejection cache's validation context.
+        return before.CompilationOptions == after.CompilationOptions && before.ParseOptions == after.ParseOptions
+            && before.AssemblyName == after.AssemblyName && before.DefaultNamespace == after.DefaultNamespace
+            && before.Name == after.Name && before.FilePath == after.FilePath && before.OutputFilePath == after.OutputFilePath
+            && !differences.GetAddedDocuments().Any() && !differences.GetRemovedDocuments().Any()
+            && !differences.GetAddedAdditionalDocuments().Any() && !differences.GetRemovedAdditionalDocuments().Any()
+            && !differences.GetChangedAdditionalDocuments().Any()
+            && !differences.GetAddedAnalyzerConfigDocuments().Any() && !differences.GetRemovedAnalyzerConfigDocuments().Any()
+            && !differences.GetChangedAnalyzerConfigDocuments().Any()
+            && !differences.GetAddedMetadataReferences().Any() && !differences.GetRemovedMetadataReferences().Any()
+            && !differences.GetAddedProjectReferences().Any() && !differences.GetRemovedProjectReferences().Any()
+            && !differences.GetAddedAnalyzerReferences().Any() && !differences.GetRemovedAnalyzerReferences().Any();
+    }
 
     internal sealed record CodeFixResult(Project Project, ImmutableArray<Diagnostic> Blocking);
 
-    private sealed record CodeActionApplication(Project? Project, string? Attempt);
+    private sealed record CodeActionApplication(Project? Project, string? Attempt, ImmutableArray<Diagnostic> Diagnostics = default);
 }

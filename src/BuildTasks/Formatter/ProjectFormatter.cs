@@ -40,6 +40,41 @@ internal static class ProjectFormatter
 
     private static async Task FormatCore(FormatProject inputs, CancellationToken cancellationToken)
     {
+        FormattingProgress progress = new(inputs.AssemblyName, message => inputs.Log.LogMessage(MessageImportance.High, message));
+        progress.Report(activity: "checking source syntax");
+        LanguageVersionResolver.LanguageVersionResolution languageVersion = LanguageVersionResolver.Resolve(inputs.LanguageVersion, inputs.ProjectPath);
+
+        if (languageVersion.Substituted)
+        {
+            inputs.Log.LogMessage(
+                MessageImportance.Normal,
+                $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}"
+            );
+        }
+
+        CSharpParseOptions parseOptions = new(
+            languageVersion.Version,
+            DocumentationMode.Diagnose,
+            preprocessorSymbols: inputs.DefineConstants.Split([';', ','], StringSplitOptions.RemoveEmptyEntries)
+        );
+
+        // Parse before loading analyzers or composing code-fix providers. Malformed source needs
+        // its own diagnostics immediately, even when initializing those providers is expensive.
+        Dictionary<string, SourceText> sources = [];
+        List<Diagnostic> syntaxDiagnostics = [];
+
+        foreach (ITaskItem source in inputs.SourceFiles)
+        {
+            string path = GetPath(source);
+            SourceText text = await ReadText(path, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            sources[path] = text;
+            SyntaxTree tree = CSharpSyntaxTree.ParseText(text, parseOptions, path, cancellationToken);
+            syntaxDiagnostics.AddRange(tree.GetDiagnostics(cancellationToken));
+        }
+
+        FormattingSyntax.Verify(syntaxDiagnostics);
+        progress.Report(activity: "loading analyzers and code-fix providers");
+
         using AnalyzerLoader loader = new();
 
         loader.AddDependencyLocation(Path.Combine(inputs.SdkAssemblyDirectory, path2: "dependencies.dll"));
@@ -78,28 +113,12 @@ internal static class ProjectFormatter
 
         ProjectId projectIdentifier = ProjectId.CreateNewId();
 
-        LanguageVersionResolver.LanguageVersionResolution languageVersion = LanguageVersionResolver.Resolve(inputs.LanguageVersion, inputs.ProjectPath);
-
-        if (languageVersion.Substituted)
-        {
-            inputs.Log.LogMessage(
-                MessageImportance.Normal,
-                $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}"
-            );
-        }
-
         OutputKind outputKind = inputs.OutputType switch
         {
             "Exe" => OutputKind.ConsoleApplication,
             "WinExe" => OutputKind.WindowsApplication,
             _ => OutputKind.DynamicallyLinkedLibrary,
         };
-
-        CSharpParseOptions parseOptions = new(
-            languageVersion.Version,
-            DocumentationMode.Diagnose,
-            preprocessorSymbols: inputs.DefineConstants.Split([';', ','], StringSplitOptions.RemoveEmptyEntries)
-        );
 
         CSharpCompilationOptions compilationOptions = new(
             outputKind,
@@ -140,7 +159,7 @@ internal static class ProjectFormatter
         foreach (ITaskItem source in inputs.SourceFiles)
         {
             string path = GetPath(source);
-            SourceText text = await ReadText(path, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            SourceText text = sources[path];
             string logicalPath = source.GetMetadata(metadataName: "Link");
 
             if (string.IsNullOrEmpty(logicalPath))
@@ -175,7 +194,7 @@ internal static class ProjectFormatter
         CodeFixProvider[] providers = [.. composition.GetExports<CodeFixProvider>()];
 
         CodeFixRunner.CodeFixResult codeFixes = await CodeFixRunner
-            .Fix(original, analyzers, providers, fault => inputs.Log.LogWarning(fault), cancellationToken)
+            .Fix(original, analyzers, providers, fault => inputs.Log.LogWarning(fault), cancellationToken, progress)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         List<string> rewritten = [];
