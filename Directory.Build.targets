@@ -1,13 +1,12 @@
 <Project>
   <PropertyGroup>
-    <NetAgentsGlobalConfigurationPath>$(IntermediateOutputPath)NetAgents.globalconfig</NetAgentsGlobalConfigurationPath>
     <NetAgentsEditorConfigTemplateDirectory>$(IntermediateOutputPath)editorconfig-template/$(NETCoreSdkVersion)/</NetAgentsEditorConfigTemplateDirectory>
     <NetAgentsEditorConfigTemplatePath>$(NetAgentsEditorConfigTemplateDirectory)content/EditorConfig/Dotnet/.editorconfig</NetAgentsEditorConfigTemplatePath>
     <NetAgentsCodeFixAssemblyPath>$(MSBuildThisFileDirectory)src/CodeFixes/bin/$(Configuration)/netstandard2.0/NetAgents.CodeFixes.dll</NetAgentsCodeFixAssemblyPath>
   </PropertyGroup>
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'NetAgents.Analyzers'">
-    <EmbeddedResource Include="$(NetAgentsGlobalConfigurationPath)" LogicalName="NetAgents.Analyzers.Configuration.NetAgents.globalconfig" />
-    <None Include="$(NetAgentsGlobalConfigurationPath)" Pack="true" PackagePath="buildTransitive/NetAgents.globalconfig" />
+    <EmbeddedResource Include="$(IntermediateOutputPath)NetAgents.globalconfig" LogicalName="NetAgents.Analyzers.Configuration.NetAgents.globalconfig" />
+    <None Include="$(IntermediateOutputPath)NetAgents.globalconfig" Pack="true" PackagePath="buildTransitive/NetAgents.globalconfig" />
     <None Include="$(NetAgentsCodeFixAssemblyPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
   <Target Name="GenerateNetAgentsGlobalConfiguration"
@@ -52,9 +51,9 @@
       <NetAgentsGlobalConfigurationLines Include="$([System.Text.RegularExpressions.Regex]::Replace('%(NetAgentsDiagnosticReleaseLines.Identity)', '^(NETAGENTS[0-9]+).*', 'dotnet_diagnostic.$1.severity = error'))" />
       <NetAgentsGlobalConfigurationLines Include="dotnet_analyzer_diagnostic.category-Style.severity = error;dotnet_diagnostic.IDE0055.severity = error;dotnet_diagnostic.IDE1006.severity = error" />
       <NetAgentsGlobalConfigurationLines Include="dotnet_diagnostic.IDE0005.severity = error;dotnet_diagnostic.IDE0059.severity = error;dotnet_diagnostic.CS1591.severity = error" />
-      <FileWrites Include="$(NetAgentsGlobalConfigurationPath);$(NetAgentsEditorConfigTemplatePath)" />
+      <FileWrites Include="$(IntermediateOutputPath)NetAgents.globalconfig;$(NetAgentsEditorConfigTemplatePath)" />
     </ItemGroup>
-    <WriteLinesToFile File="$(NetAgentsGlobalConfigurationPath)" Lines="@(NetAgentsGlobalConfigurationLines)"
+    <WriteLinesToFile File="$(IntermediateOutputPath)NetAgents.globalconfig" Lines="@(NetAgentsGlobalConfigurationLines)"
                       Overwrite="true" WriteOnlyWhenDifferent="true" Encoding="UTF-8" />
   </Target>
   <PropertyGroup>
@@ -76,7 +75,6 @@
     <NetAgentsRepositoryTaskSource>$(MSBuildThisFileDirectory)src/BuildTasks/Formatter/bin/$(Configuration)/net10.0/NetAgents.Formatter.dll</NetAgentsRepositoryTaskSource>
     <NetAgentsFormatterStamp>$([System.IO.File]::GetLastWriteTime('$(NetAgentsRepositoryTaskSource)').Ticks)</NetAgentsFormatterStamp>
     <NetAgentsFormatterDirectory>$(MSBuildThisFileDirectory)artifacts/formatter/$(Configuration)/$(NetAgentsFormatterStamp)/</NetAgentsFormatterDirectory>
-    <NetAgentsBuildTaskPath>$(NetAgentsFormatterDirectory)NetAgents.BuildTasks.dll</NetAgentsBuildTaskPath>
   </PropertyGroup>
   <Target Name="PrepareNetAgentsRepositoryFormatter" BeforeTargets="_FormatNetAgentsSource"
           Condition="'$(DesignTimeBuild)' != 'true' and Exists('$(NetAgentsRepositoryTaskSource)')">
@@ -85,9 +83,15 @@
       <NetAgentsFormattingAnalyzers Include="$(NetAgentsCodeFixAssemblyPath)" Condition="Exists('$(NetAgentsCodeFixAssemblyPath)')" />
     </ItemGroup>
     <Copy SourceFiles="@(NetAgentsFormatterFiles)" DestinationFolder="$(NetAgentsFormatterDirectory)"
-          Condition="!Exists('$(NetAgentsBuildTaskPath)')" />
+          Condition="!Exists('$(NetAgentsFormatterDirectory)NetAgents.BuildTasks.dll')" />
   </Target>
+  <!-- MSBuild uses the first task registration, so select the repository copy before importing the package targets. -->
+  <UsingTask TaskName="NetAgents.BuildTasks.FormatProject" AssemblyFile="$(NetAgentsFormatterDirectory)NetAgents.BuildTasks.dll" />
   <Import Project="$(MSBuildThisFileDirectory)src/Packaging/NetAgents.Analyzers.targets" />
+  <ItemGroup>
+    <EditorConfigFiles Remove="$(MSBuildThisFileDirectory)src/Packaging/NetAgents.globalconfig" />
+    <EditorConfigFiles Include="$(IntermediateOutputPath)NetAgents.globalconfig" />
+  </ItemGroup>
   <!-- Only repository builds bootstrap without formatting until the local formatter exists. -->
   <Target Name="FormatNetAgentsConsumerSource" BeforeTargets="CoreCompile"
           DependsOnTargets="ValidateNetAgentsConsumerPolicy;_FormatNetAgentsSource"

@@ -109,6 +109,22 @@ public sealed class PackageConsumptionTests
             Assert.Equal(formatted, await File.ReadAllTextAsync(sourcePath));
             Assert.Equal(modification, File.GetLastWriteTimeUtc(sourcePath));
 
+            // Former path overrides must not redirect the task, policy, or Roslyn host.
+            string ignoredHost = Directory.CreateDirectory(Path.Combine(workspace.FullName, path2: "ignored-host")).FullName;
+            await File.WriteAllTextAsync(Path.Combine(ignoredHost, path2: "Microsoft.CodeAnalysis.dll"), contents: "Not an assembly.");
+
+            string[] pathOverrideArguments =
+            [
+                .. buildArguments,
+                "-p:NetAgentsBuildTaskPath=" + Path.Combine(ignoredHost, path2: "missing-task.dll"),
+                "-p:NetAgentsGlobalConfigurationPath=" + Path.Combine(ignoredHost, path2: "missing.globalconfig"),
+                "-p:NetAgentsRoslynDirectory=" + ignoredHost,
+            ];
+
+            await File.WriteAllTextAsync(sourcePath, source);
+            await RunDevelopmentKit(workspace.FullName, pathOverrideArguments, withoutShell: true);
+            Assert.Equal(formatted, await File.ReadAllTextAsync(sourcePath));
+
             string conditionalAssignments = ValidSource
                 .Replace(
                     oldValue: "<param name=\"recipientName\">The name to return.</param>",

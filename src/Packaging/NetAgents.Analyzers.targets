@@ -1,14 +1,5 @@
 <Project>
-  <PropertyGroup>
-    <NetAgentsGlobalConfigurationPath Condition="'$(NetAgentsGlobalConfigurationPath)' == ''">$(MSBuildThisFileDirectory)NetAgents.globalconfig</NetAgentsGlobalConfigurationPath>
-  </PropertyGroup>
-  <PropertyGroup>
-    <NetAgentsBuildTaskPath Condition="'$(NetAgentsBuildTaskPath)' == ''">$(MSBuildThisFileDirectory)../tools/net10.0/NetAgents.BuildTasks.dll</NetAgentsBuildTaskPath>
-    <!-- The formatter hosts this SDK's Roslyn so its analyzers are never newer than the compiler running
-         them; pointing this elsewhere, or at nothing, falls back to the copy inside the package. -->
-    <NetAgentsRoslynDirectory Condition="'$(NetAgentsRoslynDirectory)' == ''">$(MSBuildToolsPath)/DotnetTools/dotnet-format</NetAgentsRoslynDirectory>
-  </PropertyGroup>
-  <UsingTask TaskName="NetAgents.BuildTasks.FormatProject" AssemblyFile="$(NetAgentsBuildTaskPath)" />
+  <UsingTask TaskName="NetAgents.BuildTasks.FormatProject" AssemblyFile="$(MSBuildThisFileDirectory)../tools/net10.0/NetAgents.BuildTasks.dll" />
   <Target Name="FormatNetAgentsConsumerSource" BeforeTargets="CoreCompile"
           DependsOnTargets="ValidateNetAgentsConsumerPolicy;_FormatNetAgentsSource"
           Condition="'$(DesignTimeBuild)' != 'true'" />
@@ -63,10 +54,10 @@
                                        BuildProperties="@(NetAgentsFormattingBuildProperties)"
                                        ReportAnalyzerPerformance="$(NetAgentsReportAnalyzerPerformance)"
                                        CodeFixDirectory="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/codestyle/cs"
-                                       SdkAssemblyDirectory="$(NetAgentsRoslynDirectory)" />
+                                       SdkAssemblyDirectory="$(MSBuildToolsPath)/DotnetTools/dotnet-format" />
   </Target>
   <ItemGroup>
-    <EditorConfigFiles Include="$(NetAgentsGlobalConfigurationPath)" />
+    <EditorConfigFiles Include="$(MSBuildThisFileDirectory)NetAgents.globalconfig" />
   </ItemGroup>
   <Target Name="ValidateNetAgentsConsumerPolicy" BeforeTargets="CoreCompile" Condition="'$(DesignTimeBuild)' != 'true'">
     <Error Code="NETAGENTS0014" Condition="'$(Nullable)' != 'enable'"
