@@ -18,21 +18,24 @@ public sealed class CodeFixPerformanceTests
 {
     /// <summary>Validates each accepted state once, with required repairs preceding optional actions.</summary>
     /// <param name="suggestions">Whether to offer an unrelated compiler-breaking suggestion.</param>
+    /// <param name="profiling">Whether to report analyzer execution times.</param>
     [Theory]
-    [InlineData("none")]
-    [InlineData("optional")]
-    public async Task AnalyzesAcceptedStatesOnce(string suggestions)
+    [InlineData("none", "disabled")]
+    [InlineData("optional", "disabled")]
+    [InlineData("optional", "enabled")]
+    public async Task AnalyzesAcceptedStatesOnce(string suggestions, string profiling)
     {
         using AdhocWorkspace workspace = new();
 
         bool includeSuggestion = suggestions == "optional";
+        bool reportPerformance = profiling == "enabled";
         Project project = CreateProject(workspace);
         CountingAnalyzer analyzer = new(includeSuggestion);
         List<string> actions = [];
         List<string> messages = [];
         StepFix required = new(actions);
         SuggestionFix optional = new(actions);
-        FormattingProgress progress = new(project.Name, messages.Add);
+        FormattingProgress progress = new(project.Name, messages.Add, reportPerformance);
 
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, [analyzer], [optional, required], static fault => Assert.Fail(fault), CancellationToken.None, progress);
 
@@ -47,6 +50,10 @@ public sealed class CodeFixPerformanceTests
         Assert.Contains(messages, static message => message.Contains(value: "pass 4, elapsed", StringComparison.Ordinal));
         Assert.Contains(messages, static message => message.Contains(value: "validating PERF0002 action", StringComparison.Ordinal));
         Assert.Contains(expectedSubstring: "finished applying available fixes", messages.Last(), StringComparison.Ordinal);
+        Assert.Equal(
+            reportPerformance,
+            messages.Any(static message => message.Contains(value: "execution time (may overlap other analyzers)", StringComparison.Ordinal))
+        );
 
         if (includeSuggestion)
             Assert.Contains(messages, static message => message.Contains(value: "rejected PERF0001 action", StringComparison.Ordinal));

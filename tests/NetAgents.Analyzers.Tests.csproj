@@ -9,6 +9,10 @@
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
     <ProjectReference Include="../src/NetAgents.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
     <ProjectReference Include="../src/CodeFixes/NetAgents.CodeFixes.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+    <ProjectReference Include="../src/BuildTasks/NetAgents.BuildTasks.csproj" />
+    <Reference Include="Microsoft.Build.Framework" HintPath="$(MSBuildBinPath)/Microsoft.Build.Framework.dll" />
+    <Reference Include="Microsoft.Build.Utilities.Core" HintPath="$(MSBuildBinPath)/Microsoft.Build.Utilities.Core.dll" />
+    <Compile Include="../src/BuildTasks/Formatter/Incremental/*.cs" Link="Infrastructure/Incremental/%(Filename)%(Extension)" />
     <Compile Include="../src/BuildTasks/Formatter/AnalyzerCatalog.cs" Link="Infrastructure/AnalyzerCatalog.cs" />
     <Compile Include="../src/BuildTasks/Formatter/AnalyzerLoader.cs" Link="Infrastructure/AnalyzerLoader.cs" />
     <Compile Include="../src/BuildTasks/Formatter/HostedAnalyzerReference.cs" Link="Infrastructure/HostedAnalyzerReference.cs" />

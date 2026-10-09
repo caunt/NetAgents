@@ -57,6 +57,19 @@ public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableT
     /// <summary>Gets or sets the SDK directory containing code-style runtime dependencies.</summary>
     public string SdkAssemblyDirectory { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets whether formatter analysis reports per-analyzer execution times.</summary>
+    public bool ReportAnalyzerPerformance { get; set; }
+
+    /// <summary>Gets or sets the intermediate file recording successfully formatted inputs.</summary>
+    [Required]
+    public string CacheFile { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the project, imports, and resolved package graph used by this build.</summary>
+    public ITaskItem[] BuildFiles { get; set; } = [];
+
+    /// <summary>Gets or sets the evaluated compiler and build settings.</summary>
+    public ITaskItem[] BuildProperties { get; set; } = [];
+
     /// <inheritdoc />
     public void Cancel()
     {

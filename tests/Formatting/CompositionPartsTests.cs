@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 
@@ -18,6 +19,32 @@ public sealed class CompositionPartsTests
     private const string DependencySource = """
         public sealed class Absent
         {
+        }
+        """;
+
+    private const string LanguagePartsSource = """
+        using System;
+        using System.Collections.Immutable;
+        using System.Threading.Tasks;
+        using Microsoft.CodeAnalysis;
+        using Microsoft.CodeAnalysis.CodeFixes;
+
+        public abstract class BaseFix : CodeFixProvider
+        {
+            public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create("TEST0001");
+            public override Task RegisterCodeFixesAsync(CodeFixContext context) => Task.CompletedTask;
+        }
+
+        [ExportCodeFixProvider(LanguageNames.CSharp, Name = "CSharp")]
+        public sealed class CSharpFix : BaseFix { }
+
+        [ExportCodeFixProvider(LanguageNames.CSharp, LanguageNames.VisualBasic, Name = "Shared")]
+        public sealed class SharedFix : BaseFix { }
+
+        [ExportCodeFixProvider(LanguageNames.VisualBasic, Name = "VisualBasic")]
+        public sealed class VisualBasicFix : BaseFix
+        {
+            public VisualBasicFix() => throw new InvalidOperationException("Wrong language provider was instantiated.");
         }
         """;
 
@@ -59,6 +86,39 @@ public sealed class CompositionPartsTests
             }
         }
         """;
+
+    /// <summary>Composes C# and shared fixes without instantiating foreign-language exports.</summary>
+    [Fact]
+    public void FiltersCodeFixesByExportedLanguage()
+    {
+        DirectoryInfo workspace = Directory.CreateTempSubdirectory(prefix: "netagents-language-parts-");
+
+        try
+        {
+            string partsPath = Path.Combine(workspace.FullName, path2: "LanguageParts.dll");
+            Compile(
+                partsPath,
+                LanguagePartsSource,
+                [typeof(ExportAttribute).Assembly.Location, typeof(CodeFixProvider).Assembly.Location, typeof(Diagnostic).Assembly.Location]
+            );
+
+            using DependencyLoader loader = new(workspace.FullName);
+
+            Assembly parts = loader.LoadFromAssemblyPath(partsPath);
+            CompositionParts.CompositionSelection selection = CompositionParts.Select([parts]);
+            Assert.Empty(selection.Skipped);
+            Assert.DoesNotContain(selection.Types, static type => type.Name == "VisualBasicFix");
+
+            using CompositionHost container = new ContainerConfiguration().WithParts(selection.Types).CreateContainer();
+
+            string[] providers = [.. container.GetExports<CodeFixProvider>().Select(static provider => provider.GetType().Name).Order(StringComparer.Ordinal)];
+            Assert.Equal(["CSharpFix", "SharedFix"], providers);
+        }
+        finally
+        {
+            workspace.Delete(recursive: true);
+        }
+    }
 
     /// <summary>
     /// Skips the one export whose member attribute names a type this runtime cannot load, the way the SDK

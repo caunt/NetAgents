@@ -15,6 +15,36 @@
       <NetAgentsFormattingAnalyzers Include="@(Analyzer)" />
       <NetAgentsFormattingAnalyzers Include="$(NetAgentsCodeFixAssemblyPath)"
                                     Condition="'$(NetAgentsRepositoryBuild)' == 'true' and Exists('$(NetAgentsCodeFixAssemblyPath)')" />
+      <NetAgentsFormattingBuildFiles Include="$(MSBuildProjectFullPath);$(MSBuildAllProjects);$(ProjectAssetsFile);$(CodeAnalysisRuleSet);$(AssemblyOriginatorKeyFile);@(CustomAdditionalCompileInputs)" />
+      <NetAgentsFormattingBuildProperties Include="Compiler">
+        <TargetFramework>$(TargetFramework)</TargetFramework>
+        <Configuration>$(Configuration)</Configuration>
+        <Platform>$(Platform)</Platform>
+        <RuntimeIdentifier>$(RuntimeIdentifier)</RuntimeIdentifier>
+        <NETCoreSdkVersion>$(NETCoreSdkVersion)</NETCoreSdkVersion>
+        <MSBuildVersion>$(MSBuildVersion)</MSBuildVersion>
+        <Nullable>$(Nullable)</Nullable>
+        <CheckForOverflowUnderflow>$(CheckForOverflowUnderflow)</CheckForOverflowUnderflow>
+        <Optimize>$(Optimize)</Optimize>
+        <DebugType>$(DebugType)</DebugType>
+        <Features>$(Features)</Features>
+        <WarningLevel>$(WarningLevel)</WarningLevel>
+        <NoWarn>$(NoWarn)</NoWarn>
+        <WarningsAsErrors>$(WarningsAsErrors)</WarningsAsErrors>
+        <WarningsNotAsErrors>$(WarningsNotAsErrors)</WarningsNotAsErrors>
+        <TreatWarningsAsErrors>$(TreatWarningsAsErrors)</TreatWarningsAsErrors>
+        <AnalysisLevel>$(AnalysisLevel)</AnalysisLevel>
+        <AnalysisMode>$(AnalysisMode)</AnalysisMode>
+        <AnalysisLevelStyle>$(AnalysisLevelStyle)</AnalysisLevelStyle>
+        <AnalysisModeStyle>$(AnalysisModeStyle)</AnalysisModeStyle>
+        <GenerateDocumentationFile>$(GenerateDocumentationFile)</GenerateDocumentationFile>
+        <DocumentationFile>$(DocumentationFile)</DocumentationFile>
+        <Deterministic>$(Deterministic)</Deterministic>
+        <PathMap>$(PathMap)</PathMap>
+        <CscToolPath>$(CscToolPath)</CscToolPath>
+        <CscToolExe>$(CscToolExe)</CscToolExe>
+      </NetAgentsFormattingBuildProperties>
+      <FileWrites Include="$(IntermediateOutputPath)$(MSBuildProjectFile).NetAgents.formatting.cache" />
     </ItemGroup>
     <NetAgents.BuildTasks.FormatProject ProjectPath="$(MSBuildProjectFullPath)"
                                        AssemblyName="$(AssemblyName)"
@@ -28,6 +58,10 @@
                                        AnalyzerFiles="@(NetAgentsFormattingAnalyzers)"
                                        AdditionalFiles="@(AdditionalFiles)"
                                        ConfigurationFiles="@(EditorConfigFiles)"
+                                       CacheFile="$(IntermediateOutputPath)$(MSBuildProjectFile).NetAgents.formatting.cache"
+                                       BuildFiles="@(NetAgentsFormattingBuildFiles)"
+                                       BuildProperties="@(NetAgentsFormattingBuildProperties)"
+                                       ReportAnalyzerPerformance="$(NetAgentsReportAnalyzerPerformance)"
                                        CodeFixDirectory="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/codestyle/cs"
                                        SdkAssemblyDirectory="$(NetAgentsRoslynDirectory)" />
   </Target>

@@ -22,7 +22,35 @@ internal static class ProjectFormatter
         FormattingLock projectLock = await FormattingLock.Acquire([.. inputs.SourceFiles.Select(GetPath)], cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         await using (projectLock.ConfigureAwait(continueOnCapturedContext: false))
-            await FormatCore(inputs, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        {
+            FormattingProgress progress = new(inputs.AssemblyName, message => inputs.Log.LogMessage(MessageImportance.High, message), inputs.ReportAnalyzerPerformance);
+            progress.Report(activity: "checking formatting inputs");
+            Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(inputs.SourceFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            FormattingFingerprint before = await FormattingFingerprint.Create(inputs, sources, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            FormattingCache cache = new(inputs.CacheFile);
+
+            if (!inputs.ReportAnalyzerPerformance && cache.Matches(before))
+            {
+                progress.Report(activity: "inputs unchanged; reusing completed formatting");
+
+                return;
+            }
+
+            cache.Invalidate();
+            bool completed = await FormatCore(inputs, sources, progress, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            if (!completed)
+                return;
+
+            // Remember the bytes actually analyzed and written, not an unrelated edit made while
+            // formatting was in flight. Non-source inputs must also remain unchanged throughout.
+            FormattingFingerprint expected = before with { Sources = FormattingFingerprint.HashSources(inputs.SourceFiles, sources) };
+            Dictionary<string, byte[]> currentSources = await FormattingFingerprint.ReadSources(inputs.SourceFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            FormattingFingerprint after = await FormattingFingerprint.Create(inputs, currentSources, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            if (expected == after)
+                await cache.Store(after, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        }
     }
 
     private static PortableExecutableReference CreateReference(ITaskItem item)
@@ -38,9 +66,8 @@ internal static class ProjectFormatter
         return MetadataReference.CreateFromFile(GetPath(item), properties);
     }
 
-    private static async Task FormatCore(FormatProject inputs, CancellationToken cancellationToken)
+    private static async Task<bool> FormatCore(FormatProject inputs, Dictionary<string, byte[]> sourceBytes, FormattingProgress progress, CancellationToken cancellationToken)
     {
-        FormattingProgress progress = new(inputs.AssemblyName, message => inputs.Log.LogMessage(MessageImportance.High, message));
         progress.Report(activity: "checking source syntax");
         LanguageVersionResolver.LanguageVersionResolution languageVersion = LanguageVersionResolver.Resolve(inputs.LanguageVersion, inputs.ProjectPath);
 
@@ -66,7 +93,8 @@ internal static class ProjectFormatter
         foreach (ITaskItem source in inputs.SourceFiles)
         {
             string path = GetPath(source);
-            SourceText text = await ReadText(path, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            byte[] bytes = sourceBytes[path];
+            SourceText text = SourceText.From(bytes, bytes.Length, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
             sources[path] = text;
             SyntaxTree tree = CSharpSyntaxTree.ParseText(text, parseOptions, path, cancellationToken);
             syntaxDiagnostics.AddRange(tree.GetDiagnostics(cancellationToken));
@@ -192,9 +220,16 @@ internal static class ProjectFormatter
 
         ImmutableArray<DiagnosticAnalyzer> analyzers = [.. original.AnalyzerReferences.SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())];
         CodeFixProvider[] providers = [.. composition.GetExports<CodeFixProvider>()];
+        bool analyzerFault = false;
+
+        void ReportAnalyzerFault(string fault)
+        {
+            analyzerFault = true;
+            inputs.Log.LogWarning(fault);
+        }
 
         CodeFixRunner.CodeFixResult codeFixes = await CodeFixRunner
-            .Fix(original, analyzers, providers, fault => inputs.Log.LogWarning(fault), cancellationToken, progress)
+            .Fix(original, analyzers, providers, ReportAnalyzerFault, cancellationToken, progress)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         List<string> rewritten = [];
@@ -207,17 +242,17 @@ internal static class ProjectFormatter
 
             if (!before.ContentEquals(after) && document.FilePath is not null)
             {
-                await File.WriteAllTextAsync(
-                    document.FilePath,
-                    after.ToString(),
-                    after.Encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-                    cancellationToken
-                ).ConfigureAwait(continueOnCapturedContext: false);
+                Encoding encoding = after.Encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+                byte[] bytes = [.. encoding.GetPreamble(), .. encoding.GetBytes(after.ToString())];
+                await File.WriteAllBytesAsync(document.FilePath, bytes, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                sourceBytes[document.FilePath] = bytes;
                 rewritten.Add(GetDisplayPath(projectDirectory, document.FilePath));
             }
         }
 
         Report(inputs, rewritten, codeFixes.Blocking);
+
+        return codeFixes.Blocking.IsEmpty && analyzerCatalog.Unavailable.Length == 0 && !analyzerFault && !inputs.Log.HasLoggedErrors;
     }
 
     private static string GetDisplayPath(string projectDirectory, string path)

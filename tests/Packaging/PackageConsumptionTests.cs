@@ -256,8 +256,45 @@ public sealed class PackageConsumptionTests
             await File.WriteAllTextAsync(sourcePath, source);
             await RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["NetAgents rewrote " + relativeSourcePath], withoutShell: true);
 
-            // A rebuild that changes nothing stays silent.
-            await RunDevelopmentKit(workspace.FullName, reportingArguments, forbiddenOutput: ["NetAgents rewrote"], withoutShell: true);
+            // A separate MSBuild invocation reuses completed formatting, including rejected suggestions.
+            await RunDevelopmentKit(
+                workspace.FullName,
+                reportingArguments,
+                expectedOutput: ["inputs unchanged; reusing completed formatting"],
+                forbiddenOutput: ["NetAgents rewrote", "analyzing project", "loading analyzers and code-fix providers"],
+                withoutShell: true
+            );
+
+            // Generated inputs affect binding even though the formatter never rewrites them.
+            await File.WriteAllTextAsync(generatedPath, generatedSource + "// Changed generated input.\n");
+            await RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["analyzing project"], withoutShell: true);
+            string cachePath = Assert.Single(Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories));
+            await File.WriteAllTextAsync(cachePath, contents: "incomplete cache record");
+            await RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["analyzing project"], withoutShell: true);
+            await RunDevelopmentKit(
+                workspace.FullName,
+                [.. reportingArguments, "-p:NetAgentsReportAnalyzerPerformance=true"],
+                expectedOutput: ["analyzing project", "execution time (may overlap other analyzers)"],
+                withoutShell: true
+            );
+
+            await RunDevelopmentKit(workspace.FullName, ["clean", projectPath, "--nologo", "--verbosity", "quiet"], withoutShell: true);
+            Assert.False(File.Exists(cachePath));
+            await RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["analyzing project"], withoutShell: true);
+
+            // Content hashing must detect an edit that MSBuild's timestamp checks could miss.
+            DateTime formattedTime = File.GetLastWriteTimeUtc(sourcePath);
+            string currentSource = await File.ReadAllTextAsync(sourcePath);
+            await File.WriteAllTextAsync(sourcePath, currentSource.Replace(oldValue: "return greeting;", newValue: "return  greeting;", StringComparison.Ordinal));
+            File.SetLastWriteTimeUtc(sourcePath, formattedTime);
+            await RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["analyzing project", "NetAgents rewrote"], withoutShell: true);
+
+            await RunDevelopmentKit(
+                workspace.FullName,
+                [.. reportingArguments, "-p:Nullable=disable"],
+                expectedDiagnosticIdentifier: "NETAGENTS0014",
+                withoutShell: true
+            );
 
             string blockedSource = ValidSource.Replace(
                 oldValue: "return recipientName;",
@@ -273,6 +310,8 @@ public sealed class PackageConsumptionTests
                 expectedOutput: ["NetAgents rewrote " + relativeSourcePath, "NetAgents rewrote 1 file before this build failed on diagnostics no fix repairs: NETAGENTS0015", "NETAGENTS0015"],
                 withoutShell: true
             );
+
+            Assert.False(File.Exists(cachePath));
 
             // The failing build kept its rewrite, which is why the report has to name it.
             Assert.Contains(
@@ -309,6 +348,19 @@ public sealed class PackageConsumptionTests
             Assert.Equal(expected: 3, multiTargetSource.Split(separator: "string.Concat(recipientName, string.Empty)", StringSplitOptions.None).Length);
             Assert.True(File.Exists(Path.Combine(workspace.FullName, path2: "bin/Debug/net10.0/Consumer.dll")));
             Assert.True(File.Exists(Path.Combine(workspace.FullName, path2: "bin/Debug/net10.0-windows/Consumer.dll")));
+            // The first target must observe the shared-source rewrite made by the second target.
+            await RunDevelopmentKit(workspace.FullName, reportingArguments, withoutShell: true);
+            await RunDevelopmentKit(
+                workspace.FullName,
+                reportingArguments,
+                expectedOutput: ["formatting Consumer: pass 0", "inputs unchanged; reusing completed formatting"],
+                forbiddenOutput: ["analyzing project"],
+                withoutShell: true
+            );
+            Assert.Equal(
+                expected: 2,
+                Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories).Length
+            );
 
             await File.WriteAllTextAsync(
                 sourcePath,

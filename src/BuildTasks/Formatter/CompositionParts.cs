@@ -1,6 +1,9 @@
 using System.Composition;
 using System.Reflection;
 
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeFixes;
+
 namespace NetAgents.BuildTasks;
 
 internal static class CompositionParts
@@ -25,17 +28,26 @@ internal static class CompositionParts
     // Studio instead of the SDK. MEF instantiates every attribute of an exporting part while the
     // container composes, so resolving that fixer's async state machine threw before any consumer source
     // was formatted. Repeating the same reflection here drops the single unusable export instead.
-    public static CompositionSelection Select(IEnumerable<Assembly> assemblies)
+    public static CompositionSelection Select(IEnumerable<Assembly> assemblies, string language = LanguageNames.CSharp)
     {
         List<Type> composable = [];
         List<string> skipped = [];
 
         foreach (Type type in assemblies.SelectMany(GetLoadableTypes))
         {
-            if (CanCompose(type))
-                composable.Add(type);
-            else
+            if (!CanCompose(type))
+            {
                 skipped.Add(type.FullName ?? type.Name);
+
+                continue;
+            }
+
+            // Some SDK assemblies export fixes for both languages. Filter before MEF instantiates
+            // providers so a Visual Basic fix never prepares or validates a C# candidate.
+            ExportCodeFixProviderAttribute? codeFix = type.GetCustomAttribute<ExportCodeFixProviderAttribute>();
+
+            if (codeFix is null || codeFix.Languages.Contains(language, StringComparer.Ordinal))
+                composable.Add(type);
         }
 
         return new([.. composable], [.. skipped]);

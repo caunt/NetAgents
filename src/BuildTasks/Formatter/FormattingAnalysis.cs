@@ -5,6 +5,7 @@ using System.Text;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Diagnostics.Telemetry;
 using Microsoft.CodeAnalysis.Text;
 
 namespace NetAgents.BuildTasks;
@@ -43,10 +44,21 @@ internal sealed class FormattingAnalysis(
         Compilation compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
-        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException, concurrentAnalysis: true, logAnalyzerExecutionTime: false);
+        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException, concurrentAnalysis: true, progress.ReportAnalyzerPerformance);
+        CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers, options);
+        ImmutableArray<Diagnostic> diagnostics = await analysis.GetAllDiagnosticsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-        return await compilation.WithAnalyzers(analyzers, options).GetAllDiagnosticsAsync(cancellationToken)
-            .ConfigureAwait(continueOnCapturedContext: false);
+        if (progress.ReportAnalyzerPerformance)
+        {
+            foreach (DiagnosticAnalyzer analyzer in analyzers)
+            {
+                AnalyzerTelemetryInfo telemetry = await analysis.GetAnalyzerTelemetryInfoAsync(analyzer, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                string seconds = telemetry.ExecutionTime.TotalSeconds.ToString(format: "F3", CultureInfo.InvariantCulture);
+                progress.Report($"analyzer {analyzer.GetType().FullName}: {seconds}s execution time (may overlap other analyzers)");
+            }
+        }
+
+        return diagnostics;
     }
 
     public async Task<ValidationResult> Validate(Project project, ImmutableArray<Diagnostic> before, string actionKey, bool optional, CancellationToken cancellationToken)

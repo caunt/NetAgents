@@ -30,6 +30,8 @@ On each build, NetAgents:
 
 **Builds can change your source files.** Every rewritten file is named in the build log, including when the build then fails on a violation no fix can repair. Review those changes before committing. Some violations require a manual fix; IDE quick fixes and `dotnet format` are also available.
 
+Unchanged builds reuse completed formatting after checking a content fingerprint of the sources, dependencies, tools, and configuration. Policy checks and compiler enforcement remain enabled. Use `dotnet build -p:NetAgentsReportAnalyzerPerformance=true` to run full formatting with per-analyzer timing logs.
+
 ## 📏 Formatting rules
 
 - **Conditions:** keep conditions on one line, with at most **128 characters**. Extract longer expressions into separate variables. Ternary conditions follow this rule; their `?` and `:` branches can span multiple lines.

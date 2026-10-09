@@ -3,10 +3,12 @@ using System.Globalization;
 
 namespace NetAgents.BuildTasks;
 
-internal sealed class FormattingProgress(string projectName, Action<string>? report)
+internal sealed class FormattingProgress(string projectName, Action<string>? report, bool reportAnalyzerPerformance = false)
 {
     private readonly Stopwatch _elapsed = Stopwatch.StartNew();
     private int _pass;
+
+    public bool ReportAnalyzerPerformance { get; } = reportAnalyzerPerformance;
 
     public void NextPass()
     {
