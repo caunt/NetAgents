@@ -264,6 +264,24 @@ public sealed class PackageConsumptionTests
             await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS0103", withoutShell: true);
             Assert.Equal(expectedUnresolved, await File.ReadAllTextAsync(sourcePath));
 
+            // An argument the compiler rejects stays a compiler error too: no generated overload (#31).
+            string mismatchSource = ValidSource.Replace(
+                oldValue: "return recipientName;",
+                newValue: "System.ReadOnlyMemory<byte>? document = null;\n\n        Validate(document);\n\n        return recipientName;",
+                StringComparison.Ordinal
+            )
+                .Replace(
+                    oldValue: "    }\n}\n",
+                    newValue: "    }\n\n    private static void Validate(System.Memory<byte>? data)\n    {\n        System.Console.WriteLine(data.HasValue);\n    }\n}\n",
+                    StringComparison.Ordinal
+                );
+
+            await File.WriteAllTextAsync(sourcePath, mismatchSource);
+            await RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS1503", withoutShell: true);
+            string mismatched = await File.ReadAllTextAsync(sourcePath);
+            Assert.DoesNotContain(expectedSubstring: "NotImplementedException", mismatched, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "Validate(document);", mismatched, StringComparison.Ordinal);
+
             // Formatting runs before compilation, so a build that fails afterwards still rewrites the
             // file. The log names every rewritten path so a dirty tree is never a surprise (#11).
             string relativeSourcePath = Path.Combine(path1: "Features", path2: "ExampleService.cs");

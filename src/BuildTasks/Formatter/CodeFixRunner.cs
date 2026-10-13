@@ -16,11 +16,6 @@ internal static class CodeFixRunner
 {
     private static readonly string[] GeneratedSuffixes = [".g.cs", ".g.i.cs", ".generated.cs", ".designer.cs"];
 
-    // Roslyn answers these errors with generate-variable, generate-method, and generate-type fixes.
-    // Declaring API the author never wrote is not formatting, so an unresolved symbol stays a compiler error.
-    private static readonly string[] UnresolvedSymbolErrors =
-        ["CS0103", "CS0117", "CS0120", "CS0234", "CS0246", "CS0426", "CS1061", "CS7036"];
-
     public static async Task<CodeFixResult> Fix(
         Project project,
         ImmutableArray<DiagnosticAnalyzer> analyzers,
@@ -91,7 +86,7 @@ internal static class CodeFixRunner
                     throw Failure(reason: "made no progress", attempt, diagnostics);
 
                 // Compilation reports these from the rewritten files, so the caller can name what it wrote.
-                // Only source locations qualify: the formatter escalates every diagnostic to an error,
+                // Only source locations qualify: the formatter escalates every warning to an error,
                 // including reference remarks the consumer build never fails for.
                 progress.Report(activity: "finished applying available fixes");
 
@@ -152,8 +147,10 @@ internal static class CodeFixRunner
             if (document is null || !editable.Contains(document.Id) || diagnostic.IsSuppressed)
                 continue;
 
-            // Every fix offered for these errors invents a declaration, so the compiler reports them untouched.
-            if (UnresolvedSymbolErrors.Contains(diagnostic.Id, StringComparer.Ordinal))
+            // Repairing what the compiler rejected is not formatting: the fixes generate declarations,
+            // add casts, and leave NotImplementedException bodies, so the build passes and the program
+            // fails at run time. A hidden or info suggestion the compiler never fails for is still style.
+            if (IsCompilerError(diagnostic) && diagnostic.Severity == DiagnosticSeverity.Error)
                 continue;
 
             foreach (CodeFixProvider provider in providers.Where(provider => CanFixDiagnostic(provider, diagnostic)))
@@ -361,7 +358,7 @@ internal static class CodeFixRunner
             lines.Add("Attempted code action: " + attempt);
 
         // Oscillating analyzer fixes are the usual cause, so every blocking error is listed, not just
-        // compiler errors. The formatting compilation escalates everything, so only in-source errors
+        // compiler errors. The formatting compilation escalates every warning, so only in-source errors
         // qualify: reference remarks the consumer build never fails for would bury the real blockers.
         lines.AddRange(
             diagnostics.Where(IsBlockingError)

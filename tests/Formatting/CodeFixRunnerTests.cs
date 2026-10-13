@@ -5,6 +5,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
 using NetAgents.Analyzers.Formatting;
@@ -34,6 +36,38 @@ public sealed class CodeFixRunnerTests
         Assert.EndsWith(expectedEndString: "}\r\n", text.ToString(), StringComparison.Ordinal);
     }
 
+    /// <summary>Never offers a build-failing compiler error to a code-fix provider, leaving the compiler to report it.</summary>
+    /// <param name="body">The member and statement text the compiler rejects.</param>
+    /// <param name="survivor">The rejected text the formatter must leave in place.</param>
+    /// <param name="diagnosticIdentifier">The compiler error the text produces.</param>
+    [Theory]
+    [InlineData("void Run() { Missing(); }", "Missing();", "CS0103")]
+    [InlineData("void Run() { Sample sample = new(); }", "Sample sample = new();", "CS0246")]
+    [InlineData(
+        "static bool IsValid(System.Memory<byte>? data) => data.HasValue; void Run() { System.ReadOnlyMemory<byte>? document = null; IsValid(document); }",
+        "IsValid(document);",
+        "CS1503"
+    )]
+    [InlineData("Example() { } void Run() { Example example = new(0); }", "new(0);", "CS1729")]
+    public async Task PreservesCompilerErrors(string body, string survivor, string diagnosticIdentifier)
+    {
+        using AdhocWorkspace workspace = new();
+
+        Project project = CreateProject(workspace);
+        string source = $"class Example {{ {body} }}";
+        project = project.Documents.Single().WithText(SourceText.From(source)).Project;
+        CompilerErrorFix provider = new(diagnosticIdentifier);
+
+        Project result = (await CodeFixRunner.Fix(project, [], [provider], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
+        Compilation? compilation = await result.GetCompilationAsync();
+
+        Assert.NotNull(compilation);
+        Diagnostic error = Assert.Single(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        Assert.Equal(diagnosticIdentifier, error.Id);
+        Assert.Equal(expected: 0, provider.Attempts);
+        Assert.Contains(survivor, (await result.Documents.Single().GetTextAsync()).ToString(), StringComparison.Ordinal);
+    }
+
     /// <summary>Leaves the compiler error in place when its only provider cannot run.</summary>
     /// <param name="stage">The provider stage that fails.</param>
     [Theory]
@@ -45,7 +79,10 @@ public sealed class CodeFixRunnerTests
         using AdhocWorkspace workspace = new();
 
         ThrowingFix provider = new(stage);
-        Project result = (await CodeFixRunner.Fix(CreateProject(workspace), [], [provider], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
+
+        Project result = (await CodeFixRunner.Fix(CreateProject(workspace), [new MarkerAnalyzer()], [provider], static fault => Assert.Fail(fault), CancellationToken.None))
+            .Project;
+
         Compilation? compilation = await result.GetCompilationAsync();
 
         Assert.NotNull(compilation);
@@ -60,6 +97,34 @@ public sealed class CodeFixRunnerTests
         );
     }
 
+    /// <summary>Never offers a compiler warning the build escalates to an error, keeping the cast the fix would add out.</summary>
+    [Fact]
+    public async Task PreservesEscalatedCompilerWarning()
+    {
+        using AdhocWorkspace workspace = new();
+
+        // Consumer builds escalate every warning, so a nullable remark fails the build exactly like an error.
+        const string source = "class Example { static int Read(int? value) { return (int)value; } }\n";
+
+        Project project = workspace.AddProject(name: "Escalated", LanguageNames.CSharp)
+            .WithCompilationOptions(
+                new CSharpCompilationOptions(
+                    OutputKind.DynamicallyLinkedLibrary,
+                    nullableContextOptions: NullableContextOptions.Enable,
+                    generalDiagnosticOption: ReportDiagnostic.Error
+                )
+            )
+            .AddMetadataReferences(AnalyzerTestHarness.References)
+            .AddDocument(name: "Example.cs", SourceText.From(source), filePath: "Example.cs").Project;
+
+        CompilerErrorFix provider = new(identifier: "CS8629");
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, [], [provider], static fault => Assert.Fail(fault), CancellationToken.None);
+
+        Assert.Equal(expected: "CS8629", result.Blocking.Single().Id);
+        Assert.Equal(expected: 0, provider.Attempts);
+        Assert.Contains(expectedSubstring: "(int)value", (await result.Project.Documents.Single().GetTextAsync()).ToString(), StringComparison.Ordinal);
+    }
+
     /// <summary>Applies the single-document action when project-wide fixing cannot run.</summary>
     /// <param name="stage">The project-wide stage that fails.</param>
     [Theory]
@@ -70,7 +135,15 @@ public sealed class CodeFixRunnerTests
         using AdhocWorkspace workspace = new();
 
         ThrowingFix provider = new(stage);
-        Project result = (await CodeFixRunner.Fix(CreateProject(workspace), [new MethodSpacingAnalyzer()], [provider], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
+
+        Project result = (await CodeFixRunner.Fix(
+            CreateProject(workspace),
+            [new MethodSpacingAnalyzer(), new MarkerAnalyzer()],
+            [provider],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None
+        )).Project;
+
         Compilation? compilation = await result.GetCompilationAsync();
 
         Assert.NotNull(compilation);
@@ -98,6 +171,28 @@ public sealed class CodeFixRunnerTests
         Assert.Equal(generated, (await document.GetTextAsync()).ToString());
     }
 
+    /// <summary>Still applies a hidden compiler suggestion's fix, which no build fails for.</summary>
+    [Fact]
+    public async Task PreservesHiddenSuggestionFix()
+    {
+        using AdhocWorkspace workspace = new();
+
+        // CS8019 is a hidden suggestion rather than a build failure, so removing the import stays formatting.
+        Project project = CreateProject(workspace);
+        const string source = "using System;\nclass Example { int Read() => 0; }\n";
+        project = project.Documents.Single().WithText(SourceText.From(source)).Project;
+        SuggestionFix provider = new(source: "class Example { int Read() => 0; }\n");
+
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, [], [provider], static fault => Assert.Fail(fault), CancellationToken.None);
+
+        Assert.True(result.Blocking.IsEmpty);
+        Assert.DoesNotContain(
+            expectedSubstring: "using System;",
+            (await result.Project.Documents.Single().GetTextAsync()).ToString(),
+            StringComparison.Ordinal
+        );
+    }
+
     /// <summary>Allows existing compiler errors to move when a fix changes preceding text.</summary>
     [Fact]
     public async Task PreservesMovedCompilerError()
@@ -117,42 +212,25 @@ public sealed class CodeFixRunnerTests
         Assert.Equal(expected: 1, provider.Attempts);
     }
 
-    /// <summary>Never offers an unresolved symbol to a code-fix provider, leaving the compiler to report it.</summary>
-    /// <param name="body">The statement that leaves a symbol unresolved.</param>
-    /// <param name="diagnosticIdentifier">The compiler error the statement produces.</param>
-    [Theory]
-    [InlineData("Missing();", "CS0103")]
-    [InlineData("Sample sample = new();", "CS0246")]
-    public async Task PreservesUnresolvedSymbolErrors(string body, string diagnosticIdentifier)
-    {
-        using AdhocWorkspace workspace = new();
-
-        Project project = CreateProject(workspace);
-        string source = $"class Example {{ void Run() {{ {body} }} }}";
-        project = project.Documents.Single().WithText(SourceText.From(source)).Project;
-        UnresolvedFix provider = new(diagnosticIdentifier);
-
-        Project result = (await CodeFixRunner.Fix(project, [], [provider], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
-        Compilation? compilation = await result.GetCompilationAsync();
-
-        Assert.NotNull(compilation);
-        Diagnostic error = Assert.Single(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
-        Assert.Equal(diagnosticIdentifier, error.Id);
-        Assert.Equal(expected: 0, provider.Attempts);
-        Assert.Contains(body, (await result.Documents.Single().GetTextAsync()).ToString(), StringComparison.Ordinal);
-    }
-
-    /// <summary>Still applies valid automatic fixes to compiler errors.</summary>
+    /// <summary>Still applies valid automatic fixes to analyzer errors.</summary>
     [Theory]
     [InlineData("valid")]
     [InlineData("noop")]
-    public async Task PreservesValidCompilerFix(string firstAction)
+    public async Task PreservesValidAnalyzerFix(string firstAction)
     {
         using AdhocWorkspace workspace = new();
 
-        CompilerFix provider = new(mode: "valid");
-        CodeFixProvider[] providers = firstAction == "noop" ? [new CompilerFix(mode: "noop"), provider] : [provider];
-        Project result = (await CodeFixRunner.Fix(CreateProject(workspace), [new MethodSpacingAnalyzer()], providers, static fault => Assert.Fail(fault), CancellationToken.None)).Project;
+        AccessibilityFix provider = new(mode: "valid");
+        CodeFixProvider[] providers = firstAction == "noop" ? [new AccessibilityFix(mode: "noop"), provider] : [provider];
+
+        Project result = (await CodeFixRunner.Fix(
+            CreateProject(workspace),
+            [new MethodSpacingAnalyzer(), new MarkerAnalyzer()],
+            providers,
+            static fault => Assert.Fail(fault),
+            CancellationToken.None
+        )).Project;
+
         Compilation? compilation = await result.GetCompilationAsync();
         Assert.NotNull(compilation);
         Assert.DoesNotContain(compilation.GetDiagnostics().ToArray(), static diagnostic => diagnostic.Id == "CS0122");
@@ -244,10 +322,16 @@ public sealed class CodeFixRunnerTests
         using AdhocWorkspace workspace = new();
 
         Project project = CreateProject(workspace);
-        CompilerFix provider = new(mode);
+        AccessibilityFix provider = new(mode);
 
         InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => CodeFixRunner.Fix(project, [new MethodSpacingAnalyzer()], [provider], static fault => Assert.Fail(fault), CancellationToken.None)
+            () => CodeFixRunner.Fix(
+                project,
+                [new MethodSpacingAnalyzer(), new MarkerAnalyzer()],
+                [provider],
+                static fault => Assert.Fail(fault),
+                CancellationToken.None
+            )
         );
 
         Assert.Contains(expectedSubstring: "CS0122", exception.Message, StringComparison.Ordinal);
@@ -290,12 +374,12 @@ public sealed class CodeFixRunnerTests
         using AdhocWorkspace workspace = new();
 
         ThrowingFix throwing = new(stage);
-        CompilerFix working = new(mode: "valid");
+        AccessibilityFix working = new(mode: "valid");
         int expectedAttempts = stage == "identifiers" ? 0 : 1;
 
         Project result = (await CodeFixRunner.Fix(
             CreateProject(workspace),
-            [new MethodSpacingAnalyzer()],
+            [new MethodSpacingAnalyzer(), new MarkerAnalyzer()],
             [throwing, working],
             static fault => Assert.Fail(fault),
             CancellationToken.None
@@ -321,11 +405,11 @@ public sealed class CodeFixRunnerTests
             ).Project;
     }
 
-    private sealed class CompilerFix(string mode) : CodeFixProvider
+    private sealed class AccessibilityFix(string mode) : CodeFixProvider
     {
         public int Attempts { get; private set; }
 
-        public override ImmutableArray<string> FixableDiagnosticIds => ["CS0122"];
+        public override ImmutableArray<string> FixableDiagnosticIds => [MarkerAnalyzer.Identifier];
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -355,6 +439,72 @@ public sealed class CodeFixRunnerTests
             );
 
             return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>Stands in for the Roslyn fixes that answer a compiler error by generating code.</summary>
+    /// <param name="identifier">The compiler diagnostic this provider claims.</param>
+    private sealed class CompilerErrorFix(string identifier) : CodeFixProvider
+    {
+        public int Attempts { get; private set; }
+
+        public override ImmutableArray<string> FixableDiagnosticIds => [identifier];
+
+        public override Task RegisterCodeFixesAsync(CodeFixContext context)
+        {
+            Attempts++;
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    title: "Declare the missing code",
+                    cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(text: "class Example { void Run() { } }")))
+                ),
+                context.Diagnostics
+            );
+
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>Reports an analyzer error on a private field, which the accessibility repair removes.</summary>
+    [SuppressMessage(
+        "MicrosoftCodeAnalysisCorrectness",
+        "RS1001",
+        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts."
+    )]
+    [SuppressMessage(
+        "MicrosoftCodeAnalysisReleaseTracking",
+        "RS2008",
+        Justification = "This private instrumentation rule is only used in tests and is not shipped."
+    )]
+    private sealed class MarkerAnalyzer : DiagnosticAnalyzer
+    {
+        public const string Identifier = "TEST0001";
+
+        private static readonly DiagnosticDescriptor Rule = new(
+            Identifier,
+            title: "Private field",
+            messageFormat: "Private field",
+            category: "Testing",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true
+        );
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
+
+        public override void Initialize(AnalysisContext context)
+        {
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.EnableConcurrentExecution();
+            context.RegisterSyntaxNodeAction(
+                static node =>
+            {
+                FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
+
+                if (field.Modifiers.Any(SyntaxKind.PrivateKeyword))
+                    node.ReportDiagnostic(Diagnostic.Create(Rule, field.GetLocation()));
+            },
+                SyntaxKind.FieldDeclaration
+            );
         }
     }
 
@@ -428,7 +578,7 @@ public sealed class CodeFixRunnerTests
         public int Attempts { get; private set; }
 
         [SuppressMessage("Design", "CA1065", Justification = "A skewed provider fails exactly here, which is the behavior under test.")]
-        public override ImmutableArray<string> FixableDiagnosticIds => stage == "identifiers" ? throw Skew() : ["CS0122"];
+        public override ImmutableArray<string> FixableDiagnosticIds => stage == "identifiers" ? throw Skew() : [MarkerAnalyzer.Identifier];
 
         public override FixAllProvider? GetFixAllProvider()
         {
@@ -486,27 +636,6 @@ public sealed class CodeFixRunnerTests
             return failOnScopes
                 ? throw new MissingMethodException(message: "Method not found: 'Void Microsoft.CodeAnalysis.CodeGeneration.CodeGenerationContext..ctor()'.")
                 : base.GetSupportedFixAllScopes();
-        }
-    }
-
-    private sealed class UnresolvedFix(string identifier) : CodeFixProvider
-    {
-        public int Attempts { get; private set; }
-
-        public override ImmutableArray<string> FixableDiagnosticIds => [identifier];
-
-        public override Task RegisterCodeFixesAsync(CodeFixContext context)
-        {
-            Attempts++;
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Declare the unresolved symbol",
-                    cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(text: "class Example { void Run() { } }")))
-                ),
-                context.Diagnostics
-            );
-
-            return Task.CompletedTask;
         }
     }
 }
