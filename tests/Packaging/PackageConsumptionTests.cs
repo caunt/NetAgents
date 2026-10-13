@@ -607,6 +607,18 @@ public sealed class PackageConsumptionTests
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0024");
             await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0024\n" + tupleResultSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0024");
+
+            // A second summary stacked above a declaration documents nothing and reaches the generated XML.
+            string repeatedSummarySource = ValidSource.Replace(
+                oldValue: "/// <summary>Provides the consumer entry point.</summary>",
+                newValue: "/// <summary>Provides the consumer entry point.</summary>\n/// <summary>Provides the greeting.</summary>",
+                StringComparison.Ordinal
+            );
+
+            await File.WriteAllTextAsync(sourcePath, repeatedSummarySource);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0025");
+            await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0025\n" + repeatedSummarySource);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0025");
             await File.WriteAllTextAsync(
                 sourcePath,
                 ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n", string.Empty, StringComparison.Ordinal)
@@ -626,6 +638,7 @@ public sealed class PackageConsumptionTests
                 "dotnet_diagnostic.NETAGENTS0017.severity = none",
                 "dotnet_diagnostic.NETAGENTS0018.severity = none",
                 "dotnet_diagnostic.NETAGENTS0024.severity = none",
+                "dotnet_diagnostic.NETAGENTS0025.severity = none",
                 "dotnet_diagnostic.IDE0005.severity = none",
                 "dotnet_diagnostic.IDE0059.severity = none",
                 "dotnet_diagnostic.CS1591.severity = none",
@@ -680,6 +693,7 @@ public sealed class PackageConsumptionTests
                 "-p:NoWarn=NETAGENTS0001",
                 "-p:NoWarn=NETAGENTS0015",
                 "-p:NoWarn=NETAGENTS0024",
+                "-p:NoWarn=NETAGENTS0025",
                 "-p:NoWarn=1591",
                 "-p:WarningsNotAsErrors=CS1591",
                 "-p:NoWarn=IDE0005",

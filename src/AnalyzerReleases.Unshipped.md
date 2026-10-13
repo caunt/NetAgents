@@ -27,3 +27,4 @@ NETAGENTS0021 | Formatting | Error | Blank lines between adjacent method declara
 NETAGENTS0022 | Ordering | Error | Order members by kind, visibility, storage, readonly modifier, and name
 NETAGENTS0023 | Formatting | Error | No blank lines directly after an opening brace or before a closing brace
 NETAGENTS0024 | Design | Error | Dedicated named types for result contracts instead of tuples
+NETAGENTS0025 | Documentation | Error | One summary element per documentation comment
