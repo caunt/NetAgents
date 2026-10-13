@@ -56,6 +56,36 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     }
 
     /// <summary>
+    /// Verifies that a value another operator produces is not treated as an inline literal.
+    /// </summary>
+    /// <param name="body">The member body containing the operator-built argument.</param>
+    [Theory]
+    [InlineData("int Read(Buffer buffer) => buffer[^1];")]
+    [InlineData("int Read(Buffer buffer) => buffer[^(1)];")]
+    [InlineData("void Run() => Execute(~42);")]
+    [InlineData("void Run() => Toggle(!true);")]
+    public async Task AllowsOperatorBuiltArguments(string body)
+    {
+        string source = $$"""
+            class Buffer
+            {
+                public int Count => 0;
+
+                public int this[int index] => index;
+            }
+
+            class ExampleType
+            {
+                {{body}}
+                void Execute(int count) { }
+                void Toggle(bool enabled) { }
+            }
+            """;
+
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), source));
+    }
+
+    /// <summary>
     /// Verifies that a name the rule does not require is reported.
     /// </summary>
     [Fact]

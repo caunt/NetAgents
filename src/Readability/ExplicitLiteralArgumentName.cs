@@ -414,9 +414,22 @@ internal static class ExplicitLiteralArgumentName
         // Signs and parentheses nest in either order, so unwrap until neither remains.
         while (expression is ParenthesizedExpressionSyntax or PrefixUnaryExpressionSyntax)
         {
-            expression = expression is ParenthesizedExpressionSyntax parenthesizedExpression
-                ? parenthesizedExpression.Expression
-                : ((PrefixUnaryExpressionSyntax)expression).Operand;
+            if (expression is ParenthesizedExpressionSyntax parenthesizedExpression)
+            {
+                expression = parenthesizedExpression.Expression;
+
+                continue;
+            }
+
+            PrefixUnaryExpressionSyntax unaryExpression = (PrefixUnaryExpressionSyntax)expression;
+
+            // Only a sign writes a literal. An index from the end is a System.Index and a bitwise
+            // complement is a computed value, so naming either would describe something the author
+            // never wrote as a literal, and an implicit Index indexer cannot be named at all.
+            if (!unaryExpression.IsKind(SyntaxKind.UnaryMinusExpression) && !unaryExpression.IsKind(SyntaxKind.UnaryPlusExpression))
+                return expression;
+
+            expression = unaryExpression.Operand;
         }
 
         return expression;

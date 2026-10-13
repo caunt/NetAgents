@@ -28,7 +28,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0006 | Require one top-level type per file with the matching case-sensitive file name. Appropriate nested types are allowed. |
 | NETAGENTS0007 | Reject the postfix null-forgiving operator. |
 | NETAGENTS0008 | Reject literal-true `while`/`do` conditions and conditionless or literal-true `for` loops. |
-| NETAGENTS0009 | Require parameter names for inline literal/default arguments in methods, constructors, delegates, and indexers, including signed/parenthesized literals, and omit names the rule does not require. For expanded `params`, pass a named collection. Attributes use their separate language syntax. Includes an automatic code fix and Fix all support. |
+| NETAGENTS0009 | Require parameter names for inline literal/default arguments in methods, constructors, delegates, and indexers, including signed/parenthesized literals but not a value another operator produces such as `^1` or `~0`, and omit names the rule does not require. For expanded `params`, pass a named collection. Attributes use their separate language syntax. Includes an automatic code fix and Fix all support. |
 | NETAGENTS0010 | Require authored source files to contain fewer than 1,000 lines. The required final newline terminates the last line instead of starting another one. |
 | NETAGENTS0011 | Reject type names matching containing namespace segments or feature directories below the project root. |
 | NETAGENTS0012 | Reject framework synchronization types and blocking task/thread waits, including aliases, static imports, and explicit awaiter `GetResult` calls. |
@@ -58,7 +58,9 @@ dotnet format analyzers --diagnostics NETAGENTS0020
 ```
 
 Argument names converge on one shape: an inline literal or `default` argument carries its
-parameter name, and every other argument is positional. A name is only reported as unnecessary
+parameter name, and every other argument is positional. Only a sign or parentheses wrap a
+literal, so an index from the end or a bitwise complement is a computed value and stays
+positional; naming one would also be rejected outright by an implicit `Index` indexer. A name is only reported as unnecessary
 when dropping it provably keeps the same binding — each argument already sits in its own
 parameter slot, nothing is reordered, and no optional parameter is skipped — so
 `Execute(first, third: third)` keeps its name. The fix rewrites a whole argument list at once,

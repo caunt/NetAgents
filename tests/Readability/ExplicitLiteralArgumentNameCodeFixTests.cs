@@ -242,6 +242,7 @@ public sealed class ExplicitLiteralArgumentNameCodeFixTests
     [InlineData("Add(left: left, right: right)", "Add(left, right)")]
     [InlineData("Add(left: 1, right: right)", "Add(left: 1, right)")]
     [InlineData("Add(left: left, right: 2)", "Add(left, right: 2)")]
+    [InlineData("Add(left: ~1, right: 2)", "Add(~1, right: 2)")]
     public async Task RemovesUnrequiredNames(string invocation, string expected)
     {
         string source = $$"""

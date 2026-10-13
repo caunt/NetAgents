@@ -348,6 +348,18 @@ public sealed class PackageConsumptionTests
             Assert.Equal(Enumeration, await File.ReadAllTextAsync(widthPath));
             File.Delete(widthPath);
 
+            // An index from the end is a System.Index, not a literal the rule can name (#34).
+            string indexSource = ValidSource.Replace(oldValue: "namespace Consumer.Features;", newValue: "namespace CustomerApp.Features;", StringComparison.Ordinal)
+                .Replace(
+                    oldValue: "return recipientName;",
+                    newValue: "List<Version> versions = [];\n\n        return versions.Count > 0 ? versions[^1].ToString() : recipientName;",
+                    StringComparison.Ordinal
+                );
+
+            await File.WriteAllTextAsync(sourcePath, indexSource);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            Assert.Equal(indexSource, await File.ReadAllTextAsync(sourcePath));
+
             // Formatting runs before compilation, so a build that fails afterwards still rewrites the
             // file. The log names every rewritten path so a dirty tree is never a surprise (#11).
             string relativeSourcePath = Path.Combine(path1: "Features", path2: "ExampleService.cs");
