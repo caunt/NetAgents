@@ -41,6 +41,33 @@ public sealed class FormattingAnalysisTests
         Assert.Contains(expectedSubstring: "=> 4;", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
     }
 
+    /// <summary>Counts errors by identity, so a moved one is not new and a repeated one is.</summary>
+    [SuppressMessage(
+        "MicrosoftCodeAnalysisReleaseTracking",
+        "RS2008",
+        Justification = "This private instrumentation rule is only used in tests and is not shipped."
+    )]
+    [Fact]
+    public void CountsOnlyErrorsBeyondTheBaseline()
+    {
+        DiagnosticDescriptor rule = new(
+            id: "PERF0006",
+            title: "Repeated error",
+            messageFormat: "Repeated error",
+            category: "Testing",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true
+        );
+
+        Diagnostic first = Diagnostic.Create(rule, Location.None);
+        Diagnostic second = Diagnostic.Create(rule, Location.None);
+
+        Assert.Empty(FormattingAnalysis.IntroducedErrors([first], [second]).ToArray());
+        Diagnostic repeated = Assert.Single(FormattingAnalysis.IntroducedErrors([first, second], [first]).ToArray());
+
+        Assert.Equal(rule.Id, repeated.Id);
+    }
+
     /// <summary>Uses effective compiler diagnostics when the configured analyzers include a suppressor.</summary>
     [Fact]
     public async Task PreservesDiagnosticSuppressorsDuringValidation()

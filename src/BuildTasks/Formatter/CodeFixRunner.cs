@@ -62,9 +62,17 @@ internal static class CodeFixRunner
 
         HashSet<string> states = [];
         string? attempt = null;
+        string? regression = null;
+
+        // The project as it arrived, so a run that ends worse than it started can hand it back.
+        Project arrived = project;
         progress.Report(activity: "formatting whitespace");
         project = await FormatWhitespace(project, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+        // Analyzing once, after whitespace formatting, keeps this baseline free: an error whitespace
+        // formatting introduces on its own is the one kind this cannot see.
         ImmutableArray<Diagnostic> diagnostics = await analysis.GetDiagnostics(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> baseline = diagnostics;
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -90,11 +98,22 @@ internal static class CodeFixRunner
                 // including reference remarks the consumer build never fails for.
                 progress.Report(activity: "finished applying available fixes");
 
-                return new(project, [.. diagnostics.Where(IsBlockingError)]);
+                ImmutableArray<Diagnostic> introduced = [.. FormattingAnalysis.IntroducedErrors(diagnostics, baseline).Where(IsBlockingError)];
+
+                // Individual passes may introduce an error a later pass repairs, so only the state the
+                // run settles in decides. Handing back the project as it arrived is what withholds the
+                // rewrite: the caller writes a document only when its text changed. The errors reported
+                // alongside it are the baseline's, because those are the ones still in the file.
+                return introduced.IsEmpty
+                    ? new(project, [.. diagnostics.Where(IsBlockingError)], introduced, IntroducedBy: null)
+                    : new(arrived, [.. baseline.Where(IsBlockingError)], introduced, regression);
             }
 
             project = application.Project;
             diagnostics = application.Diagnostics;
+
+            if (regression is null && !FormattingAnalysis.IntroducedErrors(diagnostics, baseline).IsEmpty)
+                regression = application.Attempt;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -562,7 +581,7 @@ internal static class CodeFixRunner
             && !differences.GetAddedAnalyzerReferences().Any() && !differences.GetRemovedAnalyzerReferences().Any();
     }
 
-    internal sealed record CodeFixResult(Project Project, ImmutableArray<Diagnostic> Blocking);
+    internal sealed record CodeFixResult(Project Project, ImmutableArray<Diagnostic> Blocking, ImmutableArray<Diagnostic> Introduced, string? IntroducedBy);
 
     private sealed record CodeActionApplication(Project? Project, string? Attempt, ImmutableArray<Diagnostic> Diagnostics = default);
 }

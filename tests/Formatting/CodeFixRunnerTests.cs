@@ -36,6 +36,36 @@ public sealed class CodeFixRunnerTests
         Assert.EndsWith(expectedEndString: "}\r\n", text.ToString(), StringComparison.Ordinal);
     }
 
+    /// <summary>Keeps a rewrite whose intermediate error a later pass repairs.</summary>
+    [Fact]
+    public async Task KeepsCascadingFixesThatSettle()
+    {
+        using AdhocWorkspace workspace = new();
+
+        const string source = "class Example { private static int Value; }";
+
+        CodeFixProvider[] providers = [
+            new ModifierFix(CascadeAnalyzer.PrivateIdentifier, replaced: "private", replacement: "public"),
+            new ModifierFix(CascadeAnalyzer.PublicIdentifier, replaced: "public", replacement: "internal")];
+
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
+            CreateFieldProject(workspace, source),
+            [new CascadeAnalyzer()],
+            providers,
+            static fault => Assert.Fail(fault),
+            CancellationToken.None
+        );
+
+        // The first pass introduces the second rule and the second pass settles it, so the run keeps its work.
+        Assert.True(result.Introduced.IsEmpty);
+        Assert.True(result.Blocking.IsEmpty);
+        Assert.Contains(
+            expectedSubstring: "internal static int Value",
+            (await result.Project.Documents.Single().GetTextAsync()).ToString(),
+            StringComparison.Ordinal
+        );
+    }
+
     /// <summary>Never offers a build-failing compiler error to a code-fix provider, leaving the compiler to report it.</summary>
     /// <param name="body">The member and statement text the compiler rejects.</param>
     /// <param name="survivor">The rejected text the formatter must leave in place.</param>
@@ -210,6 +240,31 @@ public sealed class CodeFixRunnerTests
         Diagnostic error = Assert.Single(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
         Assert.Equal(expected: "CS0103", error.Id);
         Assert.Equal(expected: 1, provider.Attempts);
+    }
+
+    /// <summary>Hands back the original source when the run settles on errors it introduced.</summary>
+    [Fact]
+    public async Task PreservesSourceWhenFixesIntroduceErrors()
+    {
+        using AdhocWorkspace workspace = new();
+
+        const string source = "class Example { private static int Value; }";
+        ModifierFix provider = new(CascadeAnalyzer.PrivateIdentifier, replaced: "private", replacement: "public");
+
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
+            CreateFieldProject(workspace, source),
+            [new CascadeAnalyzer()],
+            [provider],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None
+        );
+
+        // Nothing repairs the rule the fix triggered, so the rewrite is withheld and named instead.
+        Assert.Equal(source, (await result.Project.Documents.Single().GetTextAsync()).ToString());
+        Assert.Equal(CascadeAnalyzer.PublicIdentifier, result.Introduced.Single().Id);
+        Assert.Equal(CascadeAnalyzer.PrivateIdentifier, result.Blocking.Single().Id);
+        Assert.NotNull(result.IntroducedBy);
+        Assert.Contains(expectedSubstring: "Replace private with public", result.IntroducedBy, StringComparison.Ordinal);
     }
 
     /// <summary>Still applies valid automatic fixes to analyzer errors.</summary>
@@ -393,6 +448,14 @@ public sealed class CodeFixRunnerTests
         Assert.Equal(expectedAttempts, throwing.Attempts);
     }
 
+    private static Project CreateFieldProject(AdhocWorkspace workspace, string source)
+    {
+        return workspace.AddProject(name: "Cascade", LanguageNames.CSharp)
+            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+            .AddMetadataReferences(AnalyzerTestHarness.References)
+            .AddDocument(name: "Example.cs", SourceText.From(source), filePath: "Example.cs").Project;
+    }
+
     private static Project CreateProject(AdhocWorkspace workspace)
     {
         return workspace.AddProject(name: "Progress", LanguageNames.CSharp)
@@ -439,6 +502,63 @@ public sealed class CodeFixRunnerTests
             );
 
             return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>Reports one rule for a private field and another for a public one.</summary>
+    [SuppressMessage(
+        "MicrosoftCodeAnalysisCorrectness",
+        "RS1001",
+        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts."
+    )]
+    [SuppressMessage(
+        "MicrosoftCodeAnalysisReleaseTracking",
+        "RS2008",
+        Justification = "These private instrumentation rules are only used in tests and are not shipped."
+    )]
+    private sealed class CascadeAnalyzer : DiagnosticAnalyzer
+    {
+        public const string PrivateIdentifier = "TEST0002";
+
+        public const string PublicIdentifier = "TEST0003";
+
+        private static readonly DiagnosticDescriptor PrivateRule = new(
+            PrivateIdentifier,
+            title: "Private field",
+            messageFormat: "Private field",
+            category: "Testing",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true
+        );
+
+        private static readonly DiagnosticDescriptor PublicRule = new(
+            PublicIdentifier,
+            title: "Public field",
+            messageFormat: "Public field",
+            category: "Testing",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true
+        );
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [PrivateRule, PublicRule];
+
+        public override void Initialize(AnalysisContext context)
+        {
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.EnableConcurrentExecution();
+            context.RegisterSyntaxNodeAction(
+                static node =>
+            {
+                FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
+
+                if (field.Modifiers.Any(SyntaxKind.PrivateKeyword))
+                    node.ReportDiagnostic(Diagnostic.Create(PrivateRule, field.GetLocation()));
+
+                if (field.Modifiers.Any(SyntaxKind.PublicKeyword))
+                    node.ReportDiagnostic(Diagnostic.Create(PublicRule, field.GetLocation()));
+            },
+                SyntaxKind.FieldDeclaration
+            );
         }
     }
 
@@ -505,6 +625,33 @@ public sealed class CodeFixRunnerTests
             },
                 SyntaxKind.FieldDeclaration
             );
+        }
+    }
+
+    /// <summary>Replaces one modifier with another, which can satisfy one rule and trip the next.</summary>
+    /// <param name="identifier">The diagnostic this provider claims.</param>
+    /// <param name="replaced">The modifier to replace.</param>
+    /// <param name="replacement">The modifier to write instead.</param>
+    private sealed class ModifierFix(string identifier, string replaced, string replacement) : CodeFixProvider
+    {
+        public override ImmutableArray<string> FixableDiagnosticIds => [identifier];
+
+        public override Task RegisterCodeFixesAsync(CodeFixContext context)
+        {
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    $"Replace {replaced} with {replacement}",
+                    async cancellationToken =>
+            {
+                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                return context.Document.WithText(SourceText.From(text.ToString().Replace(replaced, replacement, StringComparison.Ordinal)));
+            }
+                ),
+                context.Diagnostics
+            );
+
+            return Task.CompletedTask;
         }
     }
 

@@ -250,7 +250,7 @@ internal static class ProjectFormatter
             }
         }
 
-        Report(inputs, rewritten, codeFixes.Blocking);
+        Report(inputs, rewritten, codeFixes);
 
         return codeFixes.Blocking.IsEmpty && analyzerCatalog.Unavailable.Length == 0 && !analyzerFault && !inputs.Log.HasLoggedErrors;
     }
@@ -277,8 +277,24 @@ internal static class ProjectFormatter
 
     // Formatting runs before the compiler, so a build that fails afterwards still leaves these edits
     // behind. Naming every rewritten file keeps that visible to reviewers and dirty-tree checks.
-    private static void Report(FormatProject inputs, List<string> rewritten, ImmutableArray<Diagnostic> blocking)
+    private static void Report(FormatProject inputs, List<string> rewritten, CodeFixRunner.CodeFixResult codeFixes)
     {
+        ImmutableArray<Diagnostic> blocking = codeFixes.Blocking;
+
+        // A withheld run rewrote nothing, so this has to be said before the guard below.
+        if (!codeFixes.Introduced.IsEmpty)
+        {
+            string introduced = string.Join(
+                separator: ", ",
+                codeFixes.Introduced.Select(static diagnostic => diagnostic.Id).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
+            );
+
+            inputs.Log.LogMessage(MessageImportance.High, $"NetAgents made no change because formatting would have introduced {introduced}");
+
+            if (codeFixes.IntroducedBy is not null)
+                inputs.Log.LogMessage(MessageImportance.High, "Attempted code action: " + codeFixes.IntroducedBy);
+        }
+
         if (rewritten.Count == 0)
             return;
 

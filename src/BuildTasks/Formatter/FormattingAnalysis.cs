@@ -114,18 +114,20 @@ internal sealed class FormattingAnalysis(
         return new(diagnostics, introduced);
     }
 
-    private static DiagnosticIdentity ErrorKey(Diagnostic diagnostic)
-    {
-        return new(diagnostic.Id, diagnostic.GetMessage(CultureInfo.InvariantCulture), diagnostic.Location.SourceTree?.FilePath ?? string.Empty);
-    }
-
-    private static ImmutableArray<Diagnostic> IntroducedErrors(ImmutableArray<Diagnostic> after, ImmutableArray<Diagnostic> before)
+    // Counting by identity rather than position keeps a diagnostic that merely moved out of the
+    // result, while a second copy of an identical one still counts as introduced.
+    internal static ImmutableArray<Diagnostic> IntroducedErrors(ImmutableArray<Diagnostic> after, ImmutableArray<Diagnostic> before)
     {
         Dictionary<DiagnosticIdentity, int> existing = before.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .CountBy(ErrorKey).ToDictionary();
 
         return [.. after.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .GroupBy(ErrorKey).SelectMany(group => group.Skip(existing.GetValueOrDefault(group.Key)))];
+    }
+
+    private static DiagnosticIdentity ErrorKey(Diagnostic diagnostic)
+    {
+        return new(diagnostic.Id, diagnostic.GetMessage(CultureInfo.InvariantCulture), diagnostic.Location.SourceTree?.FilePath ?? string.Empty);
     }
 
     private static bool SuppressesCompilerDiagnostics(DiagnosticAnalyzer analyzer)
