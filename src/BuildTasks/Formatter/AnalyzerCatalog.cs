@@ -40,7 +40,12 @@ internal static class AnalyzerCatalog
                 DiagnosticAnalyzer analyzer = Create(type);
 
                 // An analyzer that cannot describe its rules faults on every compilation it joins.
-                if (!analyzer.SupportedDiagnostics.IsEmpty)
+                // A suppressor reports nothing of its own, so its suppressions are what it describes.
+                bool described = analyzer is DiagnosticSuppressor suppressor
+                    ? !suppressor.SupportedSuppressions.IsEmpty
+                    : !analyzer.SupportedDiagnostics.IsEmpty;
+
+                if (described)
                     analyzers.Add(analyzer);
             }
             catch (Exception exception) when (exception is not OperationCanceledException)

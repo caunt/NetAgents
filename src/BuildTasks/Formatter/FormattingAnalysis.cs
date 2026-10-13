@@ -82,9 +82,10 @@ internal sealed class FormattingAnalysis(
             }
         }
 
-        // Suppressors can depend on the complete diagnostic set. When one is present, the full
-        // analysis below must establish the effective compiler errors before rejecting a candidate.
-        if (!analyzers.Any(static analyzer => analyzer is DiagnosticSuppressor))
+        // Suppressors can depend on the complete diagnostic set. Only one that claims a compiler
+        // diagnostic can change the shortcut's answer, so the full analysis below must establish the
+        // effective compiler errors before rejecting a candidate when such a suppressor is present.
+        if (!analyzers.Any(SuppressesCompilerDiagnostics))
         {
             progress.Report(activity: "checking candidate compiler diagnostics");
 
@@ -125,6 +126,22 @@ internal sealed class FormattingAnalysis(
 
         return [.. after.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .GroupBy(ErrorKey).SelectMany(group => group.Skip(existing.GetValueOrDefault(group.Key)))];
+    }
+
+    private static bool SuppressesCompilerDiagnostics(DiagnosticAnalyzer analyzer)
+    {
+        if (analyzer is not DiagnosticSuppressor suppressor)
+            return false;
+
+        try
+        {
+            return suppressor.SupportedSuppressions.Any(static suppression => suppression.SuppressedDiagnosticId.StartsWith(value: "CS", StringComparison.Ordinal));
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // A suppressor that cannot list its suppressions might claim any of them.
+            return true;
+        }
     }
 
     private void Remember(string actionKey, string? fingerprint, ImmutableArray<Diagnostic> diagnostics)

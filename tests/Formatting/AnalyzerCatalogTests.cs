@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 using NetAgents.Analyzers.CodeFixes.Ordering;
+using NetAgents.Analyzers.Reliability;
 using NetAgents.BuildTasks;
 
 namespace NetAgents.Analyzers.Tests.Formatting;
@@ -17,6 +18,22 @@ public sealed class AnalyzerCatalogTests
             ?? throw new InvalidOperationException(message: "The building SDK's code-style directory is unknown."),
         path2: "Microsoft.CodeAnalysis.CSharp.CodeStyle.dll"
     );
+
+    /// <summary>Hosts a suppressor, which describes suppressions where an analyzer describes rules.</summary>
+    [Fact]
+    public void HostsSuppressorsThatReportNoDiagnosticsOfTheirOwn()
+    {
+        using AnalyzerLoader loader = new();
+
+        string path = typeof(ExhaustiveSwitchSuppressor).Assembly.Location;
+        AnalyzerCatalog.AnalyzerHostingResult result = AnalyzerCatalog.Host(path, loader);
+
+        Assert.True(result.Read);
+        Assert.Empty(result.Unavailable);
+
+        // The hosted copy comes from a separate load context, so only the name identifies it.
+        Assert.Contains([.. result.Analyzers], static analyzer => analyzer.GetType().FullName == typeof(ExhaustiveSwitchSuppressor).FullName);
+    }
 
     /// <summary>Constructs the same analyzers the compiler's loader does, without its version gate.</summary>
     [Fact]

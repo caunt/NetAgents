@@ -118,6 +118,24 @@ public sealed class FormattingAnalysisTests
         Assert.Equal(expected: 4, analyzer.Runs);
     }
 
+    /// <summary>Keeps the compiler-diagnostics shortcut for a suppressor that claims no compiler rule.</summary>
+    [Fact]
+    public async Task ShortcutsValidationWhenNoSuppressorClaimsCompilerDiagnostics()
+    {
+        List<string> messages = await ValidateBrokenCandidate(suppressedDiagnosticIdentifier: "IDE0072");
+
+        Assert.Contains(messages, static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
+    }
+
+    /// <summary>Runs the full analysis when a suppressor could change the effective compiler errors.</summary>
+    [Fact]
+    public async Task SkipsShortcutWhenASuppressorClaimsCompilerDiagnostics()
+    {
+        List<string> messages = await ValidateBrokenCandidate(suppressedDiagnosticIdentifier: "CS0219");
+
+        Assert.DoesNotContain(messages, static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
+    }
+
     private static Project Change(Project project, string name, string source)
     {
         return project.Documents.Single(document => document.Name == name).WithText(SourceText.From(source)).Project;
@@ -138,6 +156,33 @@ public sealed class FormattingAnalysisTests
                 SourceText.From(text: "internal static class Dependency { internal const int Value = 0; }\n"),
                 filePath: "Dependency.cs"
             ).Project;
+    }
+
+    private static async Task<List<string>> ValidateBrokenCandidate(string suppressedDiagnosticIdentifier)
+    {
+        using AdhocWorkspace workspace = new();
+
+        Project before = CreateProject(workspace);
+        List<string> messages = [];
+
+        FormattingAnalysis analysis = new(
+            [new ClaimingSuppressor(suppressedDiagnosticIdentifier)],
+            static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
+            new(before.Name, messages.Add)
+        );
+
+        ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
+
+        // A candidate that no longer compiles is what the shortcut exists to reject without analyzers.
+        Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() => \"text\"; }\n");
+
+        FormattingAnalysis.ValidationResult result = await analysis
+            .Validate(candidate, baseline, actionKey: "broken candidate", optional: false, CancellationToken.None)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        Assert.False(result.IntroducedErrors.IsEmpty);
+
+        return messages;
     }
 
     private sealed class CandidateFix(bool rejected) : CodeFixProvider
@@ -167,6 +212,23 @@ public sealed class FormattingAnalysisTests
             );
 
             return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>Claims one diagnostic without suppressing anything, to exercise the shortcut guard.</summary>
+    /// <param name="suppressedDiagnosticIdentifier">The diagnostic this suppressor claims.</param>
+    [SuppressMessage(
+        "MicrosoftCodeAnalysisCorrectness",
+        "RS1001",
+        Justification = "This private test suppressor is constructed explicitly and is not shipped."
+    )]
+    private sealed class ClaimingSuppressor(string suppressedDiagnosticIdentifier) : DiagnosticSuppressor
+    {
+        public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions =>
+            [new(id: "PERFSP0002", suppressedDiagnosticIdentifier, justification: "Exercise the compiler-diagnostics shortcut.")];
+
+        public override void ReportSuppressions(SuppressionAnalysisContext context)
+        {
         }
     }
 
