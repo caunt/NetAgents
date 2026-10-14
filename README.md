@@ -30,7 +30,7 @@ On each build, NetAgents:
 
 **Builds can change your source files.** Every rewritten file is named in the build log, including when the build then fails on a violation no fix can repair. A build that would leave behind a violation it introduced changes nothing at all and says so instead. Review those changes before committing. Some violations require a manual fix; IDE quick fixes and `dotnet format` are also available.
 
-Unchanged builds reuse completed formatting after checking a content fingerprint of the sources, dependencies, tools, and configuration. Policy checks and compiler enforcement remain enabled. Use `dotnet build -p:NetAgentsReportAnalyzerPerformance=true` to run full formatting with per-analyzer timing logs.
+Unchanged builds reuse completed formatting after checking a content fingerprint of the sources, dependencies, tools, and configuration. Policy checks and compiler enforcement remain enabled. Profile a build with `dotnet-trace`; `dotnet clean` discards the record when a full run is wanted.
 
 ## 📏 Formatting rules
 

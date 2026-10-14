@@ -5,7 +5,6 @@ using System.Text;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Diagnostics.Telemetry;
 using Microsoft.CodeAnalysis.Text;
 
 namespace NetAgents.BuildTasks;
@@ -44,27 +43,9 @@ internal sealed class FormattingAnalysis(
         Compilation compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
-        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException, concurrentAnalysis: true, progress.ReportAnalyzerPerformance);
+        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException, concurrentAnalysis: true, logAnalyzerExecutionTime: false);
         CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers, options);
         ImmutableArray<Diagnostic> diagnostics = await analysis.GetAllDiagnosticsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-
-        if (progress.ReportAnalyzerPerformance)
-        {
-            // Roslyn records execution time only for the analysis result, and that result carries
-            // analyzer diagnostics without the compiler's own, which the caller depends on. Profiling
-            // therefore measures in a second pass rather than changing what this method returns, so
-            // the analyzers run twice while it is requested and once otherwise.
-            AnalysisResult profile = await analysis.GetAnalysisResultAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-
-            foreach (DiagnosticAnalyzer analyzer in analyzers)
-            {
-                if (!profile.AnalyzerTelemetryInfo.TryGetValue(analyzer, out AnalyzerTelemetryInfo? telemetry) || telemetry is null)
-                    continue;
-
-                string seconds = telemetry.ExecutionTime.TotalSeconds.ToString(format: "F3", CultureInfo.InvariantCulture);
-                progress.Report($"analyzer {analyzer.GetType().FullName}: {seconds}s execution time (may overlap other analyzers)");
-            }
-        }
 
         return diagnostics;
     }

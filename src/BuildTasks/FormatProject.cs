@@ -59,9 +59,6 @@ public sealed class FormatProject : UtilitiesTask, ICancelableTask, IDisposable
     /// <summary>Gets or sets the SDK directory containing code-style runtime dependencies.</summary>
     public string SdkAssemblyDirectory { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets whether formatter analysis reports per-analyzer execution times.</summary>
-    public bool ReportAnalyzerPerformance { get; set; }
-
     /// <summary>Gets or sets the intermediate file recording successfully formatted inputs.</summary>
     [Required]
     public string CacheFile { get; set; } = string.Empty;

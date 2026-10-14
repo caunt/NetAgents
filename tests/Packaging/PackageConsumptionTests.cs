@@ -407,13 +407,6 @@ public sealed class PackageConsumptionTests
             string cachePath = Assert.Single(Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories));
             await File.WriteAllTextAsync(cachePath, contents: "incomplete cache record");
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["analyzing project"], withoutShell: true);
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
-                [.. reportingArguments, "-p:NetAgentsReportAnalyzerPerformance=true"],
-                expectedOutput: ["analyzing project", "execution time (may overlap other analyzers)"],
-                withoutShell: true
-            );
-
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, ["clean", projectPath, "--nologo", "--verbosity", "quiet"], withoutShell: true);
             Assert.False(File.Exists(cachePath));
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["analyzing project"], withoutShell: true);

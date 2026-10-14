@@ -24,13 +24,13 @@ internal static class ProjectFormatter
 
         await using (projectLock.ConfigureAwait(continueOnCapturedContext: false))
         {
-            FormattingProgress progress = new(inputs.AssemblyName, message => inputs.Log.LogMessage(MessageImportance.High, message), inputs.ReportAnalyzerPerformance);
+            FormattingProgress progress = new(inputs.AssemblyName, message => inputs.Log.LogMessage(MessageImportance.High, message));
             progress.Report(activity: "checking formatting inputs");
             Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(inputs.SourceFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             FormattingFingerprint before = await FormattingFingerprint.Create(inputs, sources, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             FormattingCache cache = new(inputs.CacheFile);
 
-            if (!inputs.ReportAnalyzerPerformance && cache.Matches(before))
+            if (cache.Matches(before))
             {
                 progress.Report(activity: "inputs unchanged; reusing completed formatting");
 

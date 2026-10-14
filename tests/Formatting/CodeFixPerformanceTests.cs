@@ -8,7 +8,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
-using NetAgents.Analyzers.Naming;
 using NetAgents.Analyzers.Tests.Infrastructure;
 using NetAgents.BuildTasks;
 
@@ -19,32 +18,27 @@ public sealed class CodeFixPerformanceTests
 {
     /// <summary>Validates each accepted state once, with required repairs preceding optional actions.</summary>
     /// <param name="suggestions">Whether to offer an unrelated compiler-breaking suggestion.</param>
-    /// <param name="profiling">Whether to report analyzer execution times.</param>
     [Theory]
-    [InlineData("none", "disabled")]
-    [InlineData("optional", "disabled")]
-    [InlineData("optional", "enabled")]
-    public async Task AnalyzesAcceptedStatesOnce(string suggestions, string profiling)
+    [InlineData("none")]
+    [InlineData("optional")]
+    public async Task AnalyzesAcceptedStatesOnce(string suggestions)
     {
         using AdhocWorkspace workspace = new();
 
         bool includeSuggestion = suggestions == "optional";
-        bool reportPerformance = profiling == "enabled";
         Project project = CreateProject(workspace);
         CountingAnalyzer analyzer = new(includeSuggestion);
         List<string> actions = [];
         List<string> messages = [];
         StepFix required = new(actions);
         SuggestionFix optional = new(actions);
-        FormattingProgress progress = new(project.Name, messages.Add, reportPerformance);
+        FormattingProgress progress = new(project.Name, messages.Add);
 
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, [analyzer], [optional, required], static fault => Assert.Fail(fault), CancellationToken.None, progress);
 
         Assert.True(result.Blocking.IsEmpty);
-        // Execution time is only recorded for an analysis result, which carries no compiler
-        // diagnostics, so profiling measures in a second pass and the analyzers run twice.
-        Assert.Equal(reportPerformance ? 8 : 4, analyzer.Runs);
-        Assert.Equal(reportPerformance ? 16 : 8, analyzer.TreeVisits);
+        Assert.Equal(expected: 4, analyzer.Runs);
+        Assert.Equal(expected: 8, analyzer.TreeVisits);
         Assert.Equal(includeSuggestion ? ["required", "required", "required", "optional"] : ["required", "required", "required"], actions);
         Assert.Equal(expected: 4, analyzer.States.Distinct(StringComparer.Ordinal).Count());
         Assert.Contains(expectedSubstring: "=> 3;", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
@@ -53,43 +47,9 @@ public sealed class CodeFixPerformanceTests
         Assert.Contains(messages, static message => message.Contains(value: "pass 4, elapsed", StringComparison.Ordinal));
         Assert.Contains(messages, static message => message.Contains(value: "validating PERF0002 action", StringComparison.Ordinal));
         Assert.Contains(expectedSubstring: "finished applying available fixes", messages.Last(), StringComparison.Ordinal);
-        Assert.Equal(
-            reportPerformance,
-            messages.Any(static message => message.Contains(value: "execution time (may overlap other analyzers)", StringComparison.Ordinal))
-        );
 
         if (includeSuggestion)
             Assert.Contains(messages, static message => message.Contains(value: "rejected PERF0001 action", StringComparison.Ordinal));
-    }
-
-    /// <summary>Reports a time that was actually measured, not a zero placeholder.</summary>
-    [Fact]
-    public async Task ReportsMeasuredAnalyzerExecutionTime()
-    {
-        using AdhocWorkspace workspace = new();
-
-        // Enough declarations that the analyzer's work is well above the reported precision.
-        string members = string.Concat(Enumerable.Range(start: 0, count: 4000).Select(static index => $"    int ValueNumber{index}() => {index};\n"));
-
-        Project project = workspace.AddProject(name: "Profiling", LanguageNames.CSharp)
-            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
-            .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(name: "Example.cs", SourceText.From($"class ExampleType\n{{\n{members}}}\n"), filePath: "Example.cs").Project;
-
-        List<string> messages = [];
-
-        FormattingAnalysis analysis = new(
-            [new DescriptiveNameAnalyzer()],
-            static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
-            new(project.Name, messages.Add, reportAnalyzerPerformance: true)
-        );
-
-        ImmutableArray<Diagnostic> diagnostics = await analysis.GetDiagnostics(project, CancellationToken.None);
-        string reported = Assert.Single(messages, static message => message.Contains(value: "execution time", StringComparison.Ordinal));
-
-        Assert.True(diagnostics.IsEmpty);
-        Assert.Contains(nameof(DescriptiveNameAnalyzer), reported, StringComparison.Ordinal);
-        Assert.DoesNotContain(expectedSubstring: "0.000s", reported, StringComparison.Ordinal);
     }
 
     /// <summary>Reports the malformed switch before formatting or invoking any analyzer or fix.</summary>

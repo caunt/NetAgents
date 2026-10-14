@@ -52,7 +52,6 @@
                                        CacheFile="$(IntermediateOutputPath)$(MSBuildProjectFile).NetAgents.formatting.cache"
                                        BuildFiles="@(NetAgentsFormattingBuildFiles)"
                                        BuildProperties="@(NetAgentsFormattingBuildProperties)"
-                                       ReportAnalyzerPerformance="$(NetAgentsReportAnalyzerPerformance)"
                                        CodeFixDirectory="$(MSBuildToolsPath)/Sdks/Microsoft.NET.Sdk/codestyle/cs"
                                        SdkAssemblyDirectory="$(MSBuildToolsPath)/DotnetTools/dotnet-format" />
   </Target>
