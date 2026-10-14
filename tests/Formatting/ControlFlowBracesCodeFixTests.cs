@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -232,7 +233,7 @@ public sealed class ControlFlowBracesCodeFixTests
             """;
 
         string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
-        Microsoft.CodeAnalysis.SyntaxNode root = await CSharpSyntaxTree.ParseText(result).GetRootAsync();
+        SyntaxNode root = await CSharpSyntaxTree.ParseText(result).GetRootAsync();
         IfStatementSyntax[] conditionals = [.. root.DescendantNodes().OfType<IfStatementSyntax>()];
         Assert.NotNull(conditionals[0].Else);
         Assert.Null(conditionals[1].Else);

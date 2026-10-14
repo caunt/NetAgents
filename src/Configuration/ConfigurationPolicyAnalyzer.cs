@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 
@@ -46,7 +47,7 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
     {
         AnalyzerConfigOptions options = context.Options.AnalyzerConfigOptionsProvider.GetOptions(context.Tree);
 
-        foreach (System.Collections.Generic.KeyValuePair<string, string> requiredOption in RequiredOptions)
+        foreach (KeyValuePair<string, string> requiredOption in RequiredOptions)
         {
             bool matches;
 

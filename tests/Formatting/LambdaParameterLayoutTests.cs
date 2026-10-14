@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Tests.Infrastructure;
 
@@ -122,7 +124,7 @@ public sealed class LambdaParameterLayoutTests
             }
             """;
 
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new LambdaParameterLayoutAnalyzer(), source);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new LambdaParameterLayoutAnalyzer(), source);
 
         Assert.Equal(LambdaParameterLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

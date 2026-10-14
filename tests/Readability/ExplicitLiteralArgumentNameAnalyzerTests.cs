@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 using NetAgents.Analyzers.Readability;
 using NetAgents.Analyzers.Tests.Infrastructure;
 
@@ -25,7 +27,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     [Fact]
     public async Task AllowsNamedArguments()
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
             new ExplicitLiteralArgumentNameAnalyzer(),
             source: "public class ExampleType { public void Run() => Execute(count: 42); private void Execute(int count) { } }"
         );
@@ -93,7 +95,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     {
         string source = CreateCoordinateSource(arguments: "horizontalCoordinate: boy.StateTargetCoordinate.First, verticalCoordinate: boy.StateTargetCoordinate.Second");
 
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), source);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), source);
 
         Assert.Equal(expected: 2, diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, diagnostic.Id));
@@ -111,7 +113,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     [InlineData("Execute((-42))")]
     public async Task ReportsUnnamedLiteralArguments(string invocation)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
             new ExplicitLiteralArgumentNameAnalyzer(),
             $"public class ExampleType {{ public void Run() => {invocation}; private void Execute(int count) {{ }} }}"
         );

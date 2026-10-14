@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 using NetAgents.Analyzers.Documentation;
 using NetAgents.Analyzers.Tests.Infrastructure;
 
@@ -62,7 +64,7 @@ public sealed class SummaryUniquenessAnalyzerTests
         string stacked = string.Concat(Enumerable.Range(start: 0, extra).Select(static index => $"/// <summary>Describes member {index}.</summary>\n"));
         string source = $"/// <summary>Describes the type.</summary>\n{stacked}public sealed record ExampleType(int Value);\n";
 
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SummaryUniquenessAnalyzer(), source);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SummaryUniquenessAnalyzer(), source);
 
         Assert.Equal(extra, diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(SummaryUniquenessAnalyzer.RuleIdentifier, diagnostic.Id));
@@ -80,8 +82,8 @@ public sealed class SummaryUniquenessAnalyzerTests
             public sealed record ExampleType(int Value);
             """;
 
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SummaryUniquenessAnalyzer(), source);
-        Microsoft.CodeAnalysis.Diagnostic diagnostic = Assert.Single(diagnostics);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SummaryUniquenessAnalyzer(), source);
+        Diagnostic diagnostic = Assert.Single(diagnostics);
 
         Assert.Equal(expected: 1, diagnostic.Location.GetLineSpan().StartLinePosition.Line);
     }

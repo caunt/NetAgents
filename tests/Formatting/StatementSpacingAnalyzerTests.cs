@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Tests.Infrastructure;
 
@@ -29,7 +31,7 @@ public sealed class StatementSpacingAnalyzerTests
     [InlineData("public static void Execute(int count) {\nusing var stream = new System.IO.MemoryStream();\n}")]
     public async Task PreservesBlockEdgesAndExistingSeparators(string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }
@@ -62,7 +64,7 @@ public sealed class StatementSpacingAnalyzerTests
             }
             """;
 
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), source);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), source);
 
         Assert.Empty(diagnostics);
     }
@@ -74,7 +76,7 @@ public sealed class StatementSpacingAnalyzerTests
     public async Task RequiresBlankLineAfterUnbracedConditional()
     {
         const string source = "public static class ExampleType { public static void Execute(int[] numbers) { for (int index = 0; index < numbers.Length; index++) { if (index > 10)\nbreak;\nnumbers[index] += index; } } }";
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), source);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), source);
 
         Assert.Equal(StatementSpacingAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
         Assert.Equal(
@@ -112,7 +114,7 @@ public sealed class StatementSpacingAnalyzerTests
     [InlineData("public static void Execute(int count) { switch (count) { case 0: count++;\nbreak; } }")]
     public async Task RequiresBlankLinesBetweenStatements(string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Equal(StatementSpacingAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

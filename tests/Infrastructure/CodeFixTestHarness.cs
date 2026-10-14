@@ -76,6 +76,12 @@ internal static class CodeFixTestHarness
         return await Fix(source, new MethodSpacingAnalyzer(), new MethodSpacingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
+    public static async Task<string> FixQualifiedTypeImports(string source, bool fixAll)
+    {
+        return await Fix(source, new QualifiedTypeImportAnalyzer(), new QualifiedTypeImportCodeFixProvider(), fixAll)
+            .ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     public static async Task<string> FixSpacing(string source, bool fixAll)
     {
         return await Fix(source, new StatementSpacingAnalyzer(), new StatementSpacingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);

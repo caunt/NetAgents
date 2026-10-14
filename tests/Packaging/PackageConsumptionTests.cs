@@ -358,6 +358,20 @@ public sealed class PackageConsumptionTests
             Assert.Contains(expectedSubstring: "name => name;", lambdas, StringComparison.Ordinal);
             Assert.DoesNotContain(expectedSubstring: "(name) =>", lambdas, StringComparison.Ordinal);
 
+            // A qualified type is imported and named directly instead (#0027).
+            string qualifiedSource = ValidSource.Replace(
+                oldValue: "return recipientName;",
+                newValue: "System.Text.StringBuilder builder = new(recipientName);\n\n        return builder.ToString();",
+                StringComparison.Ordinal
+            );
+
+            await File.WriteAllTextAsync(sourcePath, qualifiedSource);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            string imported = await File.ReadAllTextAsync(sourcePath);
+            Assert.Contains(expectedSubstring: "using System.Text;", imported, StringComparison.Ordinal);
+            Assert.Contains(expectedSubstring: "StringBuilder builder = new(", imported, StringComparison.Ordinal);
+            Assert.DoesNotContain(expectedSubstring: "System.Text.StringBuilder", imported, StringComparison.Ordinal);
+
             // An index from the end is a System.Index, not a literal the rule can name (#34).
             string indexSource = ValidSource.Replace(oldValue: "namespace Consumer.Features;", newValue: "namespace CustomerApp.Features;", StringComparison.Ordinal)
                 .Replace(
@@ -650,6 +664,7 @@ public sealed class PackageConsumptionTests
                 "dotnet_diagnostic.NETAGENTS0024.severity = none",
                 "dotnet_diagnostic.NETAGENTS0025.severity = none",
                 "dotnet_diagnostic.NETAGENTS0026.severity = none",
+                "dotnet_diagnostic.NETAGENTS0027.severity = none",
                 "dotnet_diagnostic.IDE0005.severity = none",
                 "dotnet_diagnostic.IDE0059.severity = none",
                 "dotnet_diagnostic.CS1591.severity = none",
@@ -706,6 +721,7 @@ public sealed class PackageConsumptionTests
                 "-p:NoWarn=NETAGENTS0024",
                 "-p:NoWarn=NETAGENTS0025",
                 "-p:NoWarn=NETAGENTS0026",
+                "-p:NoWarn=NETAGENTS0027",
                 "-p:NoWarn=1591",
                 "-p:WarningsNotAsErrors=CS1591",
                 "-p:NoWarn=IDE0005",

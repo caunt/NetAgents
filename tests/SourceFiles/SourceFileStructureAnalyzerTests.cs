@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 using NetAgents.Analyzers.SourceFiles;
 using NetAgents.Analyzers.Tests.Infrastructure;
 
@@ -18,7 +20,7 @@ public sealed class SourceFileStructureAnalyzerTests
     [InlineData("public delegate void ExampleType();")]
     public async Task AllowsMatchingFilesAndAppropriateNestedTypes(string source)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileStructureAnalyzer(), source);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileStructureAnalyzer(), source);
 
         Assert.Empty(diagnostics);
     }
@@ -33,7 +35,7 @@ public sealed class SourceFileStructureAnalyzerTests
     [InlineData("namespace First { public class ExampleType { } } namespace Second { public class DifferentName { } }")]
     public async Task RejectsMismatchedAndMultipleTopLevelTypes(string source)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileStructureAnalyzer(), source);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileStructureAnalyzer(), source);
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == SourceFileStructureAnalyzer.RuleIdentifier);
     }

@@ -51,7 +51,7 @@ Sorting preserves initializer order and storage order in structs and types with 
 | --- | --- |
 | 🧩 Type safety | Nullable analysis is required. No boxing, `object`/`dynamic` values, or untyped collections. |
 | 🏗️ Design | Return dedicated named records, classes, or structs instead of tuple result types, including wrapped tuple results. Lambdas with one inferred parameter drop the optional parentheses. |
-| 🏷️ Naming and structure | Descriptive names, one top-level type per matching file, files under 1,000 lines, and at most 16 authored C# files per directory. |
+| 🏷️ Naming and structure | Descriptive names, imported type names instead of qualified ones, one top-level type per matching file, files under 1,000 lines, and at most 16 authored C# files per directory. |
 | 📝 Documentation | One `<summary>` per documentation comment; describe parameters, results, and detail with `<param>`, `<returns>`, and `<remarks>`. |
 | 🛡️ Reliability | Consume return values. No discarded results, empty catches, null-forgiving operators, or unconditional loops. |
 | ⚡ Concurrency | Use asynchronous composition or Nito.AsyncEx for coordination. No `lock`, framework synchronization primitives, or blocking waits. |

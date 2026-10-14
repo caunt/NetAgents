@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 using NetAgents.Analyzers.Design;
 using NetAgents.Analyzers.Tests.Infrastructure;
 
@@ -26,7 +28,7 @@ public sealed class TupleReturnTypeAnalyzerTests
     )]
     public async Task AllowsTuplesOutsideResultContracts(string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }
@@ -64,7 +66,7 @@ public sealed class TupleReturnTypeAnalyzerTests
             }
             """;
 
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), source);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), source);
 
         Assert.Equal(expected: 2, diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(TupleReturnTypeAnalyzer.RuleIdentifier, diagnostic.Id));
@@ -78,7 +80,7 @@ public sealed class TupleReturnTypeAnalyzerTests
     {
         const string source = "public static unsafe class ExampleType { public static delegate*<(int First, int Second)> Callback; }";
 
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), source, allowUnsafeCode: true);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), source, allowUnsafeCode: true);
 
         Assert.Equal(TupleReturnTypeAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -121,8 +123,8 @@ public sealed class TupleReturnTypeAnalyzerTests
     )]
     public async Task RejectsTupleResultContracts(string source)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), source);
-        Microsoft.CodeAnalysis.Diagnostic diagnostic = Assert.Single(diagnostics);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), source);
+        Diagnostic diagnostic = Assert.Single(diagnostics);
 
         Assert.Equal(TupleReturnTypeAnalyzer.RuleIdentifier, diagnostic.Id);
         Assert.Contains(

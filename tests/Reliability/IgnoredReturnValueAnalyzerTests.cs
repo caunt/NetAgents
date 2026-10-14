@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 using NetAgents.Analyzers.Reliability;
 using NetAgents.Analyzers.Tests.Infrastructure;
 
@@ -63,7 +65,7 @@ public sealed class IgnoredReturnValueAnalyzerTests
     )]
     public async Task AllowsConsumedValuesAndVoidCalls(string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
 
         Assert.Empty(diagnostics);
     }
@@ -87,7 +89,7 @@ public sealed class IgnoredReturnValueAnalyzerTests
     [InlineData("public static int Execute() { int _; int count; (_, count) = (1, 2); return _ + count; }")]
     public async Task RejectsAssignmentsToUnderscoreSymbols(string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -157,7 +159,7 @@ public sealed class IgnoredReturnValueAnalyzerTests
     )]
     public async Task RejectsIgnoredAndDiscardedValues(string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
 
         Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -179,7 +181,7 @@ public sealed class IgnoredReturnValueAnalyzerTests
     )]
     public async Task RejectsLoopDiscards(string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

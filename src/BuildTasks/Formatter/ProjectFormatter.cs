@@ -9,6 +9,7 @@ using Microsoft.Build.Framework;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Formatting;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Text;
@@ -126,7 +127,7 @@ internal static class ProjectFormatter
             ?? throw new InvalidOperationException(message: "The formatting engine's assembly context is unavailable.");
 
         Assembly[] assemblies = [.. MefHostServices.DefaultAssemblies,
-            typeof(Microsoft.CodeAnalysis.CSharp.Formatting.CSharpFormattingOptions).Assembly,
+            typeof(CSharpFormattingOptions).Assembly,
             .. analyzerPaths.Concat(styleFixes).Select(loader.LoadFromPath),
             .. featurePaths.Where(File.Exists).Select(host.LoadFromAssemblyPath)];
 

@@ -29,3 +29,4 @@ NETAGENTS0023 | Formatting | Error | No blank lines directly after an opening br
 NETAGENTS0024 | Design | Error | Dedicated named types for result contracts instead of tuples
 NETAGENTS0025 | Documentation | Error | One summary element per documentation comment
 NETAGENTS0026 | Formatting | Error | No parentheses around a single inferred lambda parameter
+NETAGENTS0027 | Readability | Error | Imported type names instead of namespace-qualified references

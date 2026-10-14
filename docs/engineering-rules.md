@@ -46,6 +46,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0024 | Reject tuple result contracts, including C# tuples, `System.ValueTuple`, `System.Tuple`, and tuples nested inside asynchronous or other wrapper types. Return a dedicated named record, class, or struct instead. |
 | NETAGENTS0025 | Require one `<summary>` element per documentation comment, so a declaration is described once. Describe parameters, results, and detail with `<param>`, `<returns>`, and `<remarks>` instead. |
 | NETAGENTS0026 | Omit the optional parentheses around a lambda's single inferred parameter. Includes an automatic fix and Fix All support. |
+| NETAGENTS0027 | Import a type's namespace and name the type directly instead of writing it fully or partly qualified. Includes an automatic fix and Fix All support, except where the name is already taken. |
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
@@ -146,6 +147,21 @@ Framework synchronization bans cover `Lock`, `Monitor`, `Semaphore`,
 `SemaphoreSlim`, `Mutex`, reader/writer locks, spin locks/waits, reset events,
 wait handles, `CountdownEvent`, and `Barrier`. `Interlocked`, `Volatile`,
 cancellation, concurrent collections, and channels remain available.
+
+A type is named directly rather than written with its namespace, whether the reference is fully or
+only partly qualified. The rule reports a reference only after proving the short form binds to that
+same type and that importing its namespace leaves every other name in the file bound as it was, so
+an accepted fix cannot change what the code means. Namespace declarations, `using` directives,
+`nameof`, alias-qualified names, and qualification by a containing type are left alone. Where the
+short name already refers to something else, only a `using` alias can shorten the reference, and
+naming that alias renames a type for the whole file; the rule reports those references and leaves
+the choice to the author rather than inventing a name. The import is placed with the other
+directives: `System` first, then ordinal order, aliases last. Use **Import the type's namespace** or
+run:
+
+```bash
+dotnet format analyzers --diagnostics NETAGENTS0027
+```
 
 A lambda with one inferred parameter is written without parentheses. They are only optional in that
 one shape, so an empty or multi-parameter list, an explicit parameter type, an attribute, a modifier

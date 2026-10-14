@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 using NetAgents.Analyzers.Tests.Infrastructure;
 using NetAgents.Analyzers.TypeSafety;
 
@@ -20,7 +22,7 @@ public sealed class UntypedValueAnalyzerTests
     )]
     public async Task AllowsFrameworkPrescribedSignatures(string source)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(), source);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(), source);
 
         Assert.Empty(diagnostics);
     }
@@ -31,7 +33,7 @@ public sealed class UntypedValueAnalyzerTests
     [Fact]
     public async Task AllowsStronglyTypedGenericCollections()
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
             new UntypedValueAnalyzer(),
             source: "public class ExampleType { public System.Collections.Generic.List<string> Values { get; } = new(); }"
         );
@@ -54,7 +56,7 @@ public sealed class UntypedValueAnalyzerTests
     [InlineData("public override bool Equals(object? other) { object copy = other!; return copy is null; }")]
     public async Task ReportsUntypedDeclarationsAndInferredValues(string memberSource)
     {
-        Microsoft.CodeAnalysis.Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(), $"public class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(), $"public class ExampleType {{ {memberSource} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == UntypedValueAnalyzer.RuleIdentifier);
     }

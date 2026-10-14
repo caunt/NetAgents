@@ -2,13 +2,15 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.Build.Framework;
 
+using UtilitiesTask = Microsoft.Build.Utilities.Task;
+
 namespace NetAgents.BuildTasks;
 
 /// <summary>
 /// Applies available Roslyn formatting and code fixes directly inside the current MSBuild process.
 /// </summary>
 [SuppressMessage("Performance", "CA1819", Justification = "MSBuild requires item-list task parameters to expose ITaskItem arrays.")]
-public sealed class FormatProject : Microsoft.Build.Utilities.Task, ICancelableTask, IDisposable
+public sealed class FormatProject : UtilitiesTask, ICancelableTask, IDisposable
 {
     private readonly CancellationTokenSource _cancellation = new();
 
