@@ -45,6 +45,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0023 | Forbid blank lines directly after an opening brace or before a closing brace, in every block: type bodies, method and statement blocks, accessor lists, namespaces, enums, switch bodies, initializers, lambdas, and local functions. Includes an automatic fix and Fix All support. |
 | NETAGENTS0024 | Reject tuple result contracts, including C# tuples, `System.ValueTuple`, `System.Tuple`, and tuples nested inside asynchronous or other wrapper types. Return a dedicated named record, class, or struct instead. |
 | NETAGENTS0025 | Require one `<summary>` element per documentation comment, so a declaration is described once. Describe parameters, results, and detail with `<param>`, `<returns>`, and `<remarks>` instead. |
+| NETAGENTS0026 | Omit the optional parentheses around a lambda's single inferred parameter. Includes an automatic fix and Fix All support. |
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
@@ -145,6 +146,16 @@ Framework synchronization bans cover `Lock`, `Monitor`, `Semaphore`,
 `SemaphoreSlim`, `Mutex`, reader/writer locks, spin locks/waits, reset events,
 wait handles, `CountdownEvent`, and `Barrier`. `Interlocked`, `Volatile`,
 cancellation, concurrent collections, and channels remain available.
+
+A lambda with one inferred parameter is written without parentheses. They are only optional in that
+one shape, so an empty or multi-parameter list, an explicit parameter type, an attribute, a modifier
+such as `ref`, a default value, and an explicit return type all keep them. The fix drops the
+whitespace that padded the parentheses and keeps any comment written between them. Use **Drop the
+lambda parameter parentheses** or run:
+
+```bash
+dotnet format analyzers --diagnostics NETAGENTS0026
+```
 
 A documentation comment describes its declaration once. Consecutive comment lines parse into a
 single comment, so a second `<summary>` stacked above a declaration does not document anything new:

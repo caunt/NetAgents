@@ -54,6 +54,12 @@ internal static class CodeFixTestHarness
         return await Fix(source, new ControlFlowBracesAnalyzer(), new ControlFlowBracesCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
+    public static async Task<string> FixLambdaParameters(string source, bool fixAll)
+    {
+        return await Fix(source, new LambdaParameterLayoutAnalyzer(), new LambdaParameterLayoutCodeFixProvider(), fixAll)
+            .ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     public static async Task<string> FixLiteralArgumentNames(string source, bool fixAll)
     {
         return await Fix(source, new ExplicitLiteralArgumentNameAnalyzer(), new ExplicitLiteralArgumentNameCodeFixProvider(), fixAll)

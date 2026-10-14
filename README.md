@@ -50,7 +50,7 @@ Sorting preserves initializer order and storage order in structs and types with 
 | Area | What to expect |
 | --- | --- |
 | 🧩 Type safety | Nullable analysis is required. No boxing, `object`/`dynamic` values, or untyped collections. |
-| 🏗️ Design | Return dedicated named records, classes, or structs instead of tuple result types, including wrapped tuple results. |
+| 🏗️ Design | Return dedicated named records, classes, or structs instead of tuple result types, including wrapped tuple results. Lambdas with one inferred parameter drop the optional parentheses. |
 | 🏷️ Naming and structure | Descriptive names, one top-level type per matching file, files under 1,000 lines, and at most 16 authored C# files per directory. |
 | 📝 Documentation | One `<summary>` per documentation comment; describe parameters, results, and detail with `<param>`, `<returns>`, and `<remarks>`. |
 | 🛡️ Reliability | Consume return values. No discarded results, empty catches, null-forgiving operators, or unconditional loops. |
