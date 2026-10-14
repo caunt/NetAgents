@@ -72,6 +72,11 @@ internal static class QualifiedTypeImport
             if (node is not IdentifierNameSyntax identifier)
                 continue;
 
+            // Only a name the namespace also declares can become a second candidate, and asking it
+            // costs a lookup where binding the identifier costs the compiler a resolution.
+            if (container.GetTypeMembers(identifier.Identifier.ValueText).IsEmpty)
+                continue;
+
             // The import would offer a second candidate for a name this file already resolves
             // elsewhere. A declaration of another arity is never a second candidate for this one.
             if (model.GetSymbolInfo(identifier, cancellationToken).Symbol is not INamedTypeSymbol bound || IsDeclaredIn(container, bound))
