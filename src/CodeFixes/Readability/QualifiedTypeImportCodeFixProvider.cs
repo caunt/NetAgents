@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Threading;
@@ -28,7 +29,13 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return WellKnownFixAllProviders.BatchFixer;
+        // Each reference in a document rewrites the same import list, so a batch of separate edits
+        // conflicts and only part of it survives a pass. Rewriting the document once per pass lets
+        // the whole file settle immediately instead of costing a re-analysis per surviving edit.
+        return FixAllProvider.Create(
+            static async (context, document, diagnostics) =>
+            await ImportAll(document, diagnostics, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+        );
     }
 
     /// <inheritdoc />
@@ -151,6 +158,45 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
         return !resolution.Import
             ? document.WithSyntaxRoot(shortened)
             : document.WithSyntaxRoot(AddImport(shortened, resolution.Container.ToDisplayString(), GetLineEnding(unit)));
+    }
+
+    private static async Task<Document> ImportAll(Document document, ImmutableArray<Diagnostic> diagnostics, CancellationToken cancellationToken)
+    {
+        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        SemanticModel? model = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+        if (root is not CompilationUnitSyntax unit || model is null)
+            return document;
+
+        Dictionary<QualifiedNameSyntax, SimpleNameSyntax> replacements = [];
+        // AddImport skips a namespace already present, so repeats here are harmless and the
+        // sorted insertion keeps the result identical whatever order they arrive in.
+        List<string> imports = [];
+
+        foreach (Diagnostic diagnostic in diagnostics)
+        {
+            QualifiedNameSyntax? name = root.FindNode(diagnostic.Location.SourceSpan) as QualifiedNameSyntax;
+            QualifiedTypeImport.ImportResolution? resolution = name is null ? null : QualifiedTypeImport.Resolve(name, model, cancellationToken);
+
+            if (name is null || resolution is null || resolution.Collides)
+                continue;
+
+            replacements[name] = name.Right.WithTriviaFrom(name);
+
+            if (resolution.Import)
+                imports.Add(resolution.Container.ToDisplayString());
+        }
+
+        if (replacements.Count == 0)
+            return document;
+
+        CompilationUnitSyntax rewritten = unit.ReplaceNodes(replacements.Keys, (original, rewrittenNode) => replacements[original]);
+        SyntaxTrivia lineEnding = GetLineEnding(unit);
+
+        foreach (string imported in imports)
+            rewritten = AddImport(rewritten, imported, lineEnding);
+
+        return document.WithSyntaxRoot(rewritten);
     }
 
     private static bool IsFixable(SyntaxNode root, SemanticModel model, TextSpan diagnosticSpan, CancellationToken cancellationToken)
