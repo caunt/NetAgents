@@ -32,3 +32,4 @@ NETAGENTS0026 | Formatting | Error | No parentheses around a single inferred lam
 NETAGENTS0027 | Readability | Error | Imported type names instead of namespace-qualified references
 NETAGENTS0028 | Documentation | Error | Documentation elements that add to the name they describe
 NETAGENTS0029 | Documentation | Error | Documentation prose inside an element
+NETAGENTS0030 | Documentation | Error | Distinct summaries across overloads sharing a name

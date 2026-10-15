@@ -678,6 +678,17 @@ public sealed class PackageConsumptionTests
 
             await File.WriteAllTextAsync(sourcePath, ValidSource);
 
+            // Two overloads carrying one summary leave a caller with nothing to choose between.
+            string sharedSummarySource = ValidSource.Replace(
+                oldValue: "    public static string CreateGreeting(string recipientName)\n    {\n        return recipientName;\n    }",
+                newValue: "    public static string CreateGreeting(string recipientName)\n    {\n        return recipientName;\n    }\n\n    /// <summary>Returns the supplied recipient name.</summary>\n    /// <param name=\"recipientName\">The name shown in the greeting.</param>\n    /// <param name=\"attempts\">How many times the greeting was tried.</param>\n    /// <returns>The supplied name.</returns>\n    public static string CreateGreeting(string recipientName, int attempts)\n    {\n        return recipientName + attempts.ToString(System.Globalization.CultureInfo.InvariantCulture);\n    }",
+                StringComparison.Ordinal
+            );
+
+            await File.WriteAllTextAsync(sourcePath, sharedSummarySource);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0030");
+            await File.WriteAllTextAsync(sourcePath, ValidSource);
+
             string editorConfigurationPath = Path.Combine(paths: [workspace.FullName, ".editorconfig"]);
 
             string[] conflictingEditorSettings =
@@ -695,6 +706,7 @@ public sealed class PackageConsumptionTests
                 "dotnet_diagnostic.NETAGENTS0027.severity = none",
                 "dotnet_diagnostic.NETAGENTS0028.severity = none",
                 "dotnet_diagnostic.NETAGENTS0029.severity = none",
+                "dotnet_diagnostic.NETAGENTS0030.severity = none",
                 "dotnet_diagnostic.IDE0005.severity = none",
                 "dotnet_diagnostic.IDE0059.severity = none",
                 "dotnet_diagnostic.CS1591.severity = none",
