@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Tests.Infrastructure;
@@ -26,6 +27,33 @@ public sealed class ArgumentLayoutAnalyzerTests
     public async Task AcceptsValidLayouts(string source)
     {
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source));
+    }
+
+    /// <summary>
+    /// Decides a one-line list exactly as its normalized text does, across the whole length boundary.
+    /// </summary>
+    /// <remarks>
+    /// The analyzer brackets the normalized length by the token widths instead of building that
+    /// text, so the risk is a bound that is wrong rather than one that is slow. A list written on
+    /// one line is reported precisely when it cannot stay there, which makes the diagnostic a
+    /// direct read of that decision and a bound that is too tight fail here.
+    /// </remarks>
+    /// <param name="trailer">Content placed before the second parameter, inside the list.</param>
+    [Theory]
+    [InlineData("")]
+    [InlineData("/* Explanation */ ")]
+    [InlineData("/* One */ /* Two */ ")]
+    public async Task DecidesOneLineListsAsTheirNormalizedTextDoes(string trailer)
+    {
+        ArgumentNullException.ThrowIfNull(trailer);
+
+        for (int width = 100; width <= 150; width++)
+        {
+            string source = $"public class ExampleType {{ public void Execute(string {new string(c: 'a', width)}, {trailer}int count) {{ }} }}";
+            Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source);
+
+            Assert.Equal(ExceedsOneLine(source), diagnostics.Length > 0);
+        }
     }
 
     /// <summary>
@@ -67,6 +95,23 @@ public sealed class ArgumentLayoutAnalyzerTests
         Diagnostic[] expandedDiagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), expanded);
 
         Assert.Equal(length > 128 ? 0 : 1, expandedDiagnostics.Length);
+    }
+
+    /// <summary>
+    /// Expands a list whose own literal carries a line break, which no length bound can decide.
+    /// </summary>
+    [Fact]
+    public async Task ExpandsListsHoldingAMultilineLiteral()
+    {
+        const string literal = "@\"verbatim\nsecond line\"";
+        string compact = $"public class ExampleType {{ public void Execute(string value = {literal}) {{ }} }}";
+        string expanded = $"public class ExampleType {{ public void Execute(\nstring value = {literal}\n) {{ }} }}";
+
+        Assert.Equal(
+            ArgumentLayoutAnalyzer.RuleIdentifier,
+            Assert.Single(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), compact)).Id
+        );
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), expanded));
     }
 
     /// <summary>
@@ -136,5 +181,22 @@ public sealed class ArgumentLayoutAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), $"public record ExampleType({parameters});");
 
         Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    // What the analyzer decided before the bound existed: normalize the list and measure the result.
+    private static bool ExceedsOneLine(string source)
+    {
+        SyntaxNode root = CSharpSyntaxTree.ParseText(source).GetRoot();
+        SyntaxNode list = Assert.Single(root.DescendantNodes().Where(static node => node.IsKind(SyntaxKind.ParameterList)).ToArray());
+        string compact = list.WithoutTrivia().NormalizeWhitespace(indentation: "", eol: " ").ToFullString();
+        bool hasInlineComment = false;
+
+        foreach (SyntaxTrivia trivia in list.DescendantTrivia())
+        {
+            if (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) && list.Span.Contains(trivia.SpanStart))
+                hasInlineComment = true;
+        }
+
+        return compact.Length - 2 > 128 || compact.IndexOfAny(['\r', '\n']) >= 0 || hasInlineComment;
     }
 }

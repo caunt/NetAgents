@@ -10,6 +10,8 @@ internal static class ArgumentLayout
 {
     internal const string RuleIdentifier = "NETAGENTS0020";
 
+    private static readonly char[] LineBreaks = ['\r', '\n', '\u0085', '\u2028', '\u2029'];
+
     internal static bool CanFix(SyntaxNode list)
     {
         return !list.ContainsDirectives && list.DescendantTrivia().All(
@@ -56,11 +58,12 @@ internal static class ArgumentLayout
     internal static bool HasExpectedLayout(SyntaxNode list, SourceText source)
     {
         SyntaxNode[] items = [.. list.ChildNodes()];
+        bool multiple = RequiresMultipleLines(list);
 
-        if (items.Length == 0 && RequiresMultipleLines(list))
+        if (items.Length == 0 && multiple)
             return true;
 
-        if (!RequiresMultipleLines(list))
+        if (!multiple)
             return GetLine(source, list.SpanStart) == GetLine(source, list.Span.End);
 
         int previousEnd = list.GetFirstToken().Span.End;
@@ -84,20 +87,76 @@ internal static class ArgumentLayout
 
     internal static bool RequiresMultipleLines(SyntaxNode list)
     {
-        string compact = GetCompactText(list);
+        LineFitMeasurement measurement = Measure(list);
 
         // Only trivia the compact text reproduces matters; trivia outside the delimiters stays where it is.
-        bool hasInlineComment = list.DescendantTrivia()
-            .Any(trivia => trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) && list.Span.Contains(trivia.SpanStart));
+        if (measurement.HasInlineComment || measurement.HasTokenLineBreak)
+            return true;
 
-        return compact.Length - 2 > LayoutLimits.MaximumInlineLength
-            || compact.IndexOfAny(['\r', '\n', '\u0085', '\u2028', '\u2029']) >= 0
-            || hasInlineComment;
+        // Normalizing keeps every token and puts at most one space between neighbours, so the token
+        // widths bracket the compact length and usually settle the comparison without building it.
+        // A block comment is the exception: WithoutTrivia only strips the list's own outer trivia,
+        // so a comment on an inner token survives into that text and outruns the upper bound.
+        if (!measurement.HasBlockComment)
+        {
+            if (measurement.Width - 2 > LayoutLimits.MaximumInlineLength)
+                return true;
+
+            if (measurement.Width + measurement.Tokens - 2 <= LayoutLimits.MaximumInlineLength)
+                return false;
+        }
+
+        string compact = GetCompactText(list);
+
+        return compact.Length - 2 > LayoutLimits.MaximumInlineLength || compact.IndexOfAny(LineBreaks) >= 0;
+    }
+
+    private static void Classify(SyntaxNode list, SyntaxTrivia trivia, ref bool blockComment, ref bool inlineComment)
+    {
+        if (!list.Span.Contains(trivia.SpanStart))
+            return;
+
+        SyntaxKind kind = trivia.Kind();
+        bool documentation = kind is SyntaxKind.SingleLineDocumentationCommentTrivia or SyntaxKind.MultiLineDocumentationCommentTrivia;
+
+        if (kind is SyntaxKind.SingleLineCommentTrivia)
+            inlineComment = true;
+        else if (documentation || kind is SyntaxKind.MultiLineCommentTrivia)
+            blockComment = true;
     }
 
     private static int GetLine(SourceText source, int position)
     {
         return source.Lines.GetLineFromPosition(position).LineNumber;
+    }
+
+    // One walk over the tokens answers everything the bracket needs: their combined width, how many
+    // gaps normalizing could widen, a line break written inside a literal, and the comments that
+    // either force multiple lines outright or put the compact text beyond the bracket.
+    private static LineFitMeasurement Measure(SyntaxNode list)
+    {
+        bool blockComment = false;
+        bool inlineComment = false;
+        bool lineBreak = false;
+        int tokens = 0;
+        int width = 0;
+
+        foreach (SyntaxToken token in list.DescendantTokens())
+        {
+            tokens++;
+            width += token.Text.Length;
+
+            if (!lineBreak && token.Text.IndexOfAny(LineBreaks) >= 0)
+                lineBreak = true;
+
+            foreach (SyntaxTrivia trivia in token.LeadingTrivia)
+                Classify(list, trivia, ref blockComment, ref inlineComment);
+
+            foreach (SyntaxTrivia trivia in token.TrailingTrivia)
+                Classify(list, trivia, ref blockComment, ref inlineComment);
+        }
+
+        return new(blockComment, inlineComment, lineBreak, tokens, width);
     }
 
     private static TextChange SeparateItems(SourceText source, int start, int end, string newline, string indentation)
@@ -107,5 +166,18 @@ internal static class ArgumentLayout
         string replacement = comments.Length == 0 ? newline + indentation : newline + indentation + comments + newline + indentation;
 
         return new TextChange(span, replacement);
+    }
+
+    private readonly struct LineFitMeasurement(bool blockComment, bool inlineComment, bool lineBreak, int tokens, int width)
+    {
+        public bool HasBlockComment { get; } = blockComment;
+
+        public bool HasInlineComment { get; } = inlineComment;
+
+        public bool HasTokenLineBreak { get; } = lineBreak;
+
+        public int Tokens { get; } = tokens;
+
+        public int Width { get; } = width;
     }
 }
