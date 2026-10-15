@@ -440,7 +440,9 @@ public sealed class PackageConsumptionTests
                 withoutShell: true
             );
 
-            Assert.False(File.Exists(cachePath));
+            // A diagnostic no fix repairs is a finished run: the formatting is recorded so the next
+            // build reuses it, and the compiler reports the diagnostic again from the same source.
+            Assert.True(File.Exists(cachePath));
 
             // The failing build kept its rewrite, which is why the report has to name it.
             Assert.Contains(

@@ -253,7 +253,10 @@ internal static class ProjectFormatter
 
         Report(inputs, rewritten, codeFixes);
 
-        return codeFixes.Blocking.IsEmpty && analyzerCatalog.Unavailable.Length == 0 && !analyzerFault && !inputs.Log.HasLoggedErrors;
+        // A diagnostic no fix repairs is a finished run, not a failed one: the compiler reports it
+        // again and fails the build either way. Only a formatter that could not do its work keeps
+        // the result out of the cache, because that is what another run might do differently.
+        return analyzerCatalog.Unavailable.Length == 0 && !analyzerFault && !inputs.Log.HasLoggedErrors;
     }
 
     private static string GetDisplayPath(string projectDirectory, string path)
