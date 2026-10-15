@@ -52,6 +52,34 @@ public sealed class CodeFixPerformanceTests
             Assert.Contains(messages, static message => message.Contains(value: "rejected PERF0001 action", StringComparison.Ordinal));
     }
 
+    /// <summary>Rejects a project-wide action once even while accepted fixes keep changing the project.</summary>
+    [Fact]
+    public async Task RejectsAProjectWideActionOncePerRun()
+    {
+        using AdhocWorkspace workspace = new();
+
+        Project project = CreateDriftProject(workspace);
+        DriftingAnalyzer analyzer = new();
+        List<string> messages = [];
+
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
+            project,
+            [analyzer],
+            [new DriftFix(), new AdvanceFix()],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None,
+            new(project.Name, messages.Add)
+        );
+
+        // Every pass changes Step.cs, so the rejected candidate is never the one the validation cache
+        // remembers. Only skipping the action outright keeps the later passes from revalidating it.
+        Assert.True(result.Blocking.IsEmpty);
+        Assert.Equal(expected: 1, messages.Count(static message => message.Contains(value: "rejected PERF0007", StringComparison.Ordinal)));
+        Assert.Equal(expected: 5, analyzer.Runs);
+        Assert.Contains(expectedSubstring: "=> 3;", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
+    }
+
     /// <summary>Reports the malformed switch before formatting or invoking any analyzer or fix.</summary>
     /// <param name="fileName">An authored or generated source containing the parse error.</param>
     [Theory]
@@ -128,6 +156,19 @@ public sealed class CodeFixPerformanceTests
         Assert.Equal(expected: 4, analyzer.Runs);
     }
 
+    private static Project CreateDriftProject(AdhocWorkspace workspace)
+    {
+        return workspace.AddProject(name: "Drifting", LanguageNames.CSharp)
+            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+            .AddMetadataReferences(AnalyzerTestHarness.References)
+            .AddDocument(name: "Step.cs", SourceText.From(text: "internal static class Step { internal static int Read() => 0; }\n"), filePath: "Step.cs").Project
+            .AddDocument(
+                name: "Drift.cs",
+                SourceText.From(text: "internal static class Drift { internal static int Read() => 7; }\n"),
+                filePath: "Drift.cs"
+            ).Project;
+    }
+
     private static Project CreateProject(AdhocWorkspace workspace)
     {
         return workspace.AddProject(name: "Performance", LanguageNames.CSharp)
@@ -139,6 +180,30 @@ public sealed class CodeFixPerformanceTests
                 SourceText.From(text: "internal static class Suggestion { internal static int Read() => 1; }\n"),
                 filePath: "Suggestion.cs"
             ).Project;
+    }
+
+    private sealed class AdvanceFix : CodeFixProvider
+    {
+        public override ImmutableArray<string> FixableDiagnosticIds => ["PERF0008"];
+
+        public override Task RegisterCodeFixesAsync(CodeFixContext context)
+        {
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    title: "Advance the step",
+                    async cancellationToken =>
+                    {
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                        string next = text.ToString(context.Span) switch { "0" => "1", "1" => "2", _ => "3" };
+
+                        return context.Document.WithText(text.WithChanges(new TextChange(context.Span, next)));
+                    }
+                ),
+                context.Diagnostics
+            );
+
+            return Task.CompletedTask;
+        }
     }
 
     [SuppressMessage(
@@ -206,6 +271,117 @@ public sealed class CodeFixPerformanceTests
                 }
             }
             );
+        }
+    }
+
+    // Breaking the drift file reports an analyzer error rather than a compiler one, so validating
+    // this candidate costs a full analyzer run. That is what the run-wide rejection has to avoid.
+    private sealed class DriftFix : CodeFixProvider
+    {
+        public override ImmutableArray<string> FixableDiagnosticIds => ["PERF0007"];
+
+        public override FixAllProvider GetFixAllProvider()
+        {
+            return WellKnownFixAllProviders.BatchFixer;
+        }
+
+        public override Task RegisterCodeFixesAsync(CodeFixContext context)
+        {
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    title: "Break the drift file",
+                    async cancellationToken =>
+                    {
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                        return context.Document.WithText(SourceText.From(text.ToString().Replace(oldValue: "=> 7;", newValue: "=> 8;", StringComparison.Ordinal)));
+                    },
+                    equivalenceKey: "BreakDrift"
+                ),
+                context.Diagnostics
+            );
+
+            return Task.CompletedTask;
+        }
+    }
+
+    [SuppressMessage(
+        "MicrosoftCodeAnalysisCorrectness",
+        "RS1001",
+        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts."
+    )]
+    [SuppressMessage(
+        "MicrosoftCodeAnalysisReleaseTracking",
+        "RS2008",
+        Justification = "These private instrumentation rules are only used in tests and are not shipped."
+    )]
+    private sealed class DriftingAnalyzer : DiagnosticAnalyzer
+    {
+        private static readonly DiagnosticDescriptor AdvanceRule = new(
+            id: "PERF0008",
+            title: "Advance the step",
+            messageFormat: "Advance the step",
+            category: "Testing",
+            DiagnosticSeverity.Info,
+            isEnabledByDefault: true,
+            customTags: [WellKnownDiagnosticTags.CompilationEnd]
+        );
+
+        private static readonly DiagnosticDescriptor BrokenRule = new(
+            id: "PERF0009",
+            title: "Broken drift file",
+            messageFormat: "Broken drift file",
+            category: "Testing",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            customTags: [WellKnownDiagnosticTags.CompilationEnd]
+        );
+
+        private static readonly DiagnosticDescriptor DriftRule = new(
+            id: "PERF0007",
+            title: "Drift candidate",
+            messageFormat: "Drift candidate",
+            category: "Testing",
+            DiagnosticSeverity.Info,
+            isEnabledByDefault: true,
+            customTags: [WellKnownDiagnosticTags.CompilationEnd]
+        );
+
+        public int Runs { get; private set; }
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [AdvanceRule, BrokenRule, DriftRule];
+
+        public override void Initialize(AnalysisContext context)
+        {
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.EnableConcurrentExecution();
+            context.RegisterCompilationAction(
+                compilation =>
+                {
+                    Runs++;
+                    SyntaxTree[] trees = [.. compilation.Compilation.SyntaxTrees];
+                    SyntaxTree drift = trees.Single(static tree => tree.FilePath == "Drift.cs");
+                    SyntaxTree step = trees.Single(static tree => tree.FilePath == "Step.cs");
+
+                    SyntaxToken drifted = FindNumber(drift);
+
+                    // The broken state still compiles, so rejecting it costs a full analyzer run.
+                    if (drifted.ValueText == "8")
+                        compilation.ReportDiagnostic(Diagnostic.Create(BrokenRule, drifted.GetLocation()));
+                    else
+                        compilation.ReportDiagnostic(Diagnostic.Create(DriftRule, drifted.GetLocation()));
+
+                    SyntaxToken token = FindNumber(step);
+
+                    if (token.ValueText != "3")
+                        compilation.ReportDiagnostic(Diagnostic.Create(AdvanceRule, token.GetLocation()));
+                }
+            );
+        }
+
+        private static SyntaxToken FindNumber(SyntaxTree tree)
+        {
+            return tree.GetRoot().DescendantTokens().Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
         }
     }
 

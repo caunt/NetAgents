@@ -17,6 +17,10 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 public sealed class FormattingAnalysisTests
 {
     /// <summary>Retains rejections while different accepted optional fixes advance the project.</summary>
+    /// <remarks>
+    /// The run now skips a rejected project-wide action at the scan, so its validation is never
+    /// reached a second time and the cache inside the analysis has nothing left to report here.
+    /// </remarks>
     [Fact]
     public async Task CachesRejectionsAcrossFormattingPasses()
     {
@@ -37,7 +41,8 @@ public sealed class FormattingAnalysisTests
 
         Assert.True(result.Blocking.IsEmpty);
         Assert.Equal(expected: 4, analyzer.Runs);
-        Assert.Equal(expected: 2, messages.Count(static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal)));
+        Assert.Equal(expected: 1, messages.Count(static message => message.Contains(value: "rejected PERF0004", StringComparison.Ordinal)));
+        Assert.DoesNotContain(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
         Assert.Contains(expectedSubstring: "=> 4;", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
     }
 

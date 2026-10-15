@@ -43,6 +43,11 @@ internal static class CodeFixRunner
         await FormattingSyntax.Verify(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         FormattingAnalysis analysis = new(analyzers, OnAnalyzerException, progress);
+
+        // A project-wide action rejected once stays rejected for the rest of the run. Validating it
+        // again costs a full analysis per pass, and only an optional suggestion can land here: a
+        // candidate offered for an error fails the build above instead of being dropped.
+        HashSet<string> rejectedFixAllActions = [];
         ImmutableHashSet<DocumentId> editable = [];
 
         foreach (Document document in project.Documents)
@@ -83,7 +88,7 @@ internal static class CodeFixRunner
             if (!states.Add(fingerprint))
                 throw Failure(reason: "repeated a project state without stabilizing", attempt, diagnostics);
 
-            CodeActionApplication application = await ApplyAvailableFix(project, diagnostics, providers, editable, analysis, progress, cancellationToken)
+            CodeActionApplication application = await ApplyAvailableFix(project, diagnostics, providers, editable, analysis, rejectedFixAllActions, progress, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             attempt = application.Attempt;
@@ -127,12 +132,12 @@ internal static class CodeFixRunner
         CodeFixProvider[] providers,
         ImmutableHashSet<DocumentId> editable,
         FormattingAnalysis analysis,
+        HashSet<string> rejectedFixAllActions,
         FormattingProgress progress,
         CancellationToken cancellationToken
     )
     {
         string? attempt = null;
-        HashSet<string> rejectedFixAllActions = [];
 
         CodeActionApplication collision = await AvoidNamingCollisions(project, diagnostics, editable, cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
