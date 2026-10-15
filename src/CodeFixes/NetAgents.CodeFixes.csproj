@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
     <ProjectReference Include="../BuildTasks/NetAgents.BuildTasks.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" PrivateAssets="all" />
+    <Compile Include="../Documentation/DocumentationProse.cs" Link="Documentation/DocumentationProse.cs" />
     <Compile Include="../Ordering/MemberOrdering.cs" Link="Ordering/MemberOrdering.cs" />
     <Compile Include="../Readability/ExplicitLiteralArgumentName.cs" Link="Readability/ExplicitLiteralArgumentName.cs" />
     <Compile Include="../Readability/QualifiedTypeImport.cs" Link="Readability/QualifiedTypeImport.cs" />

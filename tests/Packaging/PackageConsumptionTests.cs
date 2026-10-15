@@ -659,6 +659,25 @@ public sealed class PackageConsumptionTests
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0028");
             await File.WriteAllTextAsync(sourcePath, ValidSource);
 
+            // Prose written outside every element satisfies CS1591 and reaches no generated page,
+            // so the fix encloses it and the build that follows has nothing left to report.
+            string looseProseSource = ValidSource.Replace(
+                oldValue: "/// <summary>Provides the consumer entry point.</summary>",
+                newValue: "/// Provides the entry point every consumer build starts from.",
+                StringComparison.Ordinal
+            );
+
+            await File.WriteAllTextAsync(sourcePath, looseProseSource);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+
+            Assert.Contains(
+                expectedSubstring: "/// <summary>Provides the entry point every consumer build starts from.</summary>",
+                await File.ReadAllTextAsync(sourcePath),
+                StringComparison.Ordinal
+            );
+
+            await File.WriteAllTextAsync(sourcePath, ValidSource);
+
             string editorConfigurationPath = Path.Combine(paths: [workspace.FullName, ".editorconfig"]);
 
             string[] conflictingEditorSettings =
@@ -675,6 +694,7 @@ public sealed class PackageConsumptionTests
                 "dotnet_diagnostic.NETAGENTS0026.severity = none",
                 "dotnet_diagnostic.NETAGENTS0027.severity = none",
                 "dotnet_diagnostic.NETAGENTS0028.severity = none",
+                "dotnet_diagnostic.NETAGENTS0029.severity = none",
                 "dotnet_diagnostic.IDE0005.severity = none",
                 "dotnet_diagnostic.IDE0059.severity = none",
                 "dotnet_diagnostic.CS1591.severity = none",

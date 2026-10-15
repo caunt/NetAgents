@@ -9,9 +9,11 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
+using NetAgents.Analyzers.CodeFixes.Documentation;
 using NetAgents.Analyzers.CodeFixes.Formatting;
 using NetAgents.Analyzers.CodeFixes.Ordering;
 using NetAgents.Analyzers.CodeFixes.Readability;
+using NetAgents.Analyzers.Documentation;
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Ordering;
 using NetAgents.Analyzers.Readability;
@@ -52,6 +54,12 @@ internal static class CodeFixTestHarness
     public static async Task<string> FixBraces(string source, bool fixAll)
     {
         return await Fix(source, new ControlFlowBracesAnalyzer(), new ControlFlowBracesCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixDocumentationProse(string source)
+    {
+        return await Fix(source, new DocumentationProseAnalyzer(), new DocumentationProseCodeFixProvider(), fixAll: false)
+            .ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<string> FixLambdaParameters(string source, bool fixAll)

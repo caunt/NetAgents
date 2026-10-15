@@ -31,3 +31,4 @@ NETAGENTS0025 | Documentation | Error | One summary element per documentation co
 NETAGENTS0026 | Formatting | Error | No parentheses around a single inferred lambda parameter
 NETAGENTS0027 | Readability | Error | Imported type names instead of namespace-qualified references
 NETAGENTS0028 | Documentation | Error | Documentation elements that add to the name they describe
+NETAGENTS0029 | Documentation | Error | Documentation prose inside an element
