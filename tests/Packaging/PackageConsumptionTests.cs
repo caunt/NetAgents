@@ -63,7 +63,7 @@ public sealed class PackageConsumptionTests
         public static class ExampleService
         {
             /// <summary>Returns the supplied recipient name.</summary>
-            /// <param name="recipientName">The name to return.</param>
+            /// <param name="recipientName">The name shown in the greeting.</param>
             /// <returns>The supplied name.</returns>
             public static string CreateGreeting(string recipientName)
             {
@@ -167,7 +167,7 @@ public sealed class PackageConsumptionTests
 
             string conditionalAssignments = ValidSource
                 .Replace(
-                    oldValue: "<param name=\"recipientName\">The name to return.</param>",
+                    oldValue: "<param name=\"recipientName\">The name shown in the greeting.</param>",
                     newValue: "<param name=\"builder\">The optional builder.</param>\n    /// <param name=\"length\">The required length.</param>",
                     StringComparison.Ordinal
                 )
@@ -645,6 +645,20 @@ public sealed class PackageConsumptionTests
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS1591");
             await File.WriteAllTextAsync(sourcePath, ValidSource);
 
+            // A summary assembled from the member's own words documents nothing either, and unlike a
+            // missing one it satisfies CS1591, so only this rule stands between it and the build.
+            string emptySummarySource = ValidSource.Replace(
+                oldValue: "/// <summary>Provides the consumer entry point.</summary>",
+                newValue: "/// <summary>Provides the Example Service value or operation.</summary>",
+                StringComparison.Ordinal
+            );
+
+            await File.WriteAllTextAsync(sourcePath, emptySummarySource);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0028");
+            await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0028\n" + emptySummarySource);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0028");
+            await File.WriteAllTextAsync(sourcePath, ValidSource);
+
             string editorConfigurationPath = Path.Combine(paths: [workspace.FullName, ".editorconfig"]);
 
             string[] conflictingEditorSettings =
@@ -660,6 +674,7 @@ public sealed class PackageConsumptionTests
                 "dotnet_diagnostic.NETAGENTS0025.severity = none",
                 "dotnet_diagnostic.NETAGENTS0026.severity = none",
                 "dotnet_diagnostic.NETAGENTS0027.severity = none",
+                "dotnet_diagnostic.NETAGENTS0028.severity = none",
                 "dotnet_diagnostic.IDE0005.severity = none",
                 "dotnet_diagnostic.IDE0059.severity = none",
                 "dotnet_diagnostic.CS1591.severity = none",

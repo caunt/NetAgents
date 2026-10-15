@@ -18,8 +18,8 @@ public sealed class UnrepairableDiagnosticCacheTests
         {
             /// <summary>Returns the supplied recipient name.</summary>
             /// <summary>Describes the same declaration a second time.</summary>
-            /// <param name="recipientName">The recipient name.</param>
-            /// <returns>The recipient name.</returns>
+            /// <param name="recipientName">The name shown in the greeting.</param>
+            /// <returns>The greeting text.</returns>
             public static string CreateGreeting(
                 string recipientName)
             {

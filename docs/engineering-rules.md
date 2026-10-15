@@ -47,6 +47,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0025 | Require one `<summary>` element per documentation comment, so a declaration is described once. Describe parameters, results, and detail with `<param>`, `<returns>`, and `<remarks>` instead. |
 | NETAGENTS0026 | Omit the optional parentheses around a lambda's single inferred parameter. Includes an automatic fix and Fix All support. |
 | NETAGENTS0027 | Import a type's namespace and name the type directly instead of writing it fully or partly qualified. Includes an automatic fix and Fix All support, except where the name is already taken. |
+| NETAGENTS0028 | Require a `<summary>`, `<param>`, or `<typeparam>` element to say something the name it describes does not already say. A description built only from the name's own words, from documentation boilerplate, or left empty is rejected. Comments carrying `<inheritdoc>` are exempt. No automatic fix: the wording is the author's. |
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
