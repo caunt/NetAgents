@@ -135,7 +135,10 @@ public sealed class PackageConsumptionTests
             await VerifySyntaxErrors(workspace.FullName, sourcePath, projectPath);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             string formatted = await File.ReadAllTextAsync(sourcePath);
-            Assert.Contains(expectedSubstring: "namespace CustomerApp.Features;", formatted, StringComparison.Ordinal);
+            // Moving a public type to another namespace is an API change the projects that
+            // reference this one would only discover when they failed to compile (#36).
+            Assert.Contains(expectedSubstring: "namespace Consumer.Features;", formatted, StringComparison.Ordinal);
+            Assert.DoesNotContain(expectedSubstring: "namespace CustomerApp.Features;", formatted, StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "CreateGreeting(string recipientName)", formatted, StringComparison.Ordinal);
             Assert.True(
                 formatted.IndexOf(value: "AlphaAction", StringComparison.Ordinal) < formatted.IndexOf(value: "ZebraAction", StringComparison.Ordinal)
@@ -297,8 +300,9 @@ public sealed class PackageConsumptionTests
                 StringComparison.Ordinal
             );
 
-            // Unrelated fixes still apply, so the expectation is the namespace repair and nothing else.
-            string expectedUnresolved = unresolvedSource.Replace(oldValue: "namespace Consumer.Features;", newValue: "namespace CustomerApp.Features;", StringComparison.Ordinal);
+            // Nothing else here needs repairing, and the namespace is left to its author (#36),
+            // so a run that reports the compiler error must leave the file exactly as written.
+            string expectedUnresolved = unresolvedSource;
 
             await File.WriteAllTextAsync(sourcePath, unresolvedSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS0103", withoutShell: true);

@@ -204,6 +204,22 @@ from renaming their prescribed member names, and `NETAGENTS0002` likewise
 accepts the `object` parameters and results those signatures prescribe. Referencing existing framework
 names does not require renaming framework APIs.
 
+## Automatic formatting and the public API
+
+The formatter validates a candidate fix by reanalyzing the project it is
+formatting. It runs before that project compiles, and the projects that
+reference it are neither built nor visible, so a fix that changes what other
+assemblies can name cannot be checked that way at all.
+
+A fix is therefore refused when it moves a type to another namespace and the
+file declares a type outside the assembly can name: one declared `public`, or
+any top-level type when the assembly carries `InternalsVisibleTo`. In practice
+this is `IDE0130`, "change namespace to match folder structure", which
+otherwise renames public namespaces on the strength of a project that still
+compiles on its own and breaks every project referencing it. The diagnostic is
+still reported, so moving the file or the namespace stays an author's decision.
+Internal types in an assembly that shares nothing are moved as before.
+
 ## Shared editor configuration
 
 The shared C# preferences come from Microsoft's built-in

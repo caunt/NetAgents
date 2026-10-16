@@ -66,6 +66,21 @@ public sealed class CodeFixRunnerTests
         );
     }
 
+    /// <summary>Moves an internal type when nothing outside the assembly can name it.</summary>
+    [Fact]
+    public async Task MovesInternalTypesWhenTheAssemblyKeepsThemToItself()
+    {
+        using AdhocWorkspace workspace = new();
+
+        Project project = CreateNamespacedProject(workspace, accessibility: "internal", internalsShared: false);
+        MarkerAnalyzer analyzer = new();
+
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, [analyzer], [new NamespaceFix()], static fault => Assert.Fail(fault), CancellationToken.None);
+
+        string formatted = (await result.Project.Documents.First().GetTextAsync()).ToString();
+        Assert.Contains(expectedSubstring: "namespace Consumer.Nested;", formatted, StringComparison.Ordinal);
+    }
+
     /// <summary>Never offers a build-failing compiler error to a code-fix provider, leaving the compiler to report it.</summary>
     /// <param name="body">The member and statement text the compiler rejects.</param>
     /// <param name="survivor">The rejected text the formatter must leave in place.</param>
@@ -292,6 +307,35 @@ public sealed class CodeFixRunnerTests
         Assert.Equal(expected: 1, provider.Attempts);
     }
 
+    /// <summary>Refuses to move a public type to another namespace, which no later project can see.</summary>
+    /// <param name="accessibility">The accessibility of the type the fix would move.</param>
+    [Theory]
+    [InlineData("public")]
+    [InlineData("internal")]
+    public async Task RefusesToMoveTypesOtherProjectsCanName(string accessibility)
+    {
+        using AdhocWorkspace workspace = new();
+
+        Project project = CreateNamespacedProject(workspace, accessibility, internalsShared: true);
+        MarkerAnalyzer analyzer = new();
+        List<string> messages = [];
+
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
+            project,
+            [analyzer],
+            [new NamespaceFix()],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None,
+            new(project.Name, messages.Add)
+        );
+
+        string formatted = (await result.Project.Documents.First().GetTextAsync()).ToString();
+        Assert.Contains(expectedSubstring: "namespace Consumer;", formatted, StringComparison.Ordinal);
+        Assert.DoesNotContain(expectedSubstring: "namespace Consumer.Nested;", formatted, StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "private static int Value;", formatted, StringComparison.Ordinal);
+        Assert.Contains(messages, static message => message.Contains(value: "other projects can name", StringComparison.Ordinal));
+    }
+
     /// <summary>Rejects new compiler errors before accepting an automatic fix.</summary>
     [Theory]
     [InlineData("", "0 = 1;", "CS0131")]
@@ -454,6 +498,24 @@ public sealed class CodeFixRunnerTests
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Example.cs", SourceText.From(source), filePath: "Example.cs").Project;
+    }
+
+    private static Project CreateNamespacedProject(AdhocWorkspace workspace, string accessibility, bool internalsShared)
+    {
+        string source = "namespace Consumer;\n\n" + accessibility + " sealed class Moved\n{\n    private static int Value;\n}\n";
+
+        Project project = workspace.AddProject(name: "Namespaces", LanguageNames.CSharp)
+            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+            .AddMetadataReferences(AnalyzerTestHarness.References)
+            .AddDocument(name: "Moved.cs", SourceText.From(source), filePath: "Moved.cs").Project;
+
+        return !internalsShared
+            ? project
+            : project.AddDocument(
+                name: "Visibility.cs",
+                SourceText.From(text: "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"Friend\")]\n"),
+                filePath: "Visibility.cs"
+            ).Project;
     }
 
     private static Project CreateProject(AdhocWorkspace workspace)
@@ -647,6 +709,35 @@ public sealed class CodeFixRunnerTests
 
                 return context.Document.WithText(SourceText.From(text.ToString().Replace(replaced, replacement, StringComparison.Ordinal)));
             }
+                ),
+                context.Diagnostics
+            );
+
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class NamespaceFix : CodeFixProvider
+    {
+        public override ImmutableArray<string> FixableDiagnosticIds => [MarkerAnalyzer.Identifier];
+
+        public override Task RegisterCodeFixesAsync(CodeFixContext context)
+        {
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    title: "Move the type to a nested namespace",
+                    async cancellationToken =>
+                    {
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                        // Repairing the marker too lets an accepted move settle, so the run ends on
+                        // the moved namespace rather than on a fix that keeps being offered.
+                        string moved = text.ToString()
+                            .Replace(oldValue: "namespace Consumer;", newValue: "namespace Consumer.Nested;", StringComparison.Ordinal)
+                            .Replace(oldValue: "private static int Value;", newValue: "public static int Value;", StringComparison.Ordinal);
+
+                        return context.Document.WithText(SourceText.From(moved));
+                    }
                 ),
                 context.Diagnostics
             );

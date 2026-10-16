@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Rename;
@@ -48,6 +49,7 @@ internal static class CodeFixRunner
         // again costs a full analysis per pass, and only an optional suggestion can land here: a
         // candidate offered for an error fails the build above instead of being dropped.
         HashSet<string> rejectedFixAllActions = [];
+        bool internalsShared = await SharesInternals(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
         ImmutableHashSet<DocumentId> editable = [];
 
         foreach (Document document in project.Documents)
@@ -88,7 +90,7 @@ internal static class CodeFixRunner
             if (!states.Add(fingerprint))
                 throw Failure(reason: "repeated a project state without stabilizing", attempt, diagnostics);
 
-            CodeActionApplication application = await ApplyAvailableFix(project, diagnostics, providers, editable, analysis, rejectedFixAllActions, progress, cancellationToken)
+            CodeActionApplication application = await ApplyAvailableFix(project, diagnostics, providers, editable, analysis, rejectedFixAllActions, internalsShared, progress, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             attempt = application.Attempt;
@@ -133,6 +135,7 @@ internal static class CodeFixRunner
         ImmutableHashSet<DocumentId> editable,
         FormattingAnalysis analysis,
         HashSet<string> rejectedFixAllActions,
+        bool internalsShared,
         FormattingProgress progress,
         CancellationToken cancellationToken
     )
@@ -230,6 +233,22 @@ internal static class CodeFixRunner
 
                     if (!supported)
                         continue;
+
+                    // Moving a type other assemblies can name is an API change, not formatting. The
+                    // validation below only ever sees this project, and the projects that reference it
+                    // are not built yet, so an accepted move compiles here and breaks them afterwards.
+                    bool moves = await MovesVisibleTypes(project, updated, changedDocuments, internalsShared, cancellationToken)
+                        .ConfigureAwait(continueOnCapturedContext: false);
+
+                    if (moves)
+                    {
+                        if (fixAllKey is not null && !rejectedFixAllActions.Add(fixAllKey))
+                            throw new InvalidOperationException(message: "The rejected formatting action was already recorded.");
+
+                        progress.Report($"rejected {diagnostic.Id} action '{preferred.Title}' because it moves a type other projects can name");
+
+                        continue;
+                    }
 
                     string description = $"{diagnostic} — code action '{preferred.Title}'";
 
@@ -374,6 +393,33 @@ internal static class CodeFixRunner
         }
     }
 
+    // A top-level type another assembly can name. Nested types travel with the type that holds
+    // them, so only the outermost declaration decides, and an unmarked one is internal.
+    private static bool DeclaresVisibleType(SyntaxNode root, bool internalsShared)
+    {
+        foreach (SyntaxNode node in root.DescendantNodes())
+        {
+            if (node is not BaseTypeDeclarationSyntax and not DelegateDeclarationSyntax)
+                continue;
+
+            if (node.Parent is TypeDeclarationSyntax)
+                continue;
+
+            SyntaxTokenList modifiers = node is BaseTypeDeclarationSyntax type ? type.Modifiers : ((DelegateDeclarationSyntax)node).Modifiers;
+
+            foreach (SyntaxToken modifier in modifiers)
+            {
+                if (modifier.IsKind(SyntaxKind.PublicKeyword))
+                    return true;
+            }
+
+            if (internalsShared)
+                return true;
+        }
+
+        return false;
+    }
+
     private static InvalidOperationException Failure(string reason, string? attempt, ImmutableArray<Diagnostic> diagnostics)
     {
         List<string> lines = [$"Automatic formatting {reason}."];
@@ -509,6 +555,24 @@ internal static class CodeFixRunner
         }
     }
 
+    // Namespaces that enclose a type declaration. A file whose set changes has moved its types,
+    // whatever else the edit did, and the global namespace is written as the empty string.
+    private static List<string> GetTypeNamespaces(SyntaxNode root)
+    {
+        List<string> namespaces = [];
+
+        foreach (SyntaxNode node in root.DescendantNodes())
+        {
+            if (node is not BaseTypeDeclarationSyntax and not DelegateDeclarationSyntax)
+                continue;
+
+            BaseNamespaceDeclarationSyntax? declaration = node.FirstAncestorOrSelf<BaseNamespaceDeclarationSyntax>();
+            namespaces.Add(declaration?.Name.ToString() ?? string.Empty);
+        }
+
+        return namespaces;
+    }
+
     private static async Task<bool> HasTextChanges(Project before, Project after, DocumentId[] changedDocuments, CancellationToken cancellationToken)
     {
         foreach (DocumentId identifier in changedDocuments)
@@ -535,6 +599,36 @@ internal static class CodeFixRunner
         return diagnostic.Id.StartsWith(value: "CS", StringComparison.Ordinal);
     }
 
+    private static async Task<bool> MovesVisibleTypes(Project before, Project after, DocumentId[] changedDocuments, bool internalsShared, CancellationToken cancellationToken)
+    {
+        foreach (DocumentId identifier in changedDocuments)
+        {
+            Document? original = before.GetDocument(identifier);
+            Document? updated = after.GetDocument(identifier);
+
+            if (original is null || updated is null)
+                continue;
+
+            SyntaxNode? originalRoot = await original.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            SyntaxNode? updatedRoot = await updated.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            if (originalRoot is null || updatedRoot is null)
+                continue;
+
+            // Comparing the namespaces first keeps every edit that leaves them alone, which is
+            // nearly all of them, off the accessibility walk.
+            HashSet<string> originalNamespaces = new(GetTypeNamespaces(originalRoot), StringComparer.Ordinal);
+
+            if (originalNamespaces.SetEquals(GetTypeNamespaces(updatedRoot)))
+                continue;
+
+            if (DeclaresVisibleType(updatedRoot, internalsShared))
+                return true;
+        }
+
+        return false;
+    }
+
     private static async Task<Project> PrepareCandidate(Project before, Project after, CancellationToken cancellationToken)
     {
         ImmutableHashSet<DocumentId> changed = [.. after.GetChanges(before).GetChangedDocuments()];
@@ -555,6 +649,24 @@ internal static class CodeFixRunner
         }
 
         return after;
+    }
+
+    // An assembly that hands its internals to another project exposes those types across the same
+    // boundary as its public ones, so moving them breaks the same way.
+    private static async Task<bool> SharesInternals(Project project, CancellationToken cancellationToken)
+    {
+        Compilation? compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+        if (compilation is null)
+            return false;
+
+        foreach (AttributeData attribute in compilation.Assembly.GetAttributes())
+        {
+            if (string.Equals(attribute.AttributeClass?.Name, b: "InternalsVisibleToAttribute", StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 
     private static bool SupportsDocumentChanges(Project before, Project after, ProjectChanges differences)
