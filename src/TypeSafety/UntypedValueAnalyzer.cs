@@ -15,7 +15,7 @@ namespace NetAgents.Analyzers.TypeSafety;
 /// Rejects object, dynamic, and inferred untyped values.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.

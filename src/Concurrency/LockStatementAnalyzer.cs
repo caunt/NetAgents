@@ -10,7 +10,7 @@ namespace NetAgents.Analyzers.Concurrency;
 /// Rejects lock statements in favor of asynchronous or atomic coordination.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class LockStatementAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class LockStatementAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.

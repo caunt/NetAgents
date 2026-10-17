@@ -220,6 +220,36 @@ compiles on its own and breaks every project referencing it. The diagnostic is
 still reported, so moving the file or the namespace stays an author's decision.
 Internal types in an assembly that shares nothing are moved as before.
 
+## Razor components and views
+
+Razor compiles a component or view into generated C#, and copies the C# its
+author wrote into it after `#line` directives that name the `.razor` or
+`.cshtml` file. NETAGENTS0001 through NETAGENTS0005, NETAGENTS0007,
+NETAGENTS0008, NETAGENTS0012, NETAGENTS0015, and NETAGENTS0024 check that
+copied C#: the members of `@code` and `@functions` blocks, the statements of
+`@{ }` blocks, and lambdas such as an `@onclick` handler. Their errors name the
+Razor file and line, and none of them has an automatic fix, so each is fixed
+by hand. A check applies to a statement, member, or lambda written whole in the
+Razor file. An expression written in markup, such as `@count` or
+`@item!.Name`, is an argument to a call Razor generates around it, so it is not
+checked, and neither is control flow that wraps markup, such as `@foreach`.
+The code Razor generates between those stretches is never checked. A
+code-behind `.razor.cs` file is ordinary C# and meets every rule.
+
+The other rules apply to C# files only. Formatting, ordering, and import rules
+exist to be fixed during the build, and the build never rewrites a Razor file.
+The file and structure rules would measure the generated file rather than the
+one its author wrote, and the documentation rules read whole files and types,
+which cannot be limited to the parts an author wrote.
+
+The .NET code-quality and style analyzers (`CA…`, `IDE…`) skip generated code
+by their own design, so they do not check Razor files either. Treating Razor's
+output as authored code (`generated_code = false`) would aim them at the code
+Razor generates as well: its `using` directives and namespace declaration, and
+`ConfigureAwait` calls in components, where leaving the renderer's
+synchronization context breaks rendering. The package does not change that
+setting.
+
 ## Shared editor configuration
 
 The shared C# preferences come from Microsoft's built-in
@@ -254,12 +284,14 @@ Consumers must also follow these engineering requirements:
 - Handle exceptions meaningfully; syntactically nonempty catches still need
   review.
 
-The analyzers inspect authored C# source. Generated code and implementation
-inside referenced assemblies are excluded. Conversion analysis detects boxing
-represented in Roslyn operations; it is not an allocation profiler or an
-inspection of every lowered intermediate-language instruction. Framework
-signatures are not rewritten. Do not pass value types to an untyped framework
-API even if a particular implicit boxing path is outside static coverage.
+The analyzers inspect authored C# source, including the C# written in Razor
+files (see [Razor components and views](#razor-components-and-views)). Other
+generated code and implementation inside referenced assemblies are excluded.
+Conversion analysis detects boxing represented in Roslyn operations; it is not
+an allocation profiler or an inspection of every lowered intermediate-language
+instruction. Framework signatures are not rewritten. Do not pass value types to
+an untyped framework API even if a particular implicit boxing path is outside
+static coverage.
 
 ## Member separation and ordering
 

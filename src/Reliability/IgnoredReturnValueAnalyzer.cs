@@ -12,7 +12,7 @@ namespace NetAgents.Analyzers.Reliability;
 /// Requires returned values to be consumed and rejects underscore assignments and loop discards.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.

@@ -11,7 +11,7 @@ namespace NetAgents.Analyzers.Exceptions;
 /// Requires catch blocks to handle or rethrow their exceptions.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class EmptyCatchBlockAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class EmptyCatchBlockAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.

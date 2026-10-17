@@ -11,7 +11,7 @@ namespace NetAgents.Analyzers.TypeSafety;
 /// Rejects conversions that box value types into reference types.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class BoxingConversionAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class BoxingConversionAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.

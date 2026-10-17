@@ -16,7 +16,7 @@ namespace NetAgents.Analyzers.Naming;
 /// Requires descriptive identifiers without known abbreviations or acronyms.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.

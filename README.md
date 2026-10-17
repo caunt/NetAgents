@@ -57,6 +57,8 @@ Sorting preserves initializer order and storage order in structs and types with 
 | ⚡ Concurrency | Use asynchronous composition or Nito.AsyncEx for coordination. No `lock`, framework synchronization primitives, or blocking waits. |
 | 📖 Documentation | XML comments are required for public APIs. |
 
+C# written in Razor components and views (`@code`, `@functions`, and `@{ }` blocks, and event-handler lambdas) meets the type-safety, descriptive-name, reliability, concurrency, and tuple-result rules too. Formatting rules and fixes apply to `.cs` files.
+
 Existing editor and project settings must agree with the shared rules. See the [complete rule reference](docs/engineering-rules.md) for details.
 
 ---

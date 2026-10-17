@@ -11,7 +11,11 @@ namespace NetAgents.Analyzers.Diagnostics;
 /// Applies shared initialization and mandatory diagnostic settings to every policy analyzer.
 /// </summary>
 /// <param name="rule">The diagnostic reported by the analyzer.</param>
-public abstract class PolicyAnalyzer(DiagnosticDescriptor rule) : DiagnosticAnalyzer
+/// <param name="analyzesRazorCode">
+/// Whether the rule also checks the C# statements, members, and lambdas written in Razor components and
+/// views, which reach the compiler only inside the code Razor generates for them.
+/// </param>
+public abstract class PolicyAnalyzer(DiagnosticDescriptor rule, bool analyzesRazorCode = false) : DiagnosticAnalyzer
 {
     private readonly ImmutableArray<DiagnosticDescriptor> _supportedDiagnostics = [ValidateRule(rule)];
 
@@ -24,9 +28,15 @@ public abstract class PolicyAnalyzer(DiagnosticDescriptor rule) : DiagnosticAnal
         if (context is null)
             throw new ArgumentNullException(nameof(context));
 
-        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+        // Razor's output is generated code with its author's C# copied into it, so a rule that checks
+        // that C# reads generated trees, and its context keeps each callback to what the author wrote.
+        GeneratedCodeAnalysisFlags generatedCode = analyzesRazorCode
+            ? GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics
+            : GeneratedCodeAnalysisFlags.None;
+
+        context.ConfigureGeneratedCodeAnalysis(generatedCode);
         context.EnableConcurrentExecution();
-        RegisterAnalysisActions(context);
+        RegisterAnalysisActions(analyzesRazorCode ? new RazorAnalysisContext(context) : context);
     }
 
     /// <summary>

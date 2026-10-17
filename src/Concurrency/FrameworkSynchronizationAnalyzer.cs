@@ -15,7 +15,7 @@ namespace NetAgents.Analyzers.Concurrency;
 /// Rejects framework synchronization primitives and blocking waits.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.

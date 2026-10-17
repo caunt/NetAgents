@@ -15,7 +15,7 @@ namespace NetAgents.Analyzers.Design;
 /// Requires authored result contracts to use dedicated named types instead of tuples.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class TupleReturnTypeAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class TupleReturnTypeAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.

@@ -11,7 +11,7 @@ namespace NetAgents.Analyzers.Concurrency;
 /// Rejects loops without a terminating condition.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.

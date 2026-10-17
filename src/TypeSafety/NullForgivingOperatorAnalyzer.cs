@@ -10,7 +10,7 @@ namespace NetAgents.Analyzers.TypeSafety;
 /// Rejects null-forgiving operators that bypass nullable analysis.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class NullForgivingOperatorAnalyzer() : PolicyAnalyzer(Rule)
+public sealed class NullForgivingOperatorAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
     /// <summary>
     /// Identifies the diagnostic emitted by this analyzer.
