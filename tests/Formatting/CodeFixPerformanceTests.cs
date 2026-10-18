@@ -252,24 +252,24 @@ public sealed class CodeFixPerformanceTests
             context.EnableConcurrentExecution();
             context.RegisterCompilationAction(
                 compilation =>
-            {
-                Runs++;
-                SyntaxTree[] trees = [.. compilation.Compilation.SyntaxTrees];
-                TreeVisits += trees.Length;
-                States.Add(string.Join(separator: "\n", trees.Select(static tree => tree.GetText().ToString())));
-
-                SyntaxTree step = trees.Single(static tree => tree.FilePath == "Step.cs");
-                SyntaxToken token = step.GetRoot().DescendantTokens().Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
-
-                if (token.ValueText != "3")
-                    compilation.ReportDiagnostic(Diagnostic.Create(RequiredRule, token.GetLocation()));
-
-                if (includeSuggestion)
                 {
-                    SyntaxTree suggestion = trees.Single(static tree => tree.FilePath == "Suggestion.cs");
-                    compilation.ReportDiagnostic(Diagnostic.Create(SuggestionRule, suggestion.GetRoot().GetFirstToken().GetLocation()));
+                    Runs++;
+                    SyntaxTree[] trees = [.. compilation.Compilation.SyntaxTrees];
+                    TreeVisits += trees.Length;
+                    States.Add(string.Join(separator: "\n", trees.Select(static tree => tree.GetText().ToString())));
+
+                    SyntaxTree step = trees.Single(static tree => tree.FilePath == "Step.cs");
+                    SyntaxToken token = step.GetRoot().DescendantTokens().Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
+
+                    if (token.ValueText != "3")
+                        compilation.ReportDiagnostic(Diagnostic.Create(RequiredRule, token.GetLocation()));
+
+                    if (includeSuggestion)
+                    {
+                        SyntaxTree suggestion = trees.Single(static tree => tree.FilePath == "Suggestion.cs");
+                        compilation.ReportDiagnostic(Diagnostic.Create(SuggestionRule, suggestion.GetRoot().GetFirstToken().GetLocation()));
+                    }
                 }
-            }
             );
         }
     }
@@ -395,12 +395,12 @@ public sealed class CodeFixPerformanceTests
                 CodeAction.Create(
                     title: "Change compilation settings",
                     async cancellationToken =>
-            {
-                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-                Document changed = context.Document.WithText(text.WithChanges(new TextChange(context.Span, newText: "3")));
+                    {
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                        Document changed = context.Document.WithText(text.WithChanges(new TextChange(context.Span, newText: "3")));
 
-                return changed.Project.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.ConsoleApplication)).Solution;
-            }
+                        return changed.Project.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.ConsoleApplication)).Solution;
+                    }
                 ),
                 context.Diagnostics
             );
@@ -419,14 +419,14 @@ public sealed class CodeFixPerformanceTests
                 CodeAction.Create(
                     title: "Advance required repair",
                     async cancellationToken =>
-            {
-                actions.Add(item: "required");
-                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-                string next = text.ToString(context.Span) switch { "0" => "1", "1" => "2", _ => "3" };
-                string changed = text.WithChanges(new TextChange(context.Span, next)).ToString();
+                    {
+                        actions.Add(item: "required");
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                        string next = text.ToString(context.Span) switch { "0" => "1", "1" => "2", _ => "3" };
+                        string changed = text.WithChanges(new TextChange(context.Span, next)).ToString();
 
-                return context.Document.WithText(SourceText.From(changed.Replace(oldValue: "static int", newValue: "static  int", StringComparison.Ordinal)));
-            }
+                        return context.Document.WithText(SourceText.From(changed.Replace(oldValue: "static int", newValue: "static  int", StringComparison.Ordinal)));
+                    }
                 ),
                 context.Diagnostics
             );
@@ -450,12 +450,12 @@ public sealed class CodeFixPerformanceTests
                 CodeAction.Create(
                     title: "Break optional return",
                     async cancellationToken =>
-            {
-                actions.Add(item: "optional");
-                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                    {
+                        actions.Add(item: "optional");
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-                return context.Document.WithText(SourceText.From(text.ToString().Replace(oldValue: "=> 1;", newValue: "=> \"text\";", StringComparison.Ordinal)));
-            },
+                        return context.Document.WithText(SourceText.From(text.ToString().Replace(oldValue: "=> 1;", newValue: "=> \"text\";", StringComparison.Ordinal)));
+                    },
                     equivalenceKey: "BreakOptionalReturn"
                 ),
                 context.Diagnostics

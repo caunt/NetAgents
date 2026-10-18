@@ -32,6 +32,37 @@ public sealed class ArgumentLayoutCodeFixTests
     }
 
     /// <summary>
+    /// Expands an argument whose lambda holds statements sharing a line, nested ones included, and opens
+    /// each body beneath its lambda (#38).
+    /// </summary>
+    /// <param name="statement">The statement passing the lambda, written on one line.</param>
+    /// <param name="expected">The statement the fix lays out, indented inside the method body.</param>
+    [Theory]
+    [InlineData(
+        "System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); System.Console.Out.Flush(); });",
+        "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n                System.Console.WriteLine();\n                System.Console.Out.Flush();\n            }\n        );"
+    )]
+    [InlineData(
+        "System.Threading.Tasks.Task.Run(() => { if (System.Environment.ProcessorCount > 1) { System.Console.WriteLine(); return; } });",
+        "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n                if (System.Environment.ProcessorCount > 1)\n                {\n                    System.Console.WriteLine();\n                    return;\n                }\n            }\n        );"
+    )]
+    [InlineData(
+        "System.Console.WriteLine(System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); System.Console.Out.Flush(); }).IsCompleted);",
+        "System.Console.WriteLine(\n            System.Threading.Tasks.Task.Run(\n                () =>\n                {\n                    System.Console.WriteLine();\n                    System.Console.Out.Flush();\n                }\n            ).IsCompleted\n        );"
+    )]
+    public async Task ExpandsLambdaStatementsSharingALine(string statement, string expected)
+    {
+        const string method = "public class ExampleType\n{\n    public void Execute()\n    {\n        STATEMENT\n    }\n}";
+
+        string source = method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal);
+
+        Assert.Equal(
+            method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal),
+            await CodeFixTestHarness.FixArguments(source, fixAll: true)
+        );
+    }
+
+    /// <summary>
     /// Expands a long record signature while retaining the document's newline convention.
     /// </summary>
     /// <param name="newline">The document's line ending.</param>

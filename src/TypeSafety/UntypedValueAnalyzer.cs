@@ -37,21 +37,21 @@ public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorC
     {
         context.RegisterCompilationStartAction(
             start =>
-        {
-            ImmutableHashSet<SyntaxTree> aliased = GetAliasedTrees(start.Compilation, start.CancellationToken);
+            {
+                ImmutableHashSet<SyntaxTree> aliased = GetAliasedTrees(start.Compilation, start.CancellationToken);
 
-            start.RegisterSyntaxNodeAction(node => AnalyzeTypeName(node, aliased), SyntaxKind.PredefinedType, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
+                start.RegisterSyntaxNodeAction(node => AnalyzeTypeName(node, aliased), SyntaxKind.PredefinedType, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
 
-            start.RegisterOperationAction(
-                AnalyzeValue,
-                OperationKind.Invocation,
-                OperationKind.PropertyReference,
-                OperationKind.FieldReference,
-                OperationKind.Conversion,
-                OperationKind.Await,
-                OperationKind.ArrayElementReference
-            );
-        }
+                start.RegisterOperationAction(
+                    AnalyzeValue,
+                    OperationKind.Invocation,
+                    OperationKind.PropertyReference,
+                    OperationKind.FieldReference,
+                    OperationKind.Conversion,
+                    OperationKind.Await,
+                    OperationKind.ArrayElementReference
+                );
+            }
         );
     }
 

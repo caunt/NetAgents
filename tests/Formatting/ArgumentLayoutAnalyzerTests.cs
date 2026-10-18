@@ -24,6 +24,12 @@ public sealed class ArgumentLayoutAnalyzerTests
     [InlineData(
         "public class ExampleType { public string Execute(string value) => value.Substring(startIndex: 1) // Skips the prefix\n        .Trim(); }"
     )]
+    [InlineData(
+        "public class ExampleType { public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); }); }"
+    )]
+    [InlineData(
+        "public class ExampleType\n{\n    public System.Threading.Tasks.Task<bool> Execute() => System.Threading.Tasks.Task.Run(\n        () =>\n        {\n            int length = System.Environment.ProcessorCount;\n\n            return length > 0;\n        }\n    );\n}"
+    )]
     public async Task AcceptsValidLayouts(string source)
     {
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source));
@@ -179,6 +185,31 @@ public sealed class ArgumentLayoutAnalyzerTests
             .Replace(oldValue: "SECOND", "string " + new string(c: 'b', count: 70), StringComparison.Ordinal);
 
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), $"public record ExampleType({parameters});");
+
+        Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
+    /// Keeps statements written in sequence inside an argument on lines of their own, under a body that
+    /// opens beneath its lambda, however short the list would be on one line (#38).
+    /// </summary>
+    /// <param name="source">A source whose one argument list holds statements laid out wrongly.</param>
+    [Theory]
+    [InlineData(
+        "public class ExampleType { public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); System.Console.WriteLine(); }); }"
+    )]
+    [InlineData(
+        "public class ExampleType\n{\n    public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(\n        () =>\n    {\n        System.Console.WriteLine();\n        System.Console.WriteLine();\n    }\n    );\n}"
+    )]
+    [InlineData(
+        "public class ExampleType { public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(() => { if (System.Environment.ProcessorCount > 1) { System.Console.WriteLine(); return; } }); }"
+    )]
+    [InlineData(
+        "public class ExampleType { public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(() => { switch (System.Environment.ProcessorCount) { case 1: System.Console.WriteLine(); break; } }); }"
+    )]
+    public async Task RejectsStatementsSharingALineInsideArguments(string source)
+    {
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source);
 
         Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

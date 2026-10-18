@@ -232,12 +232,12 @@ public sealed class FormattingAnalysisTests
                 CodeAction.Create(
                     title: "Change optional candidate",
                     async cancellationToken =>
-            {
-                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-                string next = rejected ? "2" : text.ToString(context.Span) == "1" ? "3" : "4";
+                    {
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                        string next = rejected ? "2" : text.ToString(context.Span) == "1" ? "3" : "4";
 
-                return context.Document.WithText(text.WithChanges(new TextChange(context.Span, next)));
-            },
+                        return context.Document.WithText(text.WithChanges(new TextChange(context.Span, next)));
+                    },
                     rejected ? "RejectOptionalCandidate" : "AcceptOptionalCandidate"
                 ),
                 context.Diagnostics
@@ -316,27 +316,27 @@ public sealed class FormattingAnalysisTests
             context.EnableConcurrentExecution();
             context.RegisterCompilationAction(
                 compilation =>
-            {
-                Runs++;
-                SyntaxTree reader = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Reader.cs");
-                SyntaxTree dependency = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Dependency.cs");
-                string source = reader.GetText().ToString();
-                string dependencySource = dependency.GetText().ToString();
-
-                bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal) && dependencySource.Contains(value: "= 0;", StringComparison.Ordinal);
-
-                if (invalid)
-                    compilation.ReportDiagnostic(Diagnostic.Create(Rule, reader.GetRoot().GetFirstToken().GetLocation()));
-
-                if (offerFixes)
                 {
-                    SyntaxToken token = reader.GetRoot().DescendantTokens().Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
-                    compilation.ReportDiagnostic(Diagnostic.Create(RejectedSuggestion, token.GetLocation()));
+                    Runs++;
+                    SyntaxTree reader = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Reader.cs");
+                    SyntaxTree dependency = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Dependency.cs");
+                    string source = reader.GetText().ToString();
+                    string dependencySource = dependency.GetText().ToString();
 
-                    if (token.ValueText != "4")
-                        compilation.ReportDiagnostic(Diagnostic.Create(AcceptedSuggestion, token.GetLocation()));
+                    bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal) && dependencySource.Contains(value: "= 0;", StringComparison.Ordinal);
+
+                    if (invalid)
+                        compilation.ReportDiagnostic(Diagnostic.Create(Rule, reader.GetRoot().GetFirstToken().GetLocation()));
+
+                    if (offerFixes)
+                    {
+                        SyntaxToken token = reader.GetRoot().DescendantTokens().Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
+                        compilation.ReportDiagnostic(Diagnostic.Create(RejectedSuggestion, token.GetLocation()));
+
+                        if (token.ValueText != "4")
+                            compilation.ReportDiagnostic(Diagnostic.Create(AcceptedSuggestion, token.GetLocation()));
+                    }
                 }
-            }
             );
         }
     }

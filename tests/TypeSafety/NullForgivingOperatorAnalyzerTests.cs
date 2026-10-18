@@ -77,10 +77,10 @@ public sealed class NullForgivingOperatorAnalyzerTests
         Assert.All(
             diagnostics,
             static diagnostic =>
-        {
-            Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, diagnostic.Id);
-            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
-        }
+            {
+                Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, diagnostic.Id);
+                Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            }
         );
     }
 

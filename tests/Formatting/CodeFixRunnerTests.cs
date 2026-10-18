@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
+using NetAgents.Analyzers.CodeFixes.Formatting;
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Tests.Infrastructure;
 using NetAgents.BuildTasks;
@@ -18,6 +19,10 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// <summary>Checks formatter progress with unresolved compiler diagnostics.</summary>
 public sealed class CodeFixRunnerTests
 {
+    // The layout NETAGENTS0020 and NETAGENTS0016 both accept for a lambda holding statements.
+    private const string ExpandedLambda = "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n"
+        + "                int length = System.Environment.ProcessorCount;\n\n                return length > 0;\n            }\n        );";
+
     /// <summary>Appends the final newline the document already uses instead of a bare line feed.</summary>
     [Fact]
     public async Task AppendsMatchingFinalNewline()
@@ -34,6 +39,33 @@ public sealed class CodeFixRunnerTests
         SourceText text = await result.Documents.Single().GetTextAsync();
 
         Assert.EndsWith(expectedEndString: "}\r\n", text.ToString(), StringComparison.Ordinal);
+    }
+
+    /// <summary>Settles argument layout and statement spacing on a lambda holding statements (#38).</summary>
+    /// <param name="statement">How the statement passing the lambda is written before the run.</param>
+    [Theory]
+    [InlineData(ExpandedLambda)]
+    [InlineData("System.Threading.Tasks.Task.Run(() => { int length = System.Environment.ProcessorCount; return length > 0; });")]
+    public async Task ConvergesWithStatementSpacing(string statement)
+    {
+        const string method = "class Example\n{\n    System.Threading.Tasks.Task<bool> Execute()\n    {\n        return STATEMENT\n    }\n}\n";
+
+        using AdhocWorkspace workspace = new();
+
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
+            CreateFieldProject(workspace, method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal)),
+            [new ArgumentLayoutAnalyzer(), new StatementSpacingAnalyzer()],
+            [new ArgumentLayoutCodeFixProvider(), new StatementSpacingCodeFixProvider()],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None
+        );
+
+        string formatted = (await result.Project.Documents.Single().GetTextAsync()).ToString();
+
+        Assert.Equal(method.Replace(oldValue: "STATEMENT", ExpandedLambda, StringComparison.Ordinal), formatted);
+        Assert.True(result.Blocking.IsEmpty);
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), formatted));
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), formatted));
     }
 
     /// <summary>Keeps a rewrite whose intermediate error a later pass repairs.</summary>
@@ -543,22 +575,22 @@ public sealed class CodeFixRunnerTests
                 CodeAction.Create(
                     title: "Attempt accessibility repair",
                     async cancellationToken =>
-            {
-                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-                string source = text.ToString();
+                    {
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                        string source = text.ToString();
 
-                string changed = mode switch
-                {
-                    "valid" => source.Replace(oldValue: "private", newValue: "public", StringComparison.Ordinal),
-                    "whitespace" => source.Replace(oldValue: "class Hidden", newValue: "class  Hidden", StringComparison.Ordinal),
-                    "cycle" => source.Contains(value: "class Consumer", StringComparison.Ordinal)
-                        ? source.Replace(oldValue: "class Consumer", newValue: "class Alternate", StringComparison.Ordinal)
-                        : source.Replace(oldValue: "class Alternate", newValue: "class Consumer", StringComparison.Ordinal),
-                    _ => source,
-                };
+                        string changed = mode switch
+                        {
+                            "valid" => source.Replace(oldValue: "private", newValue: "public", StringComparison.Ordinal),
+                            "whitespace" => source.Replace(oldValue: "class Hidden", newValue: "class  Hidden", StringComparison.Ordinal),
+                            "cycle" => source.Contains(value: "class Consumer", StringComparison.Ordinal)
+                                ? source.Replace(oldValue: "class Consumer", newValue: "class Alternate", StringComparison.Ordinal)
+                                : source.Replace(oldValue: "class Alternate", newValue: "class Consumer", StringComparison.Ordinal),
+                            _ => source,
+                        };
 
-                return context.Document.WithText(SourceText.From(changed));
-            }
+                        return context.Document.WithText(SourceText.From(changed));
+                    }
                 ),
                 context.Diagnostics
             );
@@ -610,15 +642,15 @@ public sealed class CodeFixRunnerTests
             context.EnableConcurrentExecution();
             context.RegisterSyntaxNodeAction(
                 static node =>
-            {
-                FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
+                {
+                    FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
 
-                if (field.Modifiers.Any(SyntaxKind.PrivateKeyword))
-                    node.ReportDiagnostic(Diagnostic.Create(PrivateRule, field.GetLocation()));
+                    if (field.Modifiers.Any(SyntaxKind.PrivateKeyword))
+                        node.ReportDiagnostic(Diagnostic.Create(PrivateRule, field.GetLocation()));
 
-                if (field.Modifiers.Any(SyntaxKind.PublicKeyword))
-                    node.ReportDiagnostic(Diagnostic.Create(PublicRule, field.GetLocation()));
-            },
+                    if (field.Modifiers.Any(SyntaxKind.PublicKeyword))
+                        node.ReportDiagnostic(Diagnostic.Create(PublicRule, field.GetLocation()));
+                },
                 SyntaxKind.FieldDeclaration
             );
         }
@@ -679,12 +711,12 @@ public sealed class CodeFixRunnerTests
             context.EnableConcurrentExecution();
             context.RegisterSyntaxNodeAction(
                 static node =>
-            {
-                FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
+                {
+                    FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
 
-                if (field.Modifiers.Any(SyntaxKind.PrivateKeyword))
-                    node.ReportDiagnostic(Diagnostic.Create(Rule, field.GetLocation()));
-            },
+                    if (field.Modifiers.Any(SyntaxKind.PrivateKeyword))
+                        node.ReportDiagnostic(Diagnostic.Create(Rule, field.GetLocation()));
+                },
                 SyntaxKind.FieldDeclaration
             );
         }
@@ -704,11 +736,11 @@ public sealed class CodeFixRunnerTests
                 CodeAction.Create(
                     $"Replace {replaced} with {replacement}",
                     async cancellationToken =>
-            {
-                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                    {
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-                return context.Document.WithText(SourceText.From(text.ToString().Replace(replaced, replacement, StringComparison.Ordinal)));
-            }
+                        return context.Document.WithText(SourceText.From(text.ToString().Replace(replaced, replacement, StringComparison.Ordinal)));
+                    }
                 ),
                 context.Diagnostics
             );
@@ -778,11 +810,11 @@ public sealed class CodeFixRunnerTests
                 CodeAction.Create(
                     title: "Keep the unnecessary using",
                     async cancellationToken =>
-            {
-                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                    {
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-                return context.Document.WithText(SourceText.From(text.ToString()));
-            }
+                        return context.Document.WithText(SourceText.From(text.ToString()));
+                    }
                 ),
                 context.Diagnostics
             );
@@ -839,15 +871,15 @@ public sealed class CodeFixRunnerTests
                 CodeAction.Create(
                     title: "Repair accessibility",
                     async cancellationToken =>
-            {
-                if (stage == "operations")
-                    throw Skew();
+                    {
+                        if (stage == "operations")
+                            throw Skew();
 
-                SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-                string changed = text.ToString().Replace(oldValue: "private", newValue: "public", StringComparison.Ordinal);
+                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                        string changed = text.ToString().Replace(oldValue: "private", newValue: "public", StringComparison.Ordinal);
 
-                return context.Document.WithText(SourceText.From(changed));
-            },
+                        return context.Document.WithText(SourceText.From(changed));
+                    },
                     equivalenceKey: "NetAgentsThrowingFix"
                 ),
                 context.Diagnostics

@@ -362,6 +362,28 @@ public sealed class PackageConsumptionTests
             Assert.Contains(expectedSubstring: "name => name;", lambdas, StringComparison.Ordinal);
             Assert.DoesNotContain(expectedSubstring: "(name) =>", lambdas, StringComparison.Ordinal);
 
+            // A lambda holding statements keeps its argument list expanded, where joining it used to fight
+            // statement spacing until the run gave up; written on one line, it is laid out the same way (#38).
+            string statementsSource = ValidSource.Replace(
+                oldValue: "return recipientName;",
+                newValue: "string[] greetings = Array.ConvertAll(\n            [recipientName],\n            static name =>\n            {\n                string trimmed = name.Trim();\n\n                return trimmed.Length > 0 ? trimmed : name;\n            }\n        );\n\n        return greetings[0];",
+                StringComparison.Ordinal
+            );
+
+            await File.WriteAllTextAsync(sourcePath, statementsSource);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            Assert.Equal(statementsSource, await File.ReadAllTextAsync(sourcePath));
+
+            string joinedStatements = statementsSource.Replace(
+                oldValue: "(\n            [recipientName],\n            static name =>\n            {\n                string trimmed = name.Trim();\n\n                return trimmed.Length > 0 ? trimmed : name;\n            }\n        );",
+                newValue: "([recipientName], static name => { string trimmed = name.Trim(); return trimmed.Length > 0 ? trimmed : name; });",
+                StringComparison.Ordinal
+            );
+
+            await File.WriteAllTextAsync(sourcePath, joinedStatements);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
+            Assert.Equal(statementsSource, await File.ReadAllTextAsync(sourcePath));
+
             // A qualified type is imported and named directly instead (#0027).
             string qualifiedSource = ValidSource.Replace(
                 oldValue: "return recipientName;",

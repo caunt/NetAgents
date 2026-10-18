@@ -41,12 +41,12 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
     {
         context.RegisterCompilationStartAction(
             static compilationContext =>
-        {
-            StringComparer pathComparer = Path.DirectorySeparatorChar == '\\' ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-            ConcurrentDictionary<string, SyntaxTree> files = new(pathComparer);
-            compilationContext.RegisterSyntaxTreeAction(treeContext => CollectFile(treeContext, files));
-            compilationContext.RegisterCompilationEndAction(endContext => AnalyzeDirectories(endContext, files, pathComparer));
-        }
+            {
+                StringComparer pathComparer = Path.DirectorySeparatorChar == '\\' ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+                ConcurrentDictionary<string, SyntaxTree> files = new(pathComparer);
+                compilationContext.RegisterSyntaxTreeAction(treeContext => CollectFile(treeContext, files));
+                compilationContext.RegisterCompilationEndAction(endContext => AnalyzeDirectories(endContext, files, pathComparer));
+            }
         );
     }
 
