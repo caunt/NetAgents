@@ -19,15 +19,13 @@ public sealed class DocumentationInformationAnalyzer() : PolicyAnalyzer(Rule)
     /// </summary>
     public const string RuleIdentifier = DocumentationInformation.RuleIdentifier;
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Documentation comments add to the name they describe",
         messageFormat: "Describe what '{0}' is for; repeating its name leaves the reader where they started",
         category: "Documentation",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

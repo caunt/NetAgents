@@ -161,11 +161,9 @@ internal static class AnalyzerCatalog
         string rules = result.Analyzers.Length == 1 ? "analyzer" : "analyzers";
         string reasons = string.Join(separator: ", ", rejections.Select(Explain));
 
-        return new(
-            new HostedAnalyzerReference(path, result.Analyzers),
+        return new(new HostedAnalyzerReference(path, result.Analyzers),
             $"NetAgents hosts {count} {rules} from {Path.GetFileName(path)} that this formatter's Roslyn refused: {reasons}",
-            result.Unavailable
-        );
+            result.Unavailable);
     }
 
     internal sealed record AnalyzerHostingResult(bool Read, ImmutableArray<DiagnosticAnalyzer> Analyzers, string[] Unavailable);

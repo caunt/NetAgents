@@ -47,13 +47,11 @@ public sealed class BlockPaddingTests
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "ExampleType.cs", SourceText.From(source)).Project;
 
-        Project result = (await CodeFixRunner.Fix(
-            project,
+        Project result = (await CodeFixRunner.Fix(project,
             [new BlockPaddingAnalyzer(), new MethodSpacingAnalyzer(), new MemberOrderingAnalyzer()],
             [new BlockPaddingCodeFixProvider(), new MethodSpacingCodeFixProvider(), new MemberOrderingCodeFixProvider()],
             static fault => Assert.Fail(fault),
-            CancellationToken.None
-        )).Project;
+            CancellationToken.None)).Project;
 
         string formatted = (await result.Documents.Single().GetTextAsync()).ToString();
 
@@ -70,40 +68,24 @@ public sealed class BlockPaddingTests
     [InlineData("class ExampleType\n{\n\n    void Execute() { }\n}", "class ExampleType\n{\n    void Execute() { }\n}")]
     [InlineData("class ExampleType\n{\n    void Execute() { }\n\n}", "class ExampleType\n{\n    void Execute() { }\n}")]
     [InlineData("class ExampleType\r\n{\r\n\r\n    void Execute() { }\r\n}", "class ExampleType\r\n{\r\n    void Execute() { }\r\n}")]
-    [InlineData(
-        "class ExampleType\n{\n    void Execute()\n    {\n\n        System.Console.WriteLine();\n    }\n}",
-        "class ExampleType\n{\n    void Execute()\n    {\n        System.Console.WriteLine();\n    }\n}"
-    )]
-    [InlineData(
-        "class ExampleType\n{\n    void Execute(bool flag)\n    {\n        if (flag)\n        {\n\n            System.Console.WriteLine();\n        }\n    }\n}",
-        "class ExampleType\n{\n    void Execute(bool flag)\n    {\n        if (flag)\n        {\n            System.Console.WriteLine();\n        }\n    }\n}"
-    )]
-    [InlineData(
-        "class ExampleType\n{\n    int Count\n    {\n\n        get => 1;\n    }\n}",
-        "class ExampleType\n{\n    int Count\n    {\n        get => 1;\n    }\n}"
-    )]
+    [InlineData("class ExampleType\n{\n    void Execute()\n    {\n\n        System.Console.WriteLine();\n    }\n}",
+        "class ExampleType\n{\n    void Execute()\n    {\n        System.Console.WriteLine();\n    }\n}")]
+    [InlineData("class ExampleType\n{\n    void Execute(bool flag)\n    {\n        if (flag)\n        {\n\n            System.Console.WriteLine();\n        }\n    }\n}",
+        "class ExampleType\n{\n    void Execute(bool flag)\n    {\n        if (flag)\n        {\n            System.Console.WriteLine();\n        }\n    }\n}")]
+    [InlineData("class ExampleType\n{\n    int Count\n    {\n\n        get => 1;\n    }\n}",
+        "class ExampleType\n{\n    int Count\n    {\n        get => 1;\n    }\n}")]
     [InlineData("namespace Example\n{\n\n    class ExampleType { }\n}", "namespace Example\n{\n    class ExampleType { }\n}")]
     [InlineData("enum ExampleKind\n{\n\n    First\n}", "enum ExampleKind\n{\n    First\n}")]
-    [InlineData(
-        "class ExampleType\n{\n    void Execute(int value)\n    {\n        switch (value)\n        {\n\n            default: break;\n        }\n    }\n}",
-        "class ExampleType\n{\n    void Execute(int value)\n    {\n        switch (value)\n        {\n            default: break;\n        }\n    }\n}"
-    )]
-    [InlineData(
-        "class ExampleType\n{\n    int Count;\n\n    ExampleType Create() => new ExampleType\n    {\n\n        Count = 1\n    };\n}",
-        "class ExampleType\n{\n    int Count;\n\n    ExampleType Create() => new ExampleType\n    {\n        Count = 1\n    };\n}"
-    )]
-    [InlineData(
-        "class ExampleType\n{\n    System.Action Create() => () =>\n    {\n\n        System.Console.WriteLine();\n    };\n}",
-        "class ExampleType\n{\n    System.Action Create() => () =>\n    {\n        System.Console.WriteLine();\n    };\n}"
-    )]
-    [InlineData(
-        "class ExampleType\n{\n    void Execute()\n    {\n        void Local()\n        {\n\n            System.Console.WriteLine();\n        }\n\n        Local();\n    }\n}",
-        "class ExampleType\n{\n    void Execute()\n    {\n        void Local()\n        {\n            System.Console.WriteLine();\n        }\n\n        Local();\n    }\n}"
-    )]
-    [InlineData(
-        "class ExampleType\n{\n\n    // Leading comment.\n    void Execute() { }\n}",
-        "class ExampleType\n{\n    // Leading comment.\n    void Execute() { }\n}"
-    )]
+    [InlineData("class ExampleType\n{\n    void Execute(int value)\n    {\n        switch (value)\n        {\n\n            default: break;\n        }\n    }\n}",
+        "class ExampleType\n{\n    void Execute(int value)\n    {\n        switch (value)\n        {\n            default: break;\n        }\n    }\n}")]
+    [InlineData("class ExampleType\n{\n    int Count;\n\n    ExampleType Create() => new ExampleType\n    {\n\n        Count = 1\n    };\n}",
+        "class ExampleType\n{\n    int Count;\n\n    ExampleType Create() => new ExampleType\n    {\n        Count = 1\n    };\n}")]
+    [InlineData("class ExampleType\n{\n    System.Action Create() => () =>\n    {\n\n        System.Console.WriteLine();\n    };\n}",
+        "class ExampleType\n{\n    System.Action Create() => () =>\n    {\n        System.Console.WriteLine();\n    };\n}")]
+    [InlineData("class ExampleType\n{\n    void Execute()\n    {\n        void Local()\n        {\n\n            System.Console.WriteLine();\n        }\n\n        Local();\n    }\n}",
+        "class ExampleType\n{\n    void Execute()\n    {\n        void Local()\n        {\n            System.Console.WriteLine();\n        }\n\n        Local();\n    }\n}")]
+    [InlineData("class ExampleType\n{\n\n    // Leading comment.\n    void Execute() { }\n}",
+        "class ExampleType\n{\n    // Leading comment.\n    void Execute() { }\n}")]
     public async Task FixesPaddedEdges(string source, string expected)
     {
         Assert.Equal(expected, await CodeFixTestHarness.FixBlockPadding(source, fixAll: false));

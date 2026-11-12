@@ -15,14 +15,12 @@ namespace NetAgents.BuildTasks;
 
 internal static class CodeFixRunner
 {
-    public static async Task<CodeFixResult> Fix(
-        Project project,
+    public static async Task<CodeFixResult> Fix(Project project,
         ImmutableArray<DiagnosticAnalyzer> analyzers,
         CodeFixProvider[] providers,
         Action<string> reportAnalyzerFault,
         CancellationToken cancellationToken,
-        FormattingProgress? progress = null
-    )
+        FormattingProgress? progress = null)
     {
         ConcurrentDictionary<string, bool> reported = new(StringComparer.Ordinal);
 
@@ -111,8 +109,7 @@ internal static class CodeFixRunner
         throw new InvalidOperationException(message: "The formatting operation ended without completing.");
     }
 
-    private static async Task<CodeActionApplication> ApplyAvailableFix(
-        Project project,
+    private static async Task<CodeActionApplication> ApplyAvailableFix(Project project,
         ImmutableArray<Diagnostic> diagnostics,
         CodeFixProvider[] providers,
         ImmutableHashSet<DocumentId> editable,
@@ -120,8 +117,7 @@ internal static class CodeFixRunner
         HashSet<string> rejectedFixAllActions,
         bool internalsShared,
         FormattingProgress progress,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
         string? attempt = null;
 
@@ -292,11 +288,9 @@ internal static class CodeFixRunner
             return null;
 
         // ponytail: handles case-only collisions; extend the comparison if other naming transformations need repair.
-        bool collision = model.LookupSymbols(diagnosticSpan.Start).Any(
-            symbol =>
+        bool collision = model.LookupSymbols(diagnosticSpan.Start).Any(symbol =>
             symbol is ILocalSymbol or IParameterSymbol && !SymbolEqualityComparer.Default.Equals(symbol, local)
-                && string.Equals(symbol.Name, local.Name, StringComparison.OrdinalIgnoreCase)
-        );
+                && string.Equals(symbol.Name, local.Name, StringComparison.OrdinalIgnoreCase));
 
         if (!collision)
             return null;
@@ -315,12 +309,10 @@ internal static class CodeFixRunner
         return renamed.GetProject(document.Project.Id);
     }
 
-    private static async Task<CodeActionApplication> AvoidNamingCollisions(
-        Project project,
+    private static async Task<CodeActionApplication> AvoidNamingCollisions(Project project,
         ImmutableArray<Diagnostic> diagnostics,
         ImmutableHashSet<DocumentId> editable,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
         List<(DocumentId Document, TextSpan SourceSpan, Diagnostic Diagnostic)> candidates = [];
 
@@ -408,12 +400,10 @@ internal static class CodeFixRunner
         // Oscillating analyzer fixes are the usual cause, so every blocking error is listed, not just
         // compiler errors. The formatting compilation escalates every warning, so only in-source errors
         // qualify: reference remarks the consumer build never fails for would bury the real blockers.
-        lines.AddRange(
-            diagnostics.Where(IsBlockingError)
+        lines.AddRange(diagnostics.Where(IsBlockingError)
                 .OrderBy(static diagnostic => diagnostic.Location.SourceTree?.FilePath ?? string.Empty, StringComparer.Ordinal)
                 .ThenBy(static diagnostic => diagnostic.Location.SourceSpan.Start)
-                .Select(static diagnostic => diagnostic.ToString())
-        );
+                .Select(static diagnostic => diagnostic.ToString()));
 
         // An empty segment would reach MSBuild as a second error with no message at all.
         return new InvalidOperationException(string.Join(Environment.NewLine, lines));
@@ -459,26 +449,22 @@ internal static class CodeFixRunner
         return actions;
     }
 
-    private static async Task<CodeAction?> GetFixAllAction(
-        CodeFixProvider provider,
+    private static async Task<CodeAction?> GetFixAllAction(CodeFixProvider provider,
         FixAllProvider fixAllProvider,
         Document document,
         CodeAction selected,
         ImmutableArray<Diagnostic> diagnostics,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
         try
         {
-            FixAllContext context = new(
-                document,
+            FixAllContext context = new(document,
                 provider,
                 FixAllScope.Project,
                 selected.EquivalenceKey,
                 [.. provider.FixableDiagnosticIds],
                 new BuildDiagnostics(diagnostics),
-                cancellationToken
-            );
+                cancellationToken);
 
             return await fixAllProvider.GetFixAsync(context).ConfigureAwait(continueOnCapturedContext: false);
         }

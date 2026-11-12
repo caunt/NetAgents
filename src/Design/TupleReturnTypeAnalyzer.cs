@@ -22,29 +22,25 @@ public sealed class TupleReturnTypeAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0024";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Tuple return types are forbidden",
         messageFormat: "Return a dedicated named record, class, or struct instead of a tuple",
         category: "Design",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(
-            AnalyzeDeclaration,
+        context.RegisterSyntaxNodeAction(AnalyzeDeclaration,
             SyntaxKind.MethodDeclaration,
             SyntaxKind.LocalFunctionStatement,
             SyntaxKind.PropertyDeclaration,
             SyntaxKind.IndexerDeclaration,
             SyntaxKind.DelegateDeclaration,
             SyntaxKind.OperatorDeclaration,
-            SyntaxKind.ConversionOperatorDeclaration
-        );
+            SyntaxKind.ConversionOperatorDeclaration);
         context.RegisterSyntaxNodeAction(AnalyzeFunctionPointer, SyntaxKind.FunctionPointerType);
         context.RegisterOperationAction(AnalyzeAnonymousFunction, OperationKind.AnonymousFunction);
     }

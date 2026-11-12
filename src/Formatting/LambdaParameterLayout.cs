@@ -37,13 +37,11 @@ internal static class LambdaParameterLayout
             .. Meaningful(parameters.CloseParenToken.LeadingTrivia),
             .. parameters.CloseParenToken.TrailingTrivia];
 
-        return SyntaxFactory.SimpleLambdaExpression(
-            lambda.Modifiers,
+        return SyntaxFactory.SimpleLambdaExpression(lambda.Modifiers,
             parameter.WithLeadingTrivia(leading).WithTrailingTrivia(trailing),
             lambda.ArrowToken,
             lambda.Block,
-            lambda.ExpressionBody
-        );
+            lambda.ExpressionBody);
     }
 
     // Whitespace between the parentheses is padding; anything else is a comment worth keeping.

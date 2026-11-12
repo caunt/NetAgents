@@ -26,28 +26,24 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
 
     private const int MaximumFileCount = 16;
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Directories must have a focused scope",
         messageFormat: "Directory '{0}' contains {1} authored C# files (maximum {2}); organize these files into subdirectories with narrower responsibilities",
         category: "Structure",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable, WellKnownDiagnosticTags.CompilationEnd]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable, WellKnownDiagnosticTags.CompilationEnd]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterCompilationStartAction(
-            static compilationContext =>
-            {
-                StringComparer pathComparer = Path.DirectorySeparatorChar == '\\' ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-                ConcurrentDictionary<string, SyntaxTree> files = new(pathComparer);
-                compilationContext.RegisterSyntaxTreeAction(treeContext => CollectFile(treeContext, files));
-                compilationContext.RegisterCompilationEndAction(endContext => AnalyzeDirectories(endContext, files, pathComparer));
-            }
-        );
+        context.RegisterCompilationStartAction(static compilationContext =>
+        {
+            StringComparer pathComparer = Path.DirectorySeparatorChar == '\\' ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+            ConcurrentDictionary<string, SyntaxTree> files = new(pathComparer);
+            compilationContext.RegisterSyntaxTreeAction(treeContext => CollectFile(treeContext, files));
+            compilationContext.RegisterCompilationEndAction(endContext => AnalyzeDirectories(endContext, files, pathComparer));
+        });
     }
 
     private static void AnalyzeDirectories(CompilationAnalysisContext context, ConcurrentDictionary<string, SyntaxTree> files, StringComparer pathComparer)
@@ -62,15 +58,11 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
 
             SyntaxTree firstFile = directory.OrderBy(static file => file.Key, pathComparer).First().Value;
 
-            context.ReportDiagnostic(
-                Diagnostic.Create(
-                    Rule,
-                    Location.Create(firstFile, new TextSpan(start: 0, length: 0)),
-                    directory.Key,
-                    count.ToString(CultureInfo.InvariantCulture),
-                    MaximumFileCount.ToString(CultureInfo.InvariantCulture)
-                )
-            );
+            context.ReportDiagnostic(Diagnostic.Create(Rule,
+                Location.Create(firstFile, new TextSpan(start: 0, length: 0)),
+                directory.Key,
+                count.ToString(CultureInfo.InvariantCulture),
+                MaximumFileCount.ToString(CultureInfo.InvariantCulture)));
         }
     }
 

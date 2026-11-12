@@ -22,25 +22,21 @@ internal static class ConsumerBuild
             ?? throw new InvalidOperationException(message: "The test build configuration is missing.");
 
         string packageDirectory = Path.Combine(paths: [workspacePath, "artifacts"]);
-        await RunDevelopmentKit(
-            repositoryDirectory.FullName,
-                    [
+        await RunDevelopmentKit(repositoryDirectory.FullName,
+            [
             "pack", "src/NetAgents.Analyzers.csproj", "--configuration", configuration,
             "--no-build", "--no-restore", "--output", packageDirectory,
-        ]
-        ).ConfigureAwait(continueOnCapturedContext: false);
+        ]).ConfigureAwait(continueOnCapturedContext: false);
 
         return Assert.Single(Directory.EnumerateFiles(packageDirectory, searchPattern: "*.nupkg"));
     }
 
-    internal static async Task RunDevelopmentKit(
-        string workingDirectory,
+    internal static async Task RunDevelopmentKit(string workingDirectory,
         string[] arguments,
         string? expectedDiagnosticIdentifier = null,
         string[]? expectedOutput = null,
         string[]? forbiddenOutput = null,
-        bool withoutShell = false
-    )
+        bool withoutShell = false)
     {
         using Process process = new();
 

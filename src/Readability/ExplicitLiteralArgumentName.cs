@@ -44,15 +44,13 @@ internal static class ExplicitLiteralArgumentName
         return argument.NameColon is not null && Unwrap(argument.Expression) is not LiteralExpressionSyntax and not DefaultExpressionSyntax && argument.Parent is BaseArgumentListSyntax list && IsPositional(list, model, cancellationToken);
     }
 
-    private static bool AppendExpanded(
-        BaseArgumentListSyntax list,
+    private static bool AppendExpanded(BaseArgumentListSyntax list,
         SemanticModel model,
         ImmutableArray<IParameterSymbol> parameters,
         int expanded,
         List<ArgumentSyntax> rewritten,
         ImmutableArray<TextSpan>.Builder spans,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
         SeparatedSyntaxList<ArgumentSyntax> arguments = list.Arguments;
         List<TextSpan> named = [];
@@ -211,12 +209,10 @@ internal static class ExplicitLiteralArgumentName
         return initializer;
     }
 
-    private static int GetExpandedStart(
-        BaseArgumentListSyntax list,
+    private static int GetExpandedStart(BaseArgumentListSyntax list,
         SemanticModel model,
         ImmutableArray<IParameterSymbol> parameters,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
         int position = parameters.Length - 1;
 
@@ -239,20 +235,16 @@ internal static class ExplicitLiteralArgumentName
 
     private static bool HasComments(BaseArgumentListSyntax list, TextSpan range)
     {
-        return list.DescendantTrivia().Any(
-            trivia =>
+        return list.DescendantTrivia().Any(trivia =>
             range.Contains(trivia.SpanStart)
-                && trivia.Kind() is SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia
-        );
+                && trivia.Kind() is SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia);
     }
 
-    private static bool IsCallable(
-        BaseArgumentListSyntax list,
+    private static bool IsCallable(BaseArgumentListSyntax list,
         SemanticModel model,
         CancellationToken cancellationToken,
         out ISymbol? target,
-        out ImmutableArray<IParameterSymbol> parameters
-    )
+        out ImmutableArray<IParameterSymbol> parameters)
     {
         target = null;
         parameters = [];
@@ -322,13 +314,11 @@ internal static class ExplicitLiteralArgumentName
         return target is not null && parameters.Length >= arguments.Count;
     }
 
-    private static bool KeepsTarget(
-        BaseArgumentListSyntax list,
+    private static bool KeepsTarget(BaseArgumentListSyntax list,
         BaseArgumentListSyntax replacement,
         ISymbol? original,
         SemanticModel model,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
         SyntaxNode? anchor = FindAnchor(list);
 

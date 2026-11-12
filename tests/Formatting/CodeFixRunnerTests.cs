@@ -20,8 +20,8 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 public sealed class CodeFixRunnerTests
 {
     // The layout NETAGENTS0020 and NETAGENTS0016 both accept for a lambda holding statements.
-    private const string ExpandedLambda = "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n"
-        + "                int length = System.Environment.ProcessorCount;\n\n                return length > 0;\n            }\n        );";
+    private const string ExpandedLambda = "System.Threading.Tasks.Task.Run(() =>\n        {\n"
+        + "            int length = System.Environment.ProcessorCount;\n\n            return length > 0;\n        });";
 
     /// <summary>Appends the final newline the document already uses instead of a bare line feed.</summary>
     [Fact]
@@ -45,35 +45,25 @@ public sealed class CodeFixRunnerTests
     /// <param name="statements">The statements as written.</param>
     /// <param name="expected">The statements after the run.</param>
     [Theory]
-    [InlineData(
-        "if (ok) return;\n\n        try { System.Console.WriteLine(); }\n        catch (System.InvalidOperationException exception) { System.Console.WriteLine(exception); }",
-        "if (ok) return;\n\n        try\n        {\n            System.Console.WriteLine();\n        }\n        catch (System.InvalidOperationException exception)\n        {\n            System.Console.WriteLine(exception);\n        }"
-    )]
-    [InlineData(
-        "System.Threading.Tasks.Task.Run(() => { try { System.Console.WriteLine(); } finally { System.Console.WriteLine(ok); } });",
-        "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n                try\n                {\n                    System.Console.WriteLine();\n                }\n                finally\n                {\n                    System.Console.WriteLine(ok);\n                }\n            }\n        );"
-    )]
-    [InlineData(
-        "System.Threading.Tasks.Task.Run(() => { if (ok) System.Console.WriteLine(); });",
-        "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n                if (ok) System.Console.WriteLine();\n            }\n        );"
-    )]
-    [InlineData(
-        "System.Threading.Tasks.Task.Run(() => { { int length = System.Environment.ProcessorCount; } });",
-        "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n                {\n                    int length = System.Environment.ProcessorCount;\n                }\n            }\n        );"
-    )]
+    [InlineData("if (ok) return;\n\n        try { System.Console.WriteLine(); }\n        catch (System.InvalidOperationException exception) { System.Console.WriteLine(exception); }",
+        "if (ok) return;\n\n        try\n        {\n            System.Console.WriteLine();\n        }\n        catch (System.InvalidOperationException exception)\n        {\n            System.Console.WriteLine(exception);\n        }")]
+    [InlineData("System.Threading.Tasks.Task.Run(() => { try { System.Console.WriteLine(); } finally { System.Console.WriteLine(ok); } });",
+        "System.Threading.Tasks.Task.Run(() =>\n        {\n            try\n            {\n                System.Console.WriteLine();\n            }\n            finally\n            {\n                System.Console.WriteLine(ok);\n            }\n        });")]
+    [InlineData("System.Threading.Tasks.Task.Run(() => { if (ok) System.Console.WriteLine(); });",
+        "System.Threading.Tasks.Task.Run(() =>\n        {\n            if (ok) System.Console.WriteLine();\n        });")]
+    [InlineData("System.Threading.Tasks.Task.Run(() => { { int length = System.Environment.ProcessorCount; } });",
+        "System.Threading.Tasks.Task.Run(() =>\n        {\n            {\n                int length = System.Environment.ProcessorCount;\n            }\n        });")]
     public async Task ConvergesWithStatementBlocks(string statements, string expected)
     {
         const string method = "class Example\n{\n    void Execute(bool ok)\n    {\n        STATEMENTS\n    }\n}\n";
 
         using AdhocWorkspace workspace = new();
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
-            CreateFieldProject(workspace, method.Replace(oldValue: "STATEMENTS", statements, StringComparison.Ordinal)),
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(CreateFieldProject(workspace, method.Replace(oldValue: "STATEMENTS", statements, StringComparison.Ordinal)),
             [new ControlFlowBracesAnalyzer(), new StatementSpacingAnalyzer(), new ArgumentLayoutAnalyzer()],
             [new ControlFlowBracesCodeFixProvider(), new StatementSpacingCodeFixProvider(), new ArgumentLayoutCodeFixProvider()],
             static fault => Assert.Fail(fault),
-            CancellationToken.None
-        );
+            CancellationToken.None);
 
         string formatted = (await result.Project.Documents.Single().GetTextAsync()).ToString();
 
@@ -94,13 +84,11 @@ public sealed class CodeFixRunnerTests
 
         using AdhocWorkspace workspace = new();
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
-            CreateFieldProject(workspace, method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal)),
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(CreateFieldProject(workspace, method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal)),
             [new ArgumentLayoutAnalyzer(), new StatementSpacingAnalyzer()],
             [new ArgumentLayoutCodeFixProvider(), new StatementSpacingCodeFixProvider()],
             static fault => Assert.Fail(fault),
-            CancellationToken.None
-        );
+            CancellationToken.None);
 
         string formatted = (await result.Project.Documents.Single().GetTextAsync()).ToString();
 
@@ -122,22 +110,18 @@ public sealed class CodeFixRunnerTests
             new ModifierFix(CascadeAnalyzer.PrivateIdentifier, replaced: "private", replacement: "public"),
             new ModifierFix(CascadeAnalyzer.PublicIdentifier, replaced: "public", replacement: "internal")];
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
-            CreateFieldProject(workspace, source),
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(CreateFieldProject(workspace, source),
             [new CascadeAnalyzer()],
             providers,
             static fault => Assert.Fail(fault),
-            CancellationToken.None
-        );
+            CancellationToken.None);
 
         // The first pass introduces the second rule and the second pass settles it, so the run keeps its work.
         Assert.True(result.Introduced.IsEmpty);
         Assert.True(result.Blocking.IsEmpty);
-        Assert.Contains(
-            expectedSubstring: "internal static int Value",
+        Assert.Contains(expectedSubstring: "internal static int Value",
             (await result.Project.Documents.Single().GetTextAsync()).ToString(),
-            StringComparison.Ordinal
-        );
+            StringComparison.Ordinal);
     }
 
     /// <summary>Moves an internal type when nothing outside the assembly can name it.</summary>
@@ -162,11 +146,9 @@ public sealed class CodeFixRunnerTests
     [Theory]
     [InlineData("void Run() { Missing(); }", "Missing();", "CS0103")]
     [InlineData("void Run() { Sample sample = new(); }", "Sample sample = new();", "CS0246")]
-    [InlineData(
-        "static bool IsValid(System.Memory<byte>? data) => data.HasValue; void Run() { System.ReadOnlyMemory<byte>? document = null; IsValid(document); }",
+    [InlineData("static bool IsValid(System.Memory<byte>? data) => data.HasValue; void Run() { System.ReadOnlyMemory<byte>? document = null; IsValid(document); }",
         "IsValid(document);",
-        "CS1503"
-    )]
+        "CS1503")]
     [InlineData("Example() { } void Run() { Example example = new(0); }", "new(0);", "CS1729")]
     public async Task PreservesCompilerErrors(string body, string survivor, string diagnosticIdentifier)
     {
@@ -209,11 +191,9 @@ public sealed class CodeFixRunnerTests
         Assert.Equal(expected: "CS0122", error.Id);
 
         // The skipped accessibility repair would have replaced this modifier.
-        Assert.Contains(
-            expectedSubstring: "private static int Value",
+        Assert.Contains(expectedSubstring: "private static int Value",
             (await result.Documents.Single().GetTextAsync()).ToString(),
-            StringComparison.Ordinal
-        );
+            StringComparison.Ordinal);
     }
 
     /// <summary>Never offers a compiler warning the build escalates to an error, keeping the cast the fix would add out.</summary>
@@ -226,13 +206,9 @@ public sealed class CodeFixRunnerTests
         const string source = "class Example { static int Read(int? value) { return (int)value; } }\n";
 
         Project project = workspace.AddProject(name: "Escalated", LanguageNames.CSharp)
-            .WithCompilationOptions(
-                new CSharpCompilationOptions(
-                    OutputKind.DynamicallyLinkedLibrary,
-                    nullableContextOptions: NullableContextOptions.Enable,
-                    generalDiagnosticOption: ReportDiagnostic.Error
-                )
-            )
+            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable,
+                generalDiagnosticOption: ReportDiagnostic.Error))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Example.cs", SourceText.From(source), filePath: "Example.cs").Project;
 
@@ -255,13 +231,11 @@ public sealed class CodeFixRunnerTests
 
         ThrowingFix provider = new(stage);
 
-        Project result = (await CodeFixRunner.Fix(
-            CreateProject(workspace),
+        Project result = (await CodeFixRunner.Fix(CreateProject(workspace),
             [new MethodSpacingAnalyzer(), new MarkerAnalyzer()],
             [provider],
             static fault => Assert.Fail(fault),
-            CancellationToken.None
-        )).Project;
+            CancellationToken.None)).Project;
 
         Compilation? compilation = await result.GetCompilationAsync();
 
@@ -305,11 +279,9 @@ public sealed class CodeFixRunnerTests
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, [], [provider], static fault => Assert.Fail(fault), CancellationToken.None);
 
         Assert.True(result.Blocking.IsEmpty);
-        Assert.DoesNotContain(
-            expectedSubstring: "using System;",
+        Assert.DoesNotContain(expectedSubstring: "using System;",
             (await result.Project.Documents.Single().GetTextAsync()).ToString(),
-            StringComparison.Ordinal
-        );
+            StringComparison.Ordinal);
     }
 
     /// <summary>Allows existing compiler errors to move when a fix changes preceding text.</summary>
@@ -340,13 +312,11 @@ public sealed class CodeFixRunnerTests
         const string source = "class Example { private static int Value; }";
         ModifierFix provider = new(CascadeAnalyzer.PrivateIdentifier, replaced: "private", replacement: "public");
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
-            CreateFieldProject(workspace, source),
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(CreateFieldProject(workspace, source),
             [new CascadeAnalyzer()],
             [provider],
             static fault => Assert.Fail(fault),
-            CancellationToken.None
-        );
+            CancellationToken.None);
 
         // Nothing repairs the rule the fix triggered, so the rewrite is withheld and named instead.
         Assert.Equal(source, (await result.Project.Documents.Single().GetTextAsync()).ToString());
@@ -367,13 +337,11 @@ public sealed class CodeFixRunnerTests
         AccessibilityFix provider = new(mode: "valid");
         CodeFixProvider[] providers = firstAction == "noop" ? [new AccessibilityFix(mode: "noop"), provider] : [provider];
 
-        Project result = (await CodeFixRunner.Fix(
-            CreateProject(workspace),
+        Project result = (await CodeFixRunner.Fix(CreateProject(workspace),
             [new MethodSpacingAnalyzer(), new MarkerAnalyzer()],
             providers,
             static fault => Assert.Fail(fault),
-            CancellationToken.None
-        )).Project;
+            CancellationToken.None)).Project;
 
         Compilation? compilation = await result.GetCompilationAsync();
         Assert.NotNull(compilation);
@@ -394,14 +362,12 @@ public sealed class CodeFixRunnerTests
         MarkerAnalyzer analyzer = new();
         List<string> messages = [];
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
-            project,
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
             [analyzer],
             [new NamespaceFix()],
             static fault => Assert.Fail(fault),
             CancellationToken.None,
-            new(project.Name, messages.Add)
-        );
+            new(project.Name, messages.Add));
 
         string formatted = (await result.Project.Documents.First().GetTextAsync()).ToString();
         Assert.Contains(expectedSubstring: "namespace Consumer;", formatted, StringComparison.Ordinal);
@@ -445,11 +411,9 @@ public sealed class CodeFixRunnerTests
         Assert.Equal(expected: "CS0122", blockedResult.Blocking.Single().Id);
 
         // The unrelated whitespace repair still lands, which is what a failing build writes to disk.
-        Assert.Contains(
-            expectedSubstring: "private static int Value",
+        Assert.Contains(expectedSubstring: "private static int Value",
             (await blockedResult.Project.Documents.Single().GetTextAsync()).ToString(),
-            StringComparison.Ordinal
-        );
+            StringComparison.Ordinal);
 
         Project clean = workspace.AddProject(name: "Clean", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
@@ -478,11 +442,9 @@ public sealed class CodeFixRunnerTests
 
         Assert.Equal(expected: "CS0122", result.Blocking.Single().Id);
         Assert.InRange(provider.Attempts, low: 1, high: 3);
-        Assert.Contains(
-            expectedSubstring: "using System;",
+        Assert.Contains(expectedSubstring: "using System;",
             (await result.Project.Documents.Single().GetTextAsync()).ToString(),
-            StringComparison.Ordinal
-        );
+            StringComparison.Ordinal);
     }
 
     /// <summary>Reports stalled actions without exhausting the pass limit.</summary>
@@ -497,15 +459,11 @@ public sealed class CodeFixRunnerTests
         Project project = CreateProject(workspace);
         AccessibilityFix provider = new(mode);
 
-        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => CodeFixRunner.Fix(
-                project,
-                [new MethodSpacingAnalyzer(), new MarkerAnalyzer()],
-                [provider],
-                static fault => Assert.Fail(fault),
-                CancellationToken.None
-            )
-        );
+        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => CodeFixRunner.Fix(project,
+            [new MethodSpacingAnalyzer(), new MarkerAnalyzer()],
+            [provider],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None));
 
         Assert.Contains(expectedSubstring: "CS0122", exception.Message, StringComparison.Ordinal);
         Assert.Matches(expectedRegexPattern: @"Example\.cs\([1-9][0-9]*,[1-9][0-9]*\): error CS0122", exception.Message);
@@ -550,13 +508,11 @@ public sealed class CodeFixRunnerTests
         AccessibilityFix working = new(mode: "valid");
         int expectedAttempts = stage == "identifiers" ? 0 : 1;
 
-        Project result = (await CodeFixRunner.Fix(
-            CreateProject(workspace),
+        Project result = (await CodeFixRunner.Fix(CreateProject(workspace),
             [new MethodSpacingAnalyzer(), new MarkerAnalyzer()],
             [throwing, working],
             static fault => Assert.Fail(fault),
-            CancellationToken.None
-        )).Project;
+            CancellationToken.None)).Project;
 
         Compilation? compilation = await result.GetCompilationAsync();
 
@@ -585,11 +541,9 @@ public sealed class CodeFixRunnerTests
 
         return !internalsShared
             ? project
-            : project.AddDocument(
-                name: "Visibility.cs",
+            : project.AddDocument(name: "Visibility.cs",
                 SourceText.From(text: "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"Friend\")]\n"),
-                filePath: "Visibility.cs"
-            ).Project;
+                filePath: "Visibility.cs").Project;
     }
 
     private static Project CreateProject(AdhocWorkspace workspace)
@@ -597,11 +551,9 @@ public sealed class CodeFixRunnerTests
         return workspace.AddProject(name: "Progress", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(
-                name: "Example.cs",
+            .AddDocument(name: "Example.cs",
                 SourceText.From(text: "class Hidden { private static int Value; } class Consumer { int Read() => Hidden.Value; }"),
-                filePath: "Example.cs"
-            ).Project;
+                filePath: "Example.cs").Project;
     }
 
     private sealed class AccessibilityFix(string mode) : CodeFixProvider
@@ -613,9 +565,7 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Attempt accessibility repair",
+            context.RegisterCodeFix(CodeAction.Create(title: "Attempt accessibility repair",
                     async cancellationToken =>
                     {
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -632,49 +582,39 @@ public sealed class CodeFixRunnerTests
                         };
 
                         return context.Document.WithText(SourceText.From(changed));
-                    }
-                ),
-                context.Diagnostics
-            );
+                    }),
+                context.Diagnostics);
 
             return Task.CompletedTask;
         }
     }
 
     /// <summary>Reports one rule for a private field and another for a public one.</summary>
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisCorrectness",
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness",
         "RS1001",
-        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts."
-    )]
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisReleaseTracking",
+        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts.")]
+    [SuppressMessage("MicrosoftCodeAnalysisReleaseTracking",
         "RS2008",
-        Justification = "These private instrumentation rules are only used in tests and are not shipped."
-    )]
+        Justification = "These private instrumentation rules are only used in tests and are not shipped.")]
     private sealed class CascadeAnalyzer : DiagnosticAnalyzer
     {
         public const string PrivateIdentifier = "TEST0002";
 
         public const string PublicIdentifier = "TEST0003";
 
-        private static readonly DiagnosticDescriptor PrivateRule = new(
-            PrivateIdentifier,
+        private static readonly DiagnosticDescriptor PrivateRule = new(PrivateIdentifier,
             title: "Private field",
             messageFormat: "Private field",
             category: "Testing",
             DiagnosticSeverity.Error,
-            isEnabledByDefault: true
-        );
+            isEnabledByDefault: true);
 
-        private static readonly DiagnosticDescriptor PublicRule = new(
-            PublicIdentifier,
+        private static readonly DiagnosticDescriptor PublicRule = new(PublicIdentifier,
             title: "Public field",
             messageFormat: "Public field",
             category: "Testing",
             DiagnosticSeverity.Error,
-            isEnabledByDefault: true
-        );
+            isEnabledByDefault: true);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [PrivateRule, PublicRule];
 
@@ -682,19 +622,17 @@ public sealed class CodeFixRunnerTests
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSyntaxNodeAction(
-                static node =>
-                {
-                    FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
+            context.RegisterSyntaxNodeAction(static node =>
+            {
+                FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
 
-                    if (field.Modifiers.Any(SyntaxKind.PrivateKeyword))
-                        node.ReportDiagnostic(Diagnostic.Create(PrivateRule, field.GetLocation()));
+                if (field.Modifiers.Any(SyntaxKind.PrivateKeyword))
+                    node.ReportDiagnostic(Diagnostic.Create(PrivateRule, field.GetLocation()));
 
-                    if (field.Modifiers.Any(SyntaxKind.PublicKeyword))
-                        node.ReportDiagnostic(Diagnostic.Create(PublicRule, field.GetLocation()));
-                },
-                SyntaxKind.FieldDeclaration
-            );
+                if (field.Modifiers.Any(SyntaxKind.PublicKeyword))
+                    node.ReportDiagnostic(Diagnostic.Create(PublicRule, field.GetLocation()));
+            },
+                SyntaxKind.FieldDeclaration);
         }
     }
 
@@ -709,41 +647,31 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Declare the missing code",
-                    cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(text: "class Example { void Run() { } }")))
-                ),
-                context.Diagnostics
-            );
+            context.RegisterCodeFix(CodeAction.Create(title: "Declare the missing code",
+                    cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(text: "class Example { void Run() { } }")))),
+                context.Diagnostics);
 
             return Task.CompletedTask;
         }
     }
 
     /// <summary>Reports an analyzer error on a private field, which the accessibility repair removes.</summary>
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisCorrectness",
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness",
         "RS1001",
-        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts."
-    )]
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisReleaseTracking",
+        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts.")]
+    [SuppressMessage("MicrosoftCodeAnalysisReleaseTracking",
         "RS2008",
-        Justification = "This private instrumentation rule is only used in tests and is not shipped."
-    )]
+        Justification = "This private instrumentation rule is only used in tests and is not shipped.")]
     private sealed class MarkerAnalyzer : DiagnosticAnalyzer
     {
         public const string Identifier = "TEST0001";
 
-        private static readonly DiagnosticDescriptor Rule = new(
-            Identifier,
+        private static readonly DiagnosticDescriptor Rule = new(Identifier,
             title: "Private field",
             messageFormat: "Private field",
             category: "Testing",
             DiagnosticSeverity.Error,
-            isEnabledByDefault: true
-        );
+            isEnabledByDefault: true);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
 
@@ -751,16 +679,14 @@ public sealed class CodeFixRunnerTests
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSyntaxNodeAction(
-                static node =>
-                {
-                    FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
+            context.RegisterSyntaxNodeAction(static node =>
+            {
+                FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
 
-                    if (field.Modifiers.Any(SyntaxKind.PrivateKeyword))
-                        node.ReportDiagnostic(Diagnostic.Create(Rule, field.GetLocation()));
-                },
-                SyntaxKind.FieldDeclaration
-            );
+                if (field.Modifiers.Any(SyntaxKind.PrivateKeyword))
+                    node.ReportDiagnostic(Diagnostic.Create(Rule, field.GetLocation()));
+            },
+                SyntaxKind.FieldDeclaration);
         }
     }
 
@@ -774,18 +700,14 @@ public sealed class CodeFixRunnerTests
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    $"Replace {replaced} with {replacement}",
+            context.RegisterCodeFix(CodeAction.Create($"Replace {replaced} with {replacement}",
                     async cancellationToken =>
                     {
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
                         return context.Document.WithText(SourceText.From(text.ToString().Replace(replaced, replacement, StringComparison.Ordinal)));
-                    }
-                ),
-                context.Diagnostics
-            );
+                    }),
+                context.Diagnostics);
 
             return Task.CompletedTask;
         }
@@ -797,9 +719,7 @@ public sealed class CodeFixRunnerTests
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Move the type to a nested namespace",
+            context.RegisterCodeFix(CodeAction.Create(title: "Move the type to a nested namespace",
                     async cancellationToken =>
                     {
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -811,10 +731,8 @@ public sealed class CodeFixRunnerTests
                             .Replace(oldValue: "private static int Value;", newValue: "public static int Value;", StringComparison.Ordinal);
 
                         return context.Document.WithText(SourceText.From(moved));
-                    }
-                ),
-                context.Diagnostics
-            );
+                    }),
+                context.Diagnostics);
 
             return Task.CompletedTask;
         }
@@ -829,10 +747,8 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
-            context.RegisterCodeFix(
-                CodeAction.Create(title: "Replace method body", cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
-                context.Diagnostics
-            );
+            context.RegisterCodeFix(CodeAction.Create(title: "Replace method body", cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
+                context.Diagnostics);
 
             return Task.CompletedTask;
         }
@@ -848,18 +764,14 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Keep the unnecessary using",
+            context.RegisterCodeFix(CodeAction.Create(title: "Keep the unnecessary using",
                     async cancellationToken =>
                     {
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
                         return context.Document.WithText(SourceText.From(text.ToString()));
-                    }
-                ),
-                context.Diagnostics
-            );
+                    }),
+                context.Diagnostics);
 
             return Task.CompletedTask;
         }
@@ -875,10 +787,8 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
-            context.RegisterCodeFix(
-                CodeAction.Create(title: "Replace suggestion body", cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
-                context.Diagnostics
-            );
+            context.RegisterCodeFix(CodeAction.Create(title: "Replace suggestion body", cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
+                context.Diagnostics);
 
             return Task.CompletedTask;
         }
@@ -909,9 +819,7 @@ public sealed class CodeFixRunnerTests
             if (stage == "registration")
                 throw Skew();
 
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Repair accessibility",
+            context.RegisterCodeFix(CodeAction.Create(title: "Repair accessibility",
                     async cancellationToken =>
                     {
                         if (stage == "operations")
@@ -922,10 +830,8 @@ public sealed class CodeFixRunnerTests
 
                         return context.Document.WithText(SourceText.From(changed));
                     },
-                    equivalenceKey: "NetAgentsThrowingFix"
-                ),
-                context.Diagnostics
-            );
+                    equivalenceKey: "NetAgentsThrowingFix"),
+                context.Diagnostics);
 
             return Task.CompletedTask;
         }

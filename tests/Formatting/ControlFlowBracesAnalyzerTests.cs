@@ -43,10 +43,8 @@ public sealed class ControlFlowBracesAnalyzerTests
     [InlineData("if (count > 0) { count++; count--; } else return;", "2")]
     public async Task KeepsConditionalChainsConsistent(string statements, string expectedCount)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new ControlFlowBracesAnalyzer(),
-            $"public static class ExampleType {{ public static void Execute(int count) {{ {statements} }} }}"
-        );
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(),
+            $"public static class ExampleType {{ public static void Execute(int count) {{ {statements} }} }}");
 
         Assert.Equal(int.Parse(expectedCount, System.Globalization.CultureInfo.InvariantCulture), diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(ControlFlowBracesAnalyzer.RuleIdentifier, diagnostic.Id));
@@ -68,33 +66,19 @@ public sealed class ControlFlowBracesAnalyzerTests
     [InlineData("public static void Execute(int count) { if (count > 0)\n{\nint result = 0;\n}\n}")]
     [InlineData("public static void Execute(int count) { if (count > 0)\n{\nvoid Local() { }\n}\n}")]
     [InlineData("public static void Execute(int count) { if (count > 0)\n{\ndestination: return;\n}\n}")]
-    [InlineData(
-        "public static void Execute(string value) { if (value.Length > 0)\n{\nSystem.Console.WriteLine(int.TryParse(value, out int result));\n}\n}"
-    )]
-    [InlineData(
-        "public static void Execute(string value) { if (value.Length > 0)\n{\nSystem.Console.WriteLine(value is { Length: > 0 } result);\n}\n}"
-    )]
-    [InlineData(
-        "public static void Execute() { try\n{\nreturn;\n}\ncatch (System.Exception)\n{\nthrow;\n}\nfinally\n{\nSystem.Console.WriteLine();\n}\n}"
-    )]
+    [InlineData("public static void Execute(string value) { if (value.Length > 0)\n{\nSystem.Console.WriteLine(int.TryParse(value, out int result));\n}\n}")]
+    [InlineData("public static void Execute(string value) { if (value.Length > 0)\n{\nSystem.Console.WriteLine(value is { Length: > 0 } result);\n}\n}")]
+    [InlineData("public static void Execute() { try\n{\nreturn;\n}\ncatch (System.Exception)\n{\nthrow;\n}\nfinally\n{\nSystem.Console.WriteLine();\n}\n}")]
     [InlineData("public static void Execute(int count) { checked\n{\ncount++;\n}\nunchecked\n{\ncount++;\n}\n}")]
     [InlineData("public static unsafe void Execute(int* pointer) { unsafe\n{\n*pointer = 0;\n}\n}")]
     [InlineData("public static void Execute(int count) { if (count > 0)\n{\nif (count > 1) return;\n}\nelse\n{\nreturn;\n}\n}")]
-    [InlineData(
-        "public static void Execute(int count) { if (count > 0)\n{\ncount = System.Math.Abs(\ncount);\n}\nelse if (count < 0)\n{\nreturn;\n}\nelse\n{\nreturn;\n}\n}"
-    )]
+    [InlineData("public static void Execute(int count) { if (count > 0)\n{\ncount = System.Math.Abs(\ncount);\n}\nelse if (count < 0)\n{\nreturn;\n}\nelse\n{\nreturn;\n}\n}")]
     [InlineData("public static void Execute(int count) { if (count > 0)\n{\nreturn;\n}\nelse\n{\ncount = System.Math.Abs(\ncount);\n}\n}")]
     [InlineData("public static int Execute(int count) { switch (count) { case 0: int result; goto default; default: return result = 1; } }")]
-    [InlineData(
-        "public static int Execute(int count) { switch (count) { case 0: int Local<TValue>() => 1; return Local<int>(); default: return Local<string>(); } }"
-    )]
-    [InlineData(
-        "public static int Execute(int count) { switch (count) { case 0: count++; destination: return count; default: goto destination; } }"
-    )]
+    [InlineData("public static int Execute(int count) { switch (count) { case 0: int Local<TValue>() => 1; return Local<int>(); default: return Local<string>(); } }")]
+    [InlineData("public static int Execute(int count) { switch (count) { case 0: count++; destination: return count; default: goto destination; } }")]
     [InlineData("public static void Execute(int count) { if (count > 0) {\n#if true\nreturn;\n#endif\n} }")]
-    [InlineData(
-        "public static async System.Threading.Tasks.Task Execute(int disposed) { if (disposed != 0)\nreturn;\ntry\n{\nawait System.Threading.Tasks.Task.Yield();\n}\ncatch (System.InvalidOperationException exception)\n{\nSystem.Console.WriteLine(exception);\n}\n}"
-    )]
+    [InlineData("public static async System.Threading.Tasks.Task Execute(int disposed) { if (disposed != 0)\nreturn;\ntry\n{\nawait System.Threading.Tasks.Task.Yield();\n}\ncatch (System.InvalidOperationException exception)\n{\nSystem.Console.WriteLine(exception);\n}\n}")]
     public async Task PreservesRequiredBracesAndScopes(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
@@ -117,10 +101,8 @@ public sealed class ControlFlowBracesAnalyzerTests
     [InlineData("public static unsafe void Execute(int* pointer) { unsafe { *pointer = 0; } }", "1")]
     [InlineData("public static void Execute(int count) { { int result = count; } }", "1")]
     [InlineData("public static int Execute(int count) { switch (count) { case 0: { count++; return count; } default: return 0; } }", "1")]
-    [InlineData(
-        "public static void Execute() { try { System.Console.WriteLine(); } catch (System.InvalidOperationException exception) { System.Console.WriteLine(exception); } }",
-        "2"
-    )]
+    [InlineData("public static void Execute() { try { System.Console.WriteLine(); } catch (System.InvalidOperationException exception) { System.Console.WriteLine(exception); } }",
+        "2")]
     [InlineData("public static void Execute() { try { System.Console.WriteLine(); } catch { } finally { } }", "3")]
     [InlineData("public static void Execute() { try\n{ System.Console.WriteLine(); }\nfinally\n{ System.Console.WriteLine(); }\n}", "2")]
     [InlineData("public static void Execute(int count) { if (count > 0)\n{\ncount++; count--;\n}\n}", "1")]
@@ -145,19 +127,11 @@ public sealed class ControlFlowBracesAnalyzerTests
     [InlineData("public static void Execute(int count) { for (int index = 0; index < count; index++) { System.Console.WriteLine(index); } }")]
     [InlineData("public static void Execute(int[] values) { foreach (int value in values) { System.Console.WriteLine(value); } }")]
     [InlineData("public static void Execute(int[] values) { foreach (int value\nin values) { System.Console.WriteLine(value); } }")]
-    [InlineData(
-        "public static void Execute((int, int)[] values) { foreach (var (first, second) in values) { System.Console.WriteLine(first + second); } }"
-    )]
-    [InlineData(
-        "public static async System.Threading.Tasks.Task Execute(System.Collections.Generic.IAsyncEnumerable<int> values) { await foreach (int value in values) { System.Console.WriteLine(value); } }"
-    )]
-    [InlineData(
-        "public static System.Collections.Generic.IEnumerable<int> Execute(int[] values) { foreach (int value in values) { yield return value; } }"
-    )]
+    [InlineData("public static void Execute((int, int)[] values) { foreach (var (first, second) in values) { System.Console.WriteLine(first + second); } }")]
+    [InlineData("public static async System.Threading.Tasks.Task Execute(System.Collections.Generic.IAsyncEnumerable<int> values) { await foreach (int value in values) { System.Console.WriteLine(value); } }")]
+    [InlineData("public static System.Collections.Generic.IEnumerable<int> Execute(int[] values) { foreach (int value in values) { yield return value; } }")]
     [InlineData("public static void Execute() { using (var stream = new System.IO.MemoryStream()) { stream.Flush(); } }")]
-    [InlineData(
-        "public static async System.Threading.Tasks.Task Execute() { await using (var stream = new System.IO.MemoryStream()) { await stream.FlushAsync(); } }"
-    )]
+    [InlineData("public static async System.Threading.Tasks.Task Execute() { await using (var stream = new System.IO.MemoryStream()) { await stream.FlushAsync(); } }")]
     [InlineData("public static unsafe void Execute(int[] values) { fixed (int* pointer = values) { *pointer = 0; } }")]
     [InlineData("public static void Execute(string value) { lock (value) { System.Console.WriteLine(value); } }")]
     [InlineData("public static int Execute(int count) { switch (count) { default: { return count; } } }")]
@@ -168,12 +142,8 @@ public sealed class ControlFlowBracesAnalyzerTests
     [InlineData("public static void Execute(int count) { do count = System.Math.Abs(\ncount - 1); while (count > 0); }")]
     [InlineData("public static void Execute(int count) { for (int index = 0; index < count; index++) System.Console.WriteLine(\nindex); }")]
     [InlineData("public static void Execute(int[] values) { foreach (int value in values) System.Console.WriteLine(\nvalue); }")]
-    [InlineData(
-        "public static async System.Threading.Tasks.Task Execute(System.Collections.Generic.IAsyncEnumerable<int> values) { await foreach (int value in values) System.Console.WriteLine(\nvalue); }"
-    )]
-    [InlineData(
-        "public static async System.Threading.Tasks.Task Execute() { await using (var stream = new System.IO.MemoryStream()) stream.WriteByte(\n0); }"
-    )]
+    [InlineData("public static async System.Threading.Tasks.Task Execute(System.Collections.Generic.IAsyncEnumerable<int> values) { await foreach (int value in values) System.Console.WriteLine(\nvalue); }")]
+    [InlineData("public static async System.Threading.Tasks.Task Execute() { await using (var stream = new System.IO.MemoryStream()) stream.WriteByte(\n0); }")]
     [InlineData("public static void Execute() { using (var stream = new System.IO.MemoryStream()) stream.WriteByte(\n0); }")]
     [InlineData("public static unsafe void Execute(int[] values) { fixed (int* pointer = values) *pointer =\n0; }")]
     [InlineData("public static int Execute(int count) { switch (count) { default: return System.Math.Abs(\ncount); } }")]

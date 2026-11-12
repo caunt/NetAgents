@@ -59,10 +59,8 @@ internal static class ProjectFormatter
         string aliases = item.GetMetadata(metadataName: "Aliases");
         ImmutableArray<string> referenceAliases = string.IsNullOrEmpty(aliases) ? [] : [.. aliases.Split(separator: ',')];
 
-        MetadataReferenceProperties properties = new(
-            aliases: referenceAliases,
-            embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"), b: "true", StringComparison.OrdinalIgnoreCase)
-        );
+        MetadataReferenceProperties properties = new(aliases: referenceAliases,
+            embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"), b: "true", StringComparison.OrdinalIgnoreCase));
 
         return MetadataReference.CreateFromFile(GetPath(item), properties);
     }
@@ -74,17 +72,13 @@ internal static class ProjectFormatter
 
         if (languageVersion.Substituted)
         {
-            inputs.Log.LogMessage(
-                MessageImportance.Normal,
-                $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}"
-            );
+            inputs.Log.LogMessage(MessageImportance.Normal,
+                $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}");
         }
 
-        CSharpParseOptions parseOptions = new(
-            languageVersion.Version,
+        CSharpParseOptions parseOptions = new(languageVersion.Version,
             DocumentationMode.Diagnose,
-            preprocessorSymbols: inputs.DefineConstants.Split([';', ','], StringSplitOptions.RemoveEmptyEntries)
-        );
+            preprocessorSymbols: inputs.DefineConstants.Split([';', ','], StringSplitOptions.RemoveEmptyEntries));
 
         // Parse before loading analyzers or composing code-fix providers. Malformed source needs
         // its own diagnostics immediately, even when initializing those providers is expensive.
@@ -149,12 +143,10 @@ internal static class ProjectFormatter
             _ => OutputKind.DynamicallyLinkedLibrary,
         };
 
-        CSharpCompilationOptions compilationOptions = new(
-            outputKind,
+        CSharpCompilationOptions compilationOptions = new(outputKind,
             allowUnsafe: inputs.AllowUnsafe,
             nullableContextOptions: NullableContextOptions.Enable,
-            generalDiagnosticOption: ReportDiagnostic.Error
-        );
+            generalDiagnosticOption: ReportDiagnostic.Error);
 
         AnalyzerCatalog.AnalyzerLoadingResult analyzerCatalog = AnalyzerCatalog.Load(analyzerPaths, loader);
 
@@ -166,8 +158,7 @@ internal static class ProjectFormatter
         foreach (string failure in analyzerCatalog.Unavailable)
             inputs.Log.LogWarning(failure);
 
-        ProjectInfo information = ProjectInfo.Create(
-            projectIdentifier,
+        ProjectInfo information = ProjectInfo.Create(projectIdentifier,
             VersionStamp.Create(),
             inputs.AssemblyName,
             inputs.AssemblyName,
@@ -176,8 +167,7 @@ internal static class ProjectFormatter
             compilationOptions: compilationOptions,
             parseOptions: parseOptions,
             metadataReferences: inputs.References.Select(CreateReference),
-            analyzerReferences: analyzerCatalog.References
-        );
+            analyzerReferences: analyzerCatalog.References);
 
         Project initial = workspace.CurrentSolution.AddProject(information).GetProject(projectIdentifier)
             ?? throw new InvalidOperationException(message: "The formatting project is missing.");
@@ -288,10 +278,8 @@ internal static class ProjectFormatter
         // A withheld run rewrote nothing, so this has to be said before the guard below.
         if (!codeFixes.Introduced.IsEmpty)
         {
-            string introduced = string.Join(
-                separator: ", ",
-                codeFixes.Introduced.Select(static diagnostic => diagnostic.Id).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
-            );
+            string introduced = string.Join(separator: ", ",
+                codeFixes.Introduced.Select(static diagnostic => diagnostic.Id).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
 
             inputs.Log.LogMessage(MessageImportance.High, $"NetAgents made no change because formatting would have introduced {introduced}");
 
@@ -313,10 +301,8 @@ internal static class ProjectFormatter
         string rewriteCount = rewritten.Count.ToString(CultureInfo.InvariantCulture);
 
         // The identifiers are what this formatter could not repair; the compiler reports the full set.
-        inputs.Log.LogMessage(
-            MessageImportance.High,
-            $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}"
-        );
+        inputs.Log.LogMessage(MessageImportance.High,
+            $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}");
 
         foreach (string path in rewritten)
             inputs.Log.LogMessage(MessageImportance.High, "  " + path);

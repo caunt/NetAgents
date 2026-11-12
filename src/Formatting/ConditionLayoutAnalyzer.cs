@@ -19,29 +19,25 @@ public sealed class ConditionLayoutAnalyzer() : PolicyAnalyzer(Rule)
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0019";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Conditions must fit on one short line",
         messageFormat: "Keep the condition on one line and within {0} characters; move longer conditions into a separate variable declaration",
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(
-            AnalyzeCondition,
+        context.RegisterSyntaxNodeAction(AnalyzeCondition,
             SyntaxKind.IfStatement,
             SyntaxKind.WhileStatement,
             SyntaxKind.DoStatement,
             SyntaxKind.ForStatement,
             SyntaxKind.ConditionalExpression,
             SyntaxKind.CatchFilterClause,
-            SyntaxKind.WhenClause
-        );
+            SyntaxKind.WhenClause);
     }
 
     private static void AnalyzeCondition(SyntaxNodeAnalysisContext context)
@@ -113,10 +109,6 @@ public sealed class ConditionLayoutAnalyzer() : PolicyAnalyzer(Rule)
             != source.Lines.GetLineFromPosition(span.End).LineNumber;
 
         if (isMultiline || span.Length > LayoutLimits.MaximumInlineLength)
-        {
-            context.ReportDiagnostic(
-                Diagnostic.Create(Rule, condition.GetLocation(), LayoutLimits.MaximumInlineLength.ToString(System.Globalization.CultureInfo.InvariantCulture))
-            );
-        }
+            context.ReportDiagnostic(Diagnostic.Create(Rule, condition.GetLocation(), LayoutLimits.MaximumInlineLength.ToString(System.Globalization.CultureInfo.InvariantCulture)));
     }
 }

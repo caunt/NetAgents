@@ -33,14 +33,10 @@ public sealed class StatementSpacingCodeFixProvider : CodeFixProvider
     {
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Insert blank line between statements",
+            context.RegisterCodeFix(CodeAction.Create(title: "Insert blank line between statements",
                     cancellationToken => InsertBlankLine(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(StatementSpacingCodeFixProvider)
-                ),
-                diagnostic
-            );
+                    nameof(StatementSpacingCodeFixProvider)),
+                diagnostic);
         }
 
         return Task.CompletedTask;

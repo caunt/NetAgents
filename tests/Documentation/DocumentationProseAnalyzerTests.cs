@@ -98,11 +98,9 @@ public sealed class DocumentationProseAnalyzerTests
 
         string fixedSource = await CodeFixTestHarness.FixDocumentationProse(source);
 
-        Assert.Contains(
-            expectedSubstring: "/// <summary>Gets the country code used by age restrictions.</summary>",
+        Assert.Contains(expectedSubstring: "/// <summary>Gets the country code used by age restrictions.</summary>",
             fixedSource,
-            StringComparison.Ordinal
-        );
+            StringComparison.Ordinal);
 
         Assert.Empty(await AnalyzerTestHarness.Analyze(new DocumentationProseAnalyzer(), fixedSource));
     }

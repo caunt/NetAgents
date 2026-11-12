@@ -22,29 +22,25 @@ public sealed class SourceFileStructureAnalyzer() : PolicyAnalyzer(Rule)
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0006";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Each top-level type needs its own matching file",
         messageFormat: "Keep one top-level type per file and match the file name to the type name",
         category: "Structure",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(
-            AnalyzeDeclaration,
+        context.RegisterSyntaxNodeAction(AnalyzeDeclaration,
             SyntaxKind.ClassDeclaration,
             SyntaxKind.StructDeclaration,
             SyntaxKind.InterfaceDeclaration,
             SyntaxKind.RecordDeclaration,
             SyntaxKind.RecordStructDeclaration,
             SyntaxKind.EnumDeclaration,
-            SyntaxKind.DelegateDeclaration
-        );
+            SyntaxKind.DelegateDeclaration);
     }
 
     private static void AnalyzeDeclaration(SyntaxNodeAnalysisContext context)

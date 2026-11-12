@@ -32,10 +32,8 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
         // Each reference in a document rewrites the same import list, so a batch of separate edits
         // conflicts and only part of it survives a pass. Rewriting the document once per pass lets
         // the whole file settle immediately instead of costing a re-analysis per surviving edit.
-        return FixAllProvider.Create(
-            static async (context, document, diagnostics) =>
-            await ImportAll(document, diagnostics, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false)
-        );
+        return FixAllProvider.Create(static async (context, document, diagnostics) =>
+            await ImportAll(document, diagnostics, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
     }
 
     /// <inheritdoc />
@@ -56,14 +54,10 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
             TextSpan span = diagnostic.Location.SourceSpan;
 
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Import the type's namespace",
+            context.RegisterCodeFix(CodeAction.Create(title: "Import the type's namespace",
                     cancellationToken => Import(context.Document, span, cancellationToken),
-                    nameof(QualifiedTypeImportCodeFixProvider)
-                ),
-                diagnostic
-            );
+                    nameof(QualifiedTypeImportCodeFixProvider)),
+                diagnostic);
         }
     }
 

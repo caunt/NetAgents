@@ -33,14 +33,10 @@ public sealed class MethodSpacingCodeFixProvider : CodeFixProvider
     {
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Insert blank line between method declarations",
+            context.RegisterCodeFix(CodeAction.Create(title: "Insert blank line between method declarations",
                     cancellationToken => InsertBlankLine(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(MethodSpacingCodeFixProvider)
-                ),
-                diagnostic
-            );
+                    nameof(MethodSpacingCodeFixProvider)),
+                diagnostic);
         }
 
         return Task.CompletedTask;

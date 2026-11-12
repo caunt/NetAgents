@@ -129,22 +129,18 @@ internal static class CodeFixTestHarness
 
         Assert.False(diagnostics.IsEmpty);
         List<CodeAction> actions = [];
-        await provider.RegisterCodeFixesAsync(
-            new CodeFixContext(document, diagnostics[index: 0], (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)
-        ).ConfigureAwait(continueOnCapturedContext: false);
+        await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostics[index: 0], (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)).ConfigureAwait(continueOnCapturedContext: false);
         CodeAction action = Assert.Single(actions);
 
         if (fixAll)
         {
-            FixAllContext context = new(
-                document,
+            FixAllContext context = new(document,
                 provider,
                 FixAllScope.Document,
                 action.EquivalenceKey,
                 [.. provider.FixableDiagnosticIds],
                 new CodeFixDiagnosticProvider(analyzer),
-                CancellationToken.None
-            );
+                CancellationToken.None);
 
             FixAllProvider? fixAllProvider = provider.GetFixAllProvider();
             Assert.NotNull(fixAllProvider);

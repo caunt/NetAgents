@@ -82,9 +82,7 @@ public sealed class DescriptiveNameAnalyzerTests
     {
         const string source = "class ExampleType { System.Threading.Tasks.Task ReadMsgAsync() => System.Threading.Tasks.Task.CompletedTask; }";
 
-        Assert.Equal(
-            DescriptiveNameAnalyzer.RuleIdentifier,
-            Assert.Single(await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), source)).Id
-        );
+        Assert.Equal(DescriptiveNameAnalyzer.RuleIdentifier,
+            Assert.Single(await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), source)).Id);
     }
 }

@@ -11,10 +11,8 @@ internal static class FormattingSyntax
 
         if (errors.Length > 0)
         {
-            throw new InvalidOperationException(
-                "Automatic formatting stopped because source contains syntax errors."
-                + Environment.NewLine + string.Join(Environment.NewLine, errors)
-            );
+            throw new InvalidOperationException("Automatic formatting stopped because source contains syntax errors."
+                + Environment.NewLine + string.Join(Environment.NewLine, errors));
         }
     }
 

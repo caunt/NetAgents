@@ -17,9 +17,7 @@ public sealed class UntypedValueAnalyzerTests
     [Theory]
     [InlineData("public class ExampleType { public override bool Equals(object? other) => false; public override int GetHashCode() => 0; }")]
     [InlineData("public class ExampleType : System.IComparable { int System.IComparable.CompareTo(object? other) => 0; }")]
-    [InlineData(
-        "public class ExampleType : System.Collections.IEnumerator { object System.Collections.IEnumerator.Current => this; bool System.Collections.IEnumerator.MoveNext() => false; void System.Collections.IEnumerator.Reset() { } }"
-    )]
+    [InlineData("public class ExampleType : System.Collections.IEnumerator { object System.Collections.IEnumerator.Current => this; bool System.Collections.IEnumerator.MoveNext() => false; void System.Collections.IEnumerator.Reset() { } }")]
     public async Task AllowsFrameworkPrescribedSignatures(string source)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(), source);
@@ -33,10 +31,8 @@ public sealed class UntypedValueAnalyzerTests
     [Fact]
     public async Task AllowsStronglyTypedGenericCollections()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new UntypedValueAnalyzer(),
-            source: "public class ExampleType { public System.Collections.Generic.List<string> Values { get; } = new(); }"
-        );
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(),
+            source: "public class ExampleType { public System.Collections.Generic.List<string> Values { get; } = new(); }");
 
         Assert.Empty(diagnostics);
     }

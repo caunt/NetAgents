@@ -20,15 +20,13 @@ public sealed class MethodSpacingAnalyzer() : PolicyAnalyzer(Rule)
     /// </summary>
     public const string RuleIdentifier = MethodSpacing.RuleIdentifier;
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Method declarations require blank lines",
         messageFormat: "Separate adjacent method declarations with a blank line",
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

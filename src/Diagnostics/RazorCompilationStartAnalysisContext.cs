@@ -9,11 +9,9 @@ namespace NetAgents.Analyzers.Diagnostics;
 
 // The compilation-scoped counterpart of RazorAnalysisContext, for a rule that prepares state once per
 // compilation before registering the callbacks that use it.
-[SuppressMessage(
-    "MicrosoftCodeAnalysisPerformance",
+[SuppressMessage("MicrosoftCodeAnalysisPerformance",
     "RS1012",
-    Justification = "The start context is held to forward the registrations a rule makes on this wrapper, which registers nothing itself."
-)]
+    Justification = "The start context is held to forward the registrations a rule makes on this wrapper, which registers nothing itself.")]
 internal sealed class RazorCompilationStartAnalysisContext(CompilationStartAnalysisContext context)
     : CompilationStartAnalysisContext(context.Compilation, context.Options, context.CancellationToken)
 {

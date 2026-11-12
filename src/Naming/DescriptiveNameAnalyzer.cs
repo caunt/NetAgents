@@ -23,31 +23,26 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0005";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Names must use full descriptive words",
         messageFormat: "Expand single-letter names, acronyms, and known abbreviations into full descriptive words",
         category: "Naming",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+", RegexOptions.CultureInvariant);
 
-    private static readonly ImmutableHashSet<string> AbbreviatedWords = ImmutableHashSet.Create(
-        StringComparer.OrdinalIgnoreCase,
+    private static readonly ImmutableHashSet<string> AbbreviatedWords = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase,
         items: [        "args", "auth", "cfg", "config", "ctx", "db", "doc", "docs", "dto", "dsp",
         "env", "info", "init", "io", "ip", "max", "min",
         "msg", "num", "opts", "param", "params", "prev", "proc", "ptr", "req", "res", "sdr", "sql",
-        "temp", "tmp", "ui", "utils"]
-    );
+        "temp", "tmp", "ui", "utils"]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(
-            AnalyzeDeclaration,
+        context.RegisterSyntaxNodeAction(AnalyzeDeclaration,
             SyntaxKind.ClassDeclaration,
             SyntaxKind.StructDeclaration,
             SyntaxKind.InterfaceDeclaration,
@@ -65,8 +60,7 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
             SyntaxKind.TypeParameter,
             SyntaxKind.ForEachStatement,
             SyntaxKind.CatchDeclaration,
-            SyntaxKind.SingleVariableDesignation
-        );
+            SyntaxKind.SingleVariableDesignation);
     }
 
     private static void AnalyzeDeclaration(SyntaxNodeAnalysisContext context)

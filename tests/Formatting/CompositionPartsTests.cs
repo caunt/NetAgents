@@ -96,11 +96,9 @@ public sealed class CompositionPartsTests
         try
         {
             string partsPath = Path.Combine(workspace.FullName, path2: "LanguageParts.dll");
-            Compile(
-                partsPath,
+            Compile(partsPath,
                 LanguagePartsSource,
-                [typeof(ExportAttribute).Assembly.Location, typeof(CodeFixProvider).Assembly.Location, typeof(Diagnostic).Assembly.Location]
-            );
+                [typeof(ExportAttribute).Assembly.Location, typeof(CodeFixProvider).Assembly.Location, typeof(Diagnostic).Assembly.Location]);
 
             using DependencyLoader loader = new(workspace.FullName);
 
@@ -166,12 +164,10 @@ public sealed class CompositionPartsTests
     {
         MetadataReference[] metadata = [.. AnalyzerTestHarness.References, .. references.Select(static path => MetadataReference.CreateFromFile(path))];
 
-        CSharpCompilation compilation = CSharpCompilation.Create(
-            Path.GetFileNameWithoutExtension(assemblyPath),
+        CSharpCompilation compilation = CSharpCompilation.Create(Path.GetFileNameWithoutExtension(assemblyPath),
             [CSharpSyntaxTree.ParseText(source)],
             metadata,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-        );
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         EmitResult result = compilation.Emit(assemblyPath);
         Diagnostic[] diagnostics = [.. result.Diagnostics];

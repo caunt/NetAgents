@@ -9,11 +9,9 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace NetAgents.BuildTasks;
 
-internal sealed class FormattingAnalysis(
-    ImmutableArray<DiagnosticAnalyzer> analyzers,
+internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> analyzers,
     Action<Exception, DiagnosticAnalyzer, Diagnostic> onAnalyzerException,
-    FormattingProgress progress
-)
+    FormattingProgress progress)
 {
     // Keep only the most recent rejection for each action. Error diagnostics retain syntax trees,
     // so retaining every rejected state would grow memory with the number of formatting passes.

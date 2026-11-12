@@ -18,15 +18,13 @@ public sealed class EmptyCatchBlockAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0004";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Catch blocks must handle exceptions",
         messageFormat: "Handle, log, or explicitly rethrow the caught exception",
         category: "Exceptions",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

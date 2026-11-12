@@ -19,13 +19,9 @@ public sealed class TupleReturnTypeAnalyzerTests
     [InlineData("public static int Execute((int First, int Second) pair) => pair.First + pair.Second;")]
     [InlineData("public static int Execute() { (int First, int Second) pair = (1, 2); return pair.First + pair.Second; }")]
     [InlineData("public static int Execute() { var (first, second) = (1, 2); return first + second; }")]
-    [InlineData(
-        "public static int Execute(System.Func<(int First, int Second)> callback) { var pair = callback(); return pair.First + pair.Second; }"
-    )]
+    [InlineData("public static int Execute(System.Func<(int First, int Second)> callback) { var pair = callback(); return pair.First + pair.Second; }")]
     [InlineData("public static NamedResult Execute() => new(1, 2); public sealed record NamedResult(int First, int Second);")]
-    [InlineData(
-        "public static System.Threading.Tasks.Task<NamedResult> Execute() => System.Threading.Tasks.Task.FromResult(new NamedResult(1, 2)); public sealed record NamedResult(int First, int Second);"
-    )]
+    [InlineData("public static System.Threading.Tasks.Task<NamedResult> Execute() => System.Threading.Tasks.Task.FromResult(new NamedResult(1, 2)); public sealed record NamedResult(int First, int Second);")]
     public async Task AllowsTuplesOutsideResultContracts(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
@@ -94,43 +90,27 @@ public sealed class TupleReturnTypeAnalyzerTests
     [InlineData("public static class ExampleType { public static System.ValueTuple Execute() => default; }")]
     [InlineData("public static class ExampleType { public static System.ValueTuple<int, int> Execute() => new(1, 2); }")]
     [InlineData("public static class ExampleType { public static System.Tuple<int, int> Execute() => System.Tuple.Create(1, 2); }")]
-    [InlineData(
-        "public static class ExampleType { public static System.Threading.Tasks.Task<(int First, int Second)> Execute() => System.Threading.Tasks.Task.FromResult((1, 2)); }"
-    )]
-    [InlineData(
-        "public static class ExampleType { public static System.Threading.Tasks.ValueTask<System.Tuple<int, int>> Execute() => new(System.Tuple.Create(1, 2)); }"
-    )]
-    [InlineData(
-        "public static class ExampleType { public static System.Threading.Tasks.ValueTask<System.ValueTuple> Execute() => new(default(System.ValueTuple)); }"
-    )]
+    [InlineData("public static class ExampleType { public static System.Threading.Tasks.Task<(int First, int Second)> Execute() => System.Threading.Tasks.Task.FromResult((1, 2)); }")]
+    [InlineData("public static class ExampleType { public static System.Threading.Tasks.ValueTask<System.Tuple<int, int>> Execute() => new(System.Tuple.Create(1, 2)); }")]
+    [InlineData("public static class ExampleType { public static System.Threading.Tasks.ValueTask<System.ValueTuple> Execute() => new(default(System.ValueTuple)); }")]
     [InlineData("public static class ExampleType { public static System.Collections.Generic.List<(int First, int Second)> Execute() => []; }")]
     [InlineData("using Pair = System.ValueTuple<int, int>; public static class ExampleType { public static Pair Execute() => new(1, 2); }")]
     [InlineData("public static class ExampleType { public static (int First, int Second)? Execute() => (1, 2); }")]
     [InlineData("public sealed class ExampleType { public (int First, int Second) Value => (1, 2); }")]
     [InlineData("public sealed class ExampleType { public (int First, int Second) this[int index] => (index, index); }")]
     [InlineData("public delegate (int First, int Second) ExampleType();")]
-    [InlineData(
-        "public readonly struct ExampleType { public static (int First, int Second) operator +(ExampleType left, ExampleType right) => (1, 2); }"
-    )]
-    [InlineData(
-        "public static class ExampleType { public static int Execute() { (int First, int Second) Local() => (1, 2); return Local().First; } }"
-    )]
-    [InlineData(
-        "public static class ExampleType { public static int Execute() { System.Func<(int First, int Second)> callback = () => (1, 2); return callback().First; } }"
-    )]
-    [InlineData(
-        "public static class ExampleType { public static int Execute() { System.Func<System.Tuple<int, int>> callback = delegate { return System.Tuple.Create(1, 2); }; return callback().Item1; } }"
-    )]
+    [InlineData("public readonly struct ExampleType { public static (int First, int Second) operator +(ExampleType left, ExampleType right) => (1, 2); }")]
+    [InlineData("public static class ExampleType { public static int Execute() { (int First, int Second) Local() => (1, 2); return Local().First; } }")]
+    [InlineData("public static class ExampleType { public static int Execute() { System.Func<(int First, int Second)> callback = () => (1, 2); return callback().First; } }")]
+    [InlineData("public static class ExampleType { public static int Execute() { System.Func<System.Tuple<int, int>> callback = delegate { return System.Tuple.Create(1, 2); }; return callback().Item1; } }")]
     public async Task RejectsTupleResultContracts(string source)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), source);
         Diagnostic diagnostic = Assert.Single(diagnostics);
 
         Assert.Equal(TupleReturnTypeAnalyzer.RuleIdentifier, diagnostic.Id);
-        Assert.Contains(
-            expectedSubstring: "dedicated named",
+        Assert.Contains(expectedSubstring: "dedicated named",
             diagnostic.GetMessage(System.Globalization.CultureInfo.InvariantCulture),
-            StringComparison.Ordinal
-        );
+            StringComparison.Ordinal);
     }
 }

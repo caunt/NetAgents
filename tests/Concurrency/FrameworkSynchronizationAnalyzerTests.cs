@@ -16,10 +16,8 @@ public sealed class FrameworkSynchronizationAnalyzerTests
     [Fact]
     public async Task AllowsAtomicsAndAsynchronousComposition()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(
-            new FrameworkSynchronizationAnalyzer(),
-            source: "public class ExampleType { private int count; public async System.Threading.Tasks.Task Execute() { System.Threading.Interlocked.Increment(ref count); await System.Threading.Tasks.Task.Delay(1); } }"
-        );
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new FrameworkSynchronizationAnalyzer(),
+            source: "public class ExampleType { private int count; public async System.Threading.Tasks.Task Execute() { System.Threading.Interlocked.Increment(ref count); await System.Threading.Tasks.Task.Delay(1); } }");
 
         Assert.Empty(diagnostics);
     }

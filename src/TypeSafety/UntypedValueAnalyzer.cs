@@ -22,37 +22,31 @@ public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorC
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0002";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Untyped values are forbidden",
         messageFormat: "Replace object or dynamic with an explicit type, interface, or generic type parameter",
         category: "TypeSafety",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterCompilationStartAction(
-            start =>
-            {
-                ImmutableHashSet<SyntaxTree> aliased = GetAliasedTrees(start.Compilation, start.CancellationToken);
+        context.RegisterCompilationStartAction(start =>
+        {
+            ImmutableHashSet<SyntaxTree> aliased = GetAliasedTrees(start.Compilation, start.CancellationToken);
 
-                start.RegisterSyntaxNodeAction(node => AnalyzeTypeName(node, aliased), SyntaxKind.PredefinedType, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
+            start.RegisterSyntaxNodeAction(node => AnalyzeTypeName(node, aliased), SyntaxKind.PredefinedType, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
 
-                start.RegisterOperationAction(
-                    AnalyzeValue,
-                    OperationKind.Invocation,
-                    OperationKind.PropertyReference,
-                    OperationKind.FieldReference,
-                    OperationKind.Conversion,
-                    OperationKind.Await,
-                    OperationKind.ArrayElementReference
-                );
-            }
-        );
+            start.RegisterOperationAction(AnalyzeValue,
+                OperationKind.Invocation,
+                OperationKind.PropertyReference,
+                OperationKind.FieldReference,
+                OperationKind.Conversion,
+                OperationKind.Await,
+                OperationKind.ArrayElementReference);
+        });
     }
 
     private static void AnalyzeTypeName(SyntaxNodeAnalysisContext context, ImmutableHashSet<SyntaxTree> aliased)

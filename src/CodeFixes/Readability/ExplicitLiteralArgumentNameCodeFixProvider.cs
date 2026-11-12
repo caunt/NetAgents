@@ -28,10 +28,8 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return FixAllProvider.Create(
-            static async (context, document, diagnostics) =>
-            await FixNames(document, requestedSpans: null, fixAll: true, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false)
-        );
+        return FixAllProvider.Create(static async (context, document, diagnostics) =>
+            await FixNames(document, requestedSpans: null, fixAll: true, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
     }
 
     /// <inheritdoc />
@@ -57,14 +55,10 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
 
             TextSpan span = diagnostic.Location.SourceSpan;
 
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Fix argument parameter names",
+            context.RegisterCodeFix(CodeAction.Create(title: "Fix argument parameter names",
                     cancellationToken => FixNames(context.Document, [span], fixAll: false, cancellationToken),
-                    nameof(ExplicitLiteralArgumentNameCodeFixProvider)
-                ),
-                diagnostic
-            );
+                    nameof(ExplicitLiteralArgumentNameCodeFixProvider)),
+                diagnostic);
         }
     }
 

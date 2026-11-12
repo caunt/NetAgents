@@ -18,15 +18,13 @@ public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule, analyzesR
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0008";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Unconditional loops are forbidden",
         messageFormat: "Use an explicit termination or cancellation condition",
         category: "Concurrency",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

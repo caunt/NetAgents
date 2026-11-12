@@ -17,15 +17,13 @@ public sealed class SourceFileLengthAnalyzer() : PolicyAnalyzer(Rule)
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0010";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Source files must contain fewer than one thousand lines",
         messageFormat: "Split this file by responsibility; authored files may contain at most 999 lines",
         category: "Structure",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

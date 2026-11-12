@@ -100,27 +100,19 @@ public sealed class ControlFlowBracesCodeFixTests
     /// <param name="statements">The statements as written.</param>
     /// <param name="expected">The statements after the fix.</param>
     [Theory]
-    [InlineData(
-        "try { count++; }\n        catch (System.InvalidOperationException exception) { System.Console.WriteLine(exception); }",
-        "try\n        {\n            count++;\n        }\n        catch (System.InvalidOperationException exception)\n        {\n            System.Console.WriteLine(exception);\n        }"
-    )]
+    [InlineData("try { count++; }\n        catch (System.InvalidOperationException exception) { System.Console.WriteLine(exception); }",
+        "try\n        {\n            count++;\n        }\n        catch (System.InvalidOperationException exception)\n        {\n            System.Console.WriteLine(exception);\n        }")]
     [InlineData("try { count++; } finally { }", "try\n        {\n            count++;\n        }\n        finally\n        {\n        }")]
-    [InlineData(
-        "try\n        { count++; }\n        finally\n        { count--; }",
-        "try\n        {\n            count++;\n        }\n        finally\n        {\n            count--;\n        }"
-    )]
+    [InlineData("try\n        { count++; }\n        finally\n        { count--; }",
+        "try\n        {\n            count++;\n        }\n        finally\n        {\n            count--;\n        }")]
     [InlineData("while (count > 0) { }", "while (count > 0)\n        {\n        }")]
     [InlineData("if (count > 0) { count++; count--; }", "if (count > 0)\n        {\n            count++;\n            count--;\n        }")]
-    [InlineData(
-        "if (count > 0) { count++; count--; } else return;",
-        "if (count > 0)\n        {\n            count++;\n            count--;\n        }\n        else\n        {\n            return;\n        }"
-    )]
+    [InlineData("if (count > 0) { count++; count--; } else return;",
+        "if (count > 0)\n        {\n            count++;\n            count--;\n        }\n        else\n        {\n            return;\n        }")]
     [InlineData("checked { count++; }", "checked\n        {\n            count++;\n        }")]
     [InlineData("{ int result = count; }", "{\n            int result = count;\n        }")]
-    [InlineData(
-        "switch (count)\n        {\n            case 0: { count++; break; }\n        }",
-        "switch (count)\n        {\n            case 0:\n                {\n                    count++;\n                    break;\n                }\n        }"
-    )]
+    [InlineData("switch (count)\n        {\n            case 0: { count++; break; }\n        }",
+        "switch (count)\n        {\n            case 0:\n                {\n                    count++;\n                    break;\n                }\n        }")]
     public async Task ExpandsOneLineStatementBlocks(string statements, string expected)
     {
         const string member = "public static class ExampleType\n{\n    public static void Execute(int count)\n    {\n        STATEMENTS\n    }\n}";
@@ -228,8 +220,7 @@ public sealed class ControlFlowBracesCodeFixTests
     [InlineData("\r\n")]
     public async Task PreservesCommentsAndLineEndings(string lineEnding)
     {
-        string source = string.Join(
-            lineEnding,
+        string source = string.Join(lineEnding,
             value:
         [
             "public static class ExampleType", "{", "    public static void Execute(int count)", "    {",
@@ -237,8 +228,7 @@ public sealed class ControlFlowBracesCodeFixTests
             "            count--; // decrement", "        } // closing", "",
             "        if (count < 0) // condition", "            // explanation",
             "            count = System.Math.Abs(", "                count); // result", "    }", "}",
-        ]
-        );
+        ]);
 
         string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
 
@@ -375,11 +365,9 @@ public sealed class ControlFlowBracesCodeFixTests
             """;
 
         string expected = source.Replace(oldValue: "        {\n", string.Empty, StringComparison.Ordinal)
-            .Replace(
-                "        }" + suffix + "\n",
+            .Replace("        }" + suffix + "\n",
                 suffix.Length == 0 ? string.Empty : "        " + suffix.TrimStart() + "\n",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixBraces(source, fixAll: false));
     }

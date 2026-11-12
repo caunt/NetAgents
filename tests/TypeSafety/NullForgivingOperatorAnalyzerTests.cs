@@ -74,14 +74,12 @@ public sealed class NullForgivingOperatorAnalyzerTests
         int expectedCount = member.Count(static character => character == '!');
 
         Assert.Equal(expectedCount, diagnostics.Length);
-        Assert.All(
-            diagnostics,
+        Assert.All(diagnostics,
             static diagnostic =>
             {
                 Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, diagnostic.Id);
                 Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
-            }
-        );
+            });
     }
 
     /// <summary>
@@ -92,12 +90,10 @@ public sealed class NullForgivingOperatorAnalyzerTests
     {
         const string source = "string variable = null!; Test(variable!); void Test(string value) { }";
 
-        CSharpCompilation compilation = CSharpCompilation.Create(
-            assemblyName: "ExampleApplication",
+        CSharpCompilation compilation = CSharpCompilation.Create(assemblyName: "ExampleApplication",
             [CSharpSyntaxTree.ParseText(source)],
             AnalyzerTestHarness.References,
-            new CSharpCompilationOptions(OutputKind.ConsoleApplication)
-        );
+            new CSharpCompilationOptions(OutputKind.ConsoleApplication));
 
         Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
         Diagnostic[] diagnostics = [.. await compilation.WithAnalyzers([new NullForgivingOperatorAnalyzer()]).GetAnalyzerDiagnosticsAsync()];

@@ -72,27 +72,23 @@ public sealed class UnrepairableDiagnosticCacheTests
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "minimal"];
 
             // The first build reformats the argument list and then fails on the repeated summary.
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 buildArguments,
                 expectedDiagnosticIdentifier: "NETAGENTS0025",
                 expectedOutput: ["NetAgents rewrote", "analyzing project"],
-                withoutShell: true
-            );
+                withoutShell: true);
 
             string formatted = await File.ReadAllTextAsync(sourcePath);
             Assert.DoesNotContain(expectedSubstring: "CreateGreeting(\n", formatted, StringComparison.Ordinal);
 
             // The formatting is finished even though the project still reports. A second build must
             // reuse it rather than reanalyze, and must fail on exactly the same diagnostic.
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 buildArguments,
                 expectedDiagnosticIdentifier: "NETAGENTS0025",
                 ["inputs unchanged; reusing completed formatting"],
                 ["analyzing project", "NetAgents rewrote"],
-                withoutShell: true
-            );
+                withoutShell: true);
 
             Assert.Equal(formatted, await File.ReadAllTextAsync(sourcePath));
 
@@ -101,14 +97,10 @@ public sealed class UnrepairableDiagnosticCacheTests
             Assert.True(File.Exists(cachePath));
 
             // Repairing the reported diagnostic is a source edit, so the next build formats again.
-            await File.WriteAllTextAsync(
-                sourcePath,
-                formatted.Replace(
-                    oldValue: "    /// <summary>Describes the same declaration a second time.</summary>\n",
+            await File.WriteAllTextAsync(sourcePath,
+                formatted.Replace(oldValue: "    /// <summary>Describes the same declaration a second time.</summary>\n",
                     newValue: "    /// <remarks>Describes the same declaration a second time.</remarks>\n",
-                    StringComparison.Ordinal
-                )
-            );
+                    StringComparison.Ordinal));
 
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedOutput: ["analyzing project"], withoutShell: true);
         }

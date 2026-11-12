@@ -19,27 +19,23 @@ public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule, analyzes
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0015";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Values must be consumed instead of discarded",
         messageFormat: "Consume returned values and use descriptive names instead of assigning values to '_' or discarding deconstructed values",
         category: "Reliability",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
         context.RegisterOperationAction(AnalyzeExpressionStatement, OperationKind.ExpressionStatement);
-        context.RegisterOperationAction(
-            AnalyzeAssignment,
+        context.RegisterOperationAction(AnalyzeAssignment,
             OperationKind.SimpleAssignment,
             OperationKind.DeconstructionAssignment,
             OperationKind.CompoundAssignment,
-            OperationKind.CoalesceAssignment
-        );
+            OperationKind.CoalesceAssignment);
         context.RegisterOperationAction(AnalyzeVariable, OperationKind.VariableDeclarator);
         context.RegisterOperationAction(AnalyzeLoop, OperationKind.Loop);
     }

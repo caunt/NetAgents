@@ -131,13 +131,11 @@ public sealed class RazorComponentTests
 
             await File.WriteAllTextAsync(samplePath, Sample);
 
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 buildArguments,
                 expectedDiagnosticIdentifier: "NETAGENTS0015",
                 ["Sample.razor(9,9): error NETAGENTS0015", "Sample.razor(15,9): error NETAGENTS0004"],
-                ["Counter.razor(", "NetAgents automatic formatting failed"]
-            );
+                ["Counter.razor(", "NetAgents automatic formatting failed"]);
 
             Assert.Equal(Sample, await File.ReadAllTextAsync(samplePath));
             Assert.Equal(Counter, await File.ReadAllTextAsync(counterPath));

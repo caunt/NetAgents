@@ -116,17 +116,13 @@ public sealed class PackageConsumptionTests
             await File.WriteAllTextAsync(generatedPath, generatedSource);
 
             string source = "using System.Text;\n" + ValidSource.Replace(oldValue: "string recipientName)", newValue: "\nstring recipientName\n)", StringComparison.Ordinal)
-                .Replace(
-                    oldValue: "return recipientName;",
+                .Replace(oldValue: "return recipientName;",
                     newValue: "string greeting = string.Concat(\nrecipientName,\nstring.Empty\n);\nif (string.IsNullOrEmpty(greeting)) { System.Console.WriteLine(greeting); }\nreturn greeting;",
-                    StringComparison.Ordinal
-                );
+                    StringComparison.Ordinal);
 
-            source = source.Replace(
-                oldValue: "    /// <summary>Returns the supplied recipient name.</summary>",
+            source = source.Replace(oldValue: "    /// <summary>Returns the supplied recipient name.</summary>",
                 newValue: "    /// <summary>Runs the final action.</summary>\n    public static void ZebraAction() {}\n    /// <summary>Runs the first action.</summary>\n    public static void AlphaAction() {}\n    /// <summary>Returns the supplied recipient name.</summary>",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, source);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
@@ -140,9 +136,7 @@ public sealed class PackageConsumptionTests
             Assert.Contains(expectedSubstring: "namespace Consumer.Features;", formatted, StringComparison.Ordinal);
             Assert.DoesNotContain(expectedSubstring: "namespace CustomerApp.Features;", formatted, StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "CreateGreeting(string recipientName)", formatted, StringComparison.Ordinal);
-            Assert.True(
-                formatted.IndexOf(value: "AlphaAction", StringComparison.Ordinal) < formatted.IndexOf(value: "ZebraAction", StringComparison.Ordinal)
-            );
+            Assert.True(formatted.IndexOf(value: "AlphaAction", StringComparison.Ordinal) < formatted.IndexOf(value: "ZebraAction", StringComparison.Ordinal));
             Assert.Contains(expectedSubstring: "}\n\n    /// <summary>Returns", formatted, StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "string.Concat(recipientName, string.Empty)", formatted, StringComparison.Ordinal);
             Assert.DoesNotContain(expectedSubstring: "using System.Text;", formatted, StringComparison.Ordinal);
@@ -169,22 +163,16 @@ public sealed class PackageConsumptionTests
             Assert.Equal(formatted, await File.ReadAllTextAsync(sourcePath));
 
             string conditionalAssignments = ValidSource
-                .Replace(
-                    oldValue: "<param name=\"recipientName\">The name shown in the greeting.</param>",
+                .Replace(oldValue: "<param name=\"recipientName\">The name shown in the greeting.</param>",
                     newValue: "<param name=\"builder\">The optional builder.</param>\n    /// <param name=\"length\">The required length.</param>",
-                    StringComparison.Ordinal
-                )
+                    StringComparison.Ordinal)
                 .Replace(oldValue: "    /// <returns>The supplied name.</returns>\n", string.Empty, StringComparison.Ordinal)
-                .Replace(
-                    oldValue: "string CreateGreeting(string recipientName)",
+                .Replace(oldValue: "string CreateGreeting(string recipientName)",
                     newValue: "void UpdateLength(System.Text.StringBuilder? builder, int length)",
-                    StringComparison.Ordinal
-                )
-                .Replace(
-                    oldValue: "return recipientName;",
+                    StringComparison.Ordinal)
+                .Replace(oldValue: "return recipientName;",
                     newValue: "if (builder is not null)\n            builder.Length = length;\n        if (builder is not null)\n            builder.Capacity = length;",
-                    StringComparison.Ordinal
-                );
+                    StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, conditionalAssignments);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
@@ -194,11 +182,9 @@ public sealed class PackageConsumptionTests
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             Assert.Equal(simplifiedAssignments, await File.ReadAllTextAsync(sourcePath));
 
-            string argumentNames = ValidSource.Replace(
-                oldValue: "return recipientName;",
+            string argumentNames = ValidSource.Replace(oldValue: "return recipientName;",
                 newValue: "string padded = string.Empty.PadLeft(totalWidth: 4, ' ');\n\n        return string.Concat(str0: padded, recipientName);",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, argumentNames);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
@@ -231,25 +217,19 @@ public sealed class PackageConsumptionTests
                 """;
 
             string tupleSource = ValidSource
-                .Replace(
-                    oldValue: "    /// <summary>Returns the supplied recipient name.</summary>",
+                .Replace(oldValue: "    /// <summary>Returns the supplied recipient name.</summary>",
                     tupleLocals + "    /// <summary>Returns the supplied recipient name.</summary>",
-                    StringComparison.Ordinal
-                )
-                .Replace(
-                    oldValue: "return recipientName;",
+                    StringComparison.Ordinal)
+                .Replace(oldValue: "return recipientName;",
                     newValue: "System.ArgumentNullException.ThrowIfNull(recipientName);\nvar habitat = Resolve(recipientName);\nvar coordinateOffset = SubtractCoordinates();\nreturn string.Concat(habitat, new string(c: ' ', coordinateOffset));",
-                    StringComparison.Ordinal
-                );
+                    StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, tupleSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             string renamedTuple = await File.ReadAllTextAsync(sourcePath);
-            Assert.Contains(
-                expectedSubstring: "(string Habitat, int Width, int Height) bounds = (Habitat: recipientName, Width: recipientName.Length, Height: recipientName.Length);",
+            Assert.Contains(expectedSubstring: "(string Habitat, int Width, int Height) bounds = (Habitat: recipientName, Width: recipientName.Length, Height: recipientName.Length);",
                 renamedTuple,
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "string habitat = bounds.Habitat;", renamedTuple, StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "int width = bounds.Width;", renamedTuple, StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "int height = bounds.Height;", renamedTuple, StringComparison.Ordinal);
@@ -259,10 +239,8 @@ public sealed class PackageConsumptionTests
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             Assert.Equal(renamedTuple, await File.ReadAllTextAsync(sourcePath));
 
-            string manyTupleMethods = string.Join(
-                Environment.NewLine,
-                Enumerable.Range(start: 0, count: 70).Select(
-                    static index => $$"""
+            string manyTupleMethods = string.Join(Environment.NewLine,
+                Enumerable.Range(start: 0, count: 70).Select(static index => $$"""
                         internal static string ResolveBounds{{index}}(string value)
                         {
                             var bounds = (Habitat: value, Width: value.Length, Height: value.Length);
@@ -271,9 +249,7 @@ public sealed class PackageConsumptionTests
                             var height = bounds.Height;
                             return string.Concat(habitat, new string(c: ' ', width + height));
                         }
-                    """
-                )
-            );
+                    """));
 
             string manyTupleSource = ValidSource.Replace(oldValue: "    }\n}\n", $"    }}\n\n{manyTupleMethods}\n}}\n", StringComparison.Ordinal);
             await File.WriteAllTextAsync(sourcePath, manyTupleSource);
@@ -290,15 +266,14 @@ public sealed class PackageConsumptionTests
             await File.WriteAllTextAsync(sourcePath, longSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             string expanded = await File.ReadAllTextAsync(sourcePath);
-            Assert.Contains(expectedSubstring: "CreateGreeting(\n", expanded, StringComparison.Ordinal);
-            Assert.Contains(expectedSubstring: "string.Concat(\n", expanded, StringComparison.Ordinal);
+            // A single item has nothing to split from and stays beside its delimiters; a later item starts a line.
+            Assert.Contains("CreateGreeting(string " + longName + ")\n", expanded, StringComparison.Ordinal);
+            Assert.Contains("string.Concat(" + longName + ",\n            string.Empty);", expanded, StringComparison.Ordinal);
 
             // An unresolved symbol stays a compiler error: no generated declaration, no formatting failure.
-            string unresolvedSource = ValidSource.Replace(
-                oldValue: "return recipientName;",
+            string unresolvedSource = ValidSource.Replace(oldValue: "return recipientName;",
                 newValue: "System.Console.WriteLine(payload);\n\n        return recipientName;",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             // Nothing else here needs repairing, and the namespace is left to its author (#36),
             // so a run that reports the compiler error must leave the file exactly as written.
@@ -309,16 +284,12 @@ public sealed class PackageConsumptionTests
             Assert.Equal(expectedUnresolved, await File.ReadAllTextAsync(sourcePath));
 
             // An argument the compiler rejects stays a compiler error too: no generated overload (#31).
-            string mismatchSource = ValidSource.Replace(
-                oldValue: "return recipientName;",
+            string mismatchSource = ValidSource.Replace(oldValue: "return recipientName;",
                 newValue: "System.ReadOnlyMemory<byte>? document = null;\n\n        Validate(document);\n\n        return recipientName;",
-                StringComparison.Ordinal
-            )
-                .Replace(
-                    oldValue: "    }\n}\n",
+                StringComparison.Ordinal)
+                .Replace(oldValue: "    }\n}\n",
                     newValue: "    }\n\n    private static void Validate(System.Memory<byte>? data)\n    {\n        System.Console.WriteLine(data.HasValue);\n    }\n}\n",
-                    StringComparison.Ordinal
-                );
+                    StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, mismatchSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS1503", withoutShell: true);
@@ -348,11 +319,9 @@ public sealed class PackageConsumptionTests
             File.Delete(widthPath);
 
             // Parentheses around one inferred lambda parameter are optional, so the build drops them (#0026).
-            string lambdaSource = ValidSource.Replace(
-                oldValue: "return recipientName;",
+            string lambdaSource = ValidSource.Replace(oldValue: "return recipientName;",
                 newValue: "System.Func<string, string> echo = (name) => name;\n\n        return echo(recipientName);",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, lambdaSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
@@ -364,32 +333,26 @@ public sealed class PackageConsumptionTests
 
             // A lambda holding statements keeps its argument list expanded, where joining it used to fight
             // statement spacing until the run gave up; written on one line, it is laid out the same way (#38).
-            string statementsSource = ValidSource.Replace(
-                oldValue: "return recipientName;",
-                newValue: "string[] greetings = Array.ConvertAll(\n            [recipientName],\n            static name =>\n            {\n                string trimmed = name.Trim();\n\n                return trimmed.Length > 0 ? trimmed : name;\n            }\n        );\n\n        return greetings[0];",
-                StringComparison.Ordinal
-            );
+            string statementsSource = ValidSource.Replace(oldValue: "return recipientName;",
+                newValue: "string[] greetings = Array.ConvertAll([recipientName],\n            static name =>\n            {\n                string trimmed = name.Trim();\n\n                return trimmed.Length > 0 ? trimmed : name;\n            });\n\n        return greetings[0];",
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, statementsSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             Assert.Equal(statementsSource, await File.ReadAllTextAsync(sourcePath));
 
-            string joinedStatements = statementsSource.Replace(
-                oldValue: "(\n            [recipientName],\n            static name =>\n            {\n                string trimmed = name.Trim();\n\n                return trimmed.Length > 0 ? trimmed : name;\n            }\n        );",
+            string joinedStatements = statementsSource.Replace(oldValue: "([recipientName],\n            static name =>\n            {\n                string trimmed = name.Trim();\n\n                return trimmed.Length > 0 ? trimmed : name;\n            });",
                 newValue: "([recipientName], static name => { string trimmed = name.Trim(); return trimmed.Length > 0 ? trimmed : name; });",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, joinedStatements);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
             Assert.Equal(statementsSource, await File.ReadAllTextAsync(sourcePath));
 
             // A qualified type is imported and named directly instead (#0027).
-            string qualifiedSource = ValidSource.Replace(
-                oldValue: "return recipientName;",
+            string qualifiedSource = ValidSource.Replace(oldValue: "return recipientName;",
                 newValue: "System.Text.StringBuilder builder = new(recipientName);\n\n        return builder.ToString();",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, qualifiedSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
@@ -400,11 +363,9 @@ public sealed class PackageConsumptionTests
 
             // An index from the end is a System.Index, not a literal the rule can name (#34).
             string indexSource = ValidSource.Replace(oldValue: "namespace Consumer.Features;", newValue: "namespace CustomerApp.Features;", StringComparison.Ordinal)
-                .Replace(
-                    oldValue: "return recipientName;",
+                .Replace(oldValue: "return recipientName;",
                     newValue: "List<Version> versions = [];\n\n        return versions.Count > 0 ? versions[^1].ToString() : recipientName;",
-                    StringComparison.Ordinal
-                );
+                    StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, indexSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
@@ -419,13 +380,11 @@ public sealed class PackageConsumptionTests
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["NetAgents rewrote " + relativeSourcePath], withoutShell: true);
 
             // A separate MSBuild invocation reuses completed formatting, including rejected suggestions.
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 reportingArguments,
                 expectedOutput: ["inputs unchanged; reusing completed formatting"],
                 forbiddenOutput: ["NetAgents rewrote", "analyzing project", "loading analyzers and code-fix providers"],
-                withoutShell: true
-            );
+                withoutShell: true);
 
             // Generated inputs affect binding even though the formatter never rewrites them.
             await File.WriteAllTextAsync(generatedPath, generatedSource + "// Changed generated input.\n");
@@ -444,58 +403,44 @@ public sealed class PackageConsumptionTests
             File.SetLastWriteTimeUtc(sourcePath, formattedTime);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["analyzing project", "NetAgents rewrote"], withoutShell: true);
 
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 [.. reportingArguments, "-p:Nullable=disable"],
                 expectedDiagnosticIdentifier: "NETAGENTS0014",
-                withoutShell: true
-            );
+                withoutShell: true);
 
-            string blockedSource = ValidSource.Replace(
-                oldValue: "return recipientName;",
+            string blockedSource = ValidSource.Replace(oldValue: "return recipientName;",
                 newValue: "recipientName.Trim();\n\n        return string.Concat(\nrecipientName,\nstring.Empty\n);",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, blockedSource);
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 reportingArguments,
                 expectedDiagnosticIdentifier: "NETAGENTS0015",
                 expectedOutput: ["NetAgents rewrote " + relativeSourcePath, "NetAgents rewrote 1 file before this build failed on diagnostics no fix repairs: NETAGENTS0015", "NETAGENTS0015"],
-                withoutShell: true
-            );
+                withoutShell: true);
 
             // A diagnostic no fix repairs is a finished run: the formatting is recorded so the next
             // build reuses it, and the compiler reports the diagnostic again from the same source.
             Assert.True(File.Exists(cachePath));
 
             // The failing build kept its rewrite, which is why the report has to name it.
-            Assert.Contains(
-                expectedSubstring: "string.Concat(recipientName, string.Empty)",
+            Assert.Contains(expectedSubstring: "string.Concat(recipientName, string.Empty)",
                 await File.ReadAllTextAsync(sourcePath),
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, source);
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 arguments: ["msbuild", projectPath, "-t:FormatNetAgentsConsumerSource", "-p:DesignTimeBuild=true"],
-                withoutShell: true
-            );
+                withoutShell: true);
             Assert.Equal(source, await File.ReadAllTextAsync(sourcePath));
 
-            string multiTargetProject = projectContent.Replace(
-                oldValue: "<TargetFramework>net10.0</TargetFramework>",
+            string multiTargetProject = projectContent.Replace(oldValue: "<TargetFramework>net10.0</TargetFramework>",
                 newValue: "<TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
-            string conditionalSource = ValidSource.Replace(
-                oldValue: "return recipientName;",
+            string conditionalSource = ValidSource.Replace(oldValue: "return recipientName;",
                 newValue: "\n#if WINDOWS\nreturn string.Concat(\nrecipientName,\nstring.Empty\n);\n#else\nreturn string.Concat(\nrecipientName,\nstring.Empty\n);\n#endif",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(projectPath, multiTargetProject);
             await File.WriteAllTextAsync(sourcePath, conditionalSource);
@@ -507,26 +452,18 @@ public sealed class PackageConsumptionTests
             Assert.True(File.Exists(Path.Combine(workspace.FullName, path2: "bin/Debug/net10.0-windows/Consumer.dll")));
             // The first target must observe the shared-source rewrite made by the second target.
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, withoutShell: true);
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 reportingArguments,
                 expectedOutput: ["formatting Consumer: pass 0", "inputs unchanged; reusing completed formatting"],
                 forbiddenOutput: ["analyzing project"],
-                withoutShell: true
-            );
-            Assert.Equal(
-                expected: 2,
-                Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories).Length
-            );
+                withoutShell: true);
+            Assert.Equal(expected: 2,
+                Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories).Length);
 
-            await File.WriteAllTextAsync(
-                sourcePath,
-                ValidSource.Replace(
-                    oldValue: "string CreateGreeting(string recipientName)",
+            await File.WriteAllTextAsync(sourcePath,
+                ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
                     newValue: "System.IComparable CreateGreeting(int recipientName)",
-                    StringComparison.Ordinal
-                )
-            );
+                    StringComparison.Ordinal));
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001", withoutShell: true);
         }
         finally
@@ -593,12 +530,10 @@ public sealed class PackageConsumptionTests
             // cases that survive every available fix, so a clean build proves nothing was left unenforced.
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, ["format", projectPath, "--no-restore", "--verify-no-changes"]);
 
-            string lookupSource = ValidSource.Replace(
-                oldValue: "return recipientName;",
+            string lookupSource = ValidSource.Replace(oldValue: "return recipientName;",
                 "System.Collections.Generic.Dictionary<string, string> values = [];\n\n"
                     + "        return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, lookupSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments);
@@ -611,11 +546,9 @@ public sealed class PackageConsumptionTests
 
             foreach (string ignoredLookup in ignoredLookups)
             {
-                string ignoredSource = lookupSource.Replace(
-                    oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
+                string ignoredSource = lookupSource.Replace(oldValue: "return values.TryGetValue(recipientName, out string? greeting) ? greeting : recipientName;",
                     ignoredLookup + "\n\n        return greeting ?? recipientName;",
-                    StringComparison.Ordinal
-                );
+                    StringComparison.Ordinal);
 
                 await File.WriteAllTextAsync(sourcePath, ignoredSource);
                 await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015");
@@ -625,11 +558,9 @@ public sealed class PackageConsumptionTests
 
             await VerifyDiscardAssignments(workspace.FullName, sourcePath, buildArguments);
 
-            string boxingSource = ValidSource.Replace(
-                oldValue: "string CreateGreeting(string recipientName)",
+            string boxingSource = ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
                 newValue: "System.IComparable CreateGreeting(int recipientName)",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, boxingSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001");
@@ -637,16 +568,12 @@ public sealed class PackageConsumptionTests
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001");
 
             string tupleResultSource = ValidSource
-                .Replace(
-                    oldValue: "string CreateGreeting(string recipientName)",
+                .Replace(oldValue: "string CreateGreeting(string recipientName)",
                     newValue: "System.Threading.Tasks.Task<(string Greeting, bool Created)> CreateGreeting(string recipientName)",
-                    StringComparison.Ordinal
-                )
-                .Replace(
-                    oldValue: "return recipientName;",
+                    StringComparison.Ordinal)
+                .Replace(oldValue: "return recipientName;",
                     newValue: "return System.Threading.Tasks.Task.FromResult((recipientName, true));",
-                    StringComparison.Ordinal
-                );
+                    StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, tupleResultSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0024");
@@ -654,30 +581,24 @@ public sealed class PackageConsumptionTests
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0024");
 
             // A second summary stacked above a declaration documents nothing and reaches the generated XML.
-            string repeatedSummarySource = ValidSource.Replace(
-                oldValue: "/// <summary>Provides the consumer entry point.</summary>",
+            string repeatedSummarySource = ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>",
                 newValue: "/// <summary>Provides the consumer entry point.</summary>\n/// <summary>Provides the greeting.</summary>",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, repeatedSummarySource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0025");
             await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0025\n" + repeatedSummarySource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0025");
-            await File.WriteAllTextAsync(
-                sourcePath,
-                ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n", string.Empty, StringComparison.Ordinal)
-            );
+            await File.WriteAllTextAsync(sourcePath,
+                ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n", string.Empty, StringComparison.Ordinal));
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS1591");
             await File.WriteAllTextAsync(sourcePath, ValidSource);
 
             // A summary assembled from the member's own words documents nothing either, and unlike a
             // missing one it satisfies CS1591, so only this rule stands between it and the build.
-            string emptySummarySource = ValidSource.Replace(
-                oldValue: "/// <summary>Provides the consumer entry point.</summary>",
+            string emptySummarySource = ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>",
                 newValue: "/// <summary>Provides the Example Service value or operation.</summary>",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, emptySummarySource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0028");
@@ -687,29 +608,23 @@ public sealed class PackageConsumptionTests
 
             // Prose written outside every element satisfies CS1591 and reaches no generated page,
             // so the fix encloses it and the build that follows has nothing left to report.
-            string looseProseSource = ValidSource.Replace(
-                oldValue: "/// <summary>Provides the consumer entry point.</summary>",
+            string looseProseSource = ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>",
                 newValue: "/// Provides the entry point every consumer build starts from.",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, looseProseSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
 
-            Assert.Contains(
-                expectedSubstring: "/// <summary>Provides the entry point every consumer build starts from.</summary>",
+            Assert.Contains(expectedSubstring: "/// <summary>Provides the entry point every consumer build starts from.</summary>",
                 await File.ReadAllTextAsync(sourcePath),
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, ValidSource);
 
             // Two overloads carrying one summary leave a caller with nothing to choose between.
-            string sharedSummarySource = ValidSource.Replace(
-                oldValue: "    public static string CreateGreeting(string recipientName)\n    {\n        return recipientName;\n    }",
+            string sharedSummarySource = ValidSource.Replace(oldValue: "    public static string CreateGreeting(string recipientName)\n    {\n        return recipientName;\n    }",
                 newValue: "    public static string CreateGreeting(string recipientName)\n    {\n        return recipientName;\n    }\n\n    /// <summary>Returns the supplied recipient name.</summary>\n    /// <param name=\"recipientName\">The name shown in the greeting.</param>\n    /// <param name=\"attempts\">How many times the greeting was tried.</param>\n    /// <returns>The supplied name.</returns>\n    public static string CreateGreeting(string recipientName, int attempts)\n    {\n        return recipientName + attempts.ToString(System.Globalization.CultureInfo.InvariantCulture);\n    }",
-                StringComparison.Ordinal
-            );
+                StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, sharedSummarySource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0030");
@@ -765,14 +680,10 @@ public sealed class PackageConsumptionTests
 
             foreach (string conflictingSetting in conflictingProjectSettings)
             {
-                await File.WriteAllTextAsync(
-                    projectPath,
-                    projectContent.Replace(
-                        oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
+                await File.WriteAllTextAsync(projectPath,
+                    projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
                         $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}",
-                        StringComparison.Ordinal
-                    )
-                );
+                        StringComparison.Ordinal));
                 await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0014");
             }
 
@@ -801,12 +712,10 @@ public sealed class PackageConsumptionTests
 
             // A newer SDK asks for a language version this package's Roslyn cannot parse, and the
             // compiler, not the formatter, owns whether that version exists.
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 [.. buildArguments, "-p:LangVersion=15.0"],
                 expectedDiagnosticIdentifier: "CS1617",
-                forbiddenOutput: ["NetAgents automatic formatting failed"]
-            );
+                forbiddenOutput: ["NetAgents automatic formatting failed"]);
 
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments);
         }
@@ -858,11 +767,9 @@ public sealed class PackageConsumptionTests
             await File.WriteAllTextAsync(sourcePath, contents: "var builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\napp.Run();\n");
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
 
-            await ConsumerBuild.RunDevelopmentKit(
-                workspace.FullName,
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"],
-                forbiddenOutput: ["NetAgents automatic formatting failed"]
-            );
+                forbiddenOutput: ["NetAgents automatic formatting failed"]);
 
             string formatted = await File.ReadAllTextAsync(sourcePath);
             Assert.Contains(expectedSubstring: "WebApplicationBuilder builder = WebApplication.CreateBuilder(args);", formatted, StringComparison.Ordinal);
@@ -919,12 +826,10 @@ public sealed class PackageConsumptionTests
             await ConsumerBuild.RunDevelopmentKit(workspacePath, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015").ConfigureAwait(continueOnCapturedContext: false);
         }
 
-        string discardedLoop = ValidSource.Replace(
-            oldValue: "return recipientName;",
+        string discardedLoop = ValidSource.Replace(oldValue: "return recipientName;",
             "(string First, string Second)[] greetings = [(recipientName, string.Empty)];\n\n"
                 + "        foreach ((string greeting, string _) in greetings)\n            recipientName = greeting;\n\n        return recipientName;",
-            StringComparison.Ordinal
-        );
+            StringComparison.Ordinal);
 
         await File.WriteAllTextAsync(sourcePath, discardedLoop).ConfigureAwait(continueOnCapturedContext: false);
         await ConsumerBuild.RunDevelopmentKit(workspacePath, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0015").ConfigureAwait(continueOnCapturedContext: false);
@@ -959,13 +864,11 @@ public sealed class PackageConsumptionTests
         string brokenPath = Path.Combine(workspacePath, path2: "BrokenSwitch.cs");
         string original = await File.ReadAllTextAsync(sourcePath).ConfigureAwait(continueOnCapturedContext: false);
         await File.WriteAllTextAsync(brokenPath, malformed).ConfigureAwait(continueOnCapturedContext: false);
-        await ConsumerBuild.RunDevelopmentKit(
-            workspacePath,
+        await ConsumerBuild.RunDevelopmentKit(workspacePath,
             ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "normal"],
             expectedDiagnosticIdentifier: "CS1513",
             ["checking source syntax", "source contains syntax errors"],
-            ["loading analyzers and code-fix providers", "NetAgents rewrote"]
-        ).ConfigureAwait(continueOnCapturedContext: false);
+            ["loading analyzers and code-fix providers", "NetAgents rewrote"]).ConfigureAwait(continueOnCapturedContext: false);
 
         Assert.Equal(original, await File.ReadAllTextAsync(sourcePath).ConfigureAwait(continueOnCapturedContext: false));
         Assert.Equal(malformed, await File.ReadAllTextAsync(brokenPath).ConfigureAwait(continueOnCapturedContext: false));

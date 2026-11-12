@@ -17,15 +17,13 @@ public sealed class NullForgivingOperatorAnalyzer() : PolicyAnalyzer(Rule, analy
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0007";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Null-forgiving operators are forbidden",
         messageFormat: "Prove non-null state through validation, nullable annotations, or control flow",
         category: "TypeSafety",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

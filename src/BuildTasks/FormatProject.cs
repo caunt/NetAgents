@@ -82,11 +82,9 @@ public sealed class FormatProject : UtilitiesTask, ICancelableTask, IDisposable
     }
 
     /// <inheritdoc />
-    [SuppressMessage(
-        "Design",
+    [SuppressMessage("Design",
         "CA1031",
-        Justification = "Every formatting failure must reach the log as a build error; an unhandled exception aborts the build with MSB4018 instead."
-    )]
+        Justification = "Every formatting failure must reach the log as a build error; an unhandled exception aborts the build with MSB4018 instead.")]
     public override bool Execute()
     {
         // Dispose() owns the source: MSBuild can still call Cancel() while this method unwinds.

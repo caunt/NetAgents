@@ -39,7 +39,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0017 | Omit optional braces around one single-line body statement; require braces for multiline bodies and keep conditional chains consistent. A statement block that keeps its braces puts `{`, each statement, and `}` on lines of their own, empty blocks included. Includes an automatic code fix and Fix all support. |
 | NETAGENTS0018 | Allow at most 16 authored C# files directly in each directory per project. Organize larger directories into subdirectories with narrower responsibilities. |
 | NETAGENTS0019 | Require single-line conditions of at most 128 characters in `if`/`else if`, `while`, `do`, `for`, ternary expressions, catch filters, and switch `when` guards. Extract longer conditions into a separate variable declaration. |
-| NETAGENTS0020 | Keep argument and parameter lists on one line when their compact contents are at most 128 characters; otherwise put each item and the closing delimiter on separate lines. Includes an automatic fix and Fix All support. |
+| NETAGENTS0020 | Keep argument and parameter lists on one line when their compact contents are at most 128 characters; otherwise keep the first item beside the opening delimiter, put each later item on a line of its own one level deeper, and close the list right after the last item. Includes an automatic fix and Fix All support. |
 | NETAGENTS0021 | Require a blank line between adjacent method declarations, including constructors, destructors, and operators. Includes an automatic fix and Fix All support. |
 | NETAGENTS0022 | Order type members by kind, visibility, const/static/instance, readonly, then ordinal name. Includes an automatic fix and Fix All support. |
 | NETAGENTS0023 | Forbid blank lines directly after an opening brace or before a closing brace, in every block: type bodies, method and statement blocks, accessor lists, namespaces, enums, switch bodies, initializers, lambdas, and local functions. Includes an automatic fix and Fix All support. |
@@ -53,9 +53,30 @@ Every custom diagnostic is an error and is marked non-configurable.
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
-Argument layout covers method and delegate calls, constructors (including target-typed `new`, `base`, and `this` initializers), attributes, element access, and declaration parameters for methods, constructors, primary constructors, records, delegates, operators, indexers, local functions, and anonymous functions. Generic type argument lists and collection initializers are not included. The shared 128-character limit counts the normalized single-line contents, including commas and spaces, but excludes delimiters, the method/type name, and indentation. A single item longer than the limit still gets its own line; this rule does not split literals or expressions.
+Argument layout covers method and delegate calls, constructors (including target-typed `new`, `base`, and `this` initializers), attributes, element access, and declaration parameters for methods, constructors, primary constructors, records, delegates, operators, indexers, local functions, and anonymous functions. Generic type argument lists and collection initializers are not included. The shared 128-character limit counts the normalized single-line contents, including commas and spaces, but excludes delimiters, the method/type name, and indentation. An expanded list keeps its first item on the line of the opening delimiter, starts each later item on a line of its own, indented one level deeper than the line the list starts on, and closes right after the last item. A list nested in the first item of another list that opens on the same line and continues past it goes one level deeper still, so the two lists never share an indentation. A comment between a delimiter and its neighbouring item keeps them on separate lines instead. A single item longer than the limit stays where it is, since there is nothing to split it from; this rule does not split literals or expressions.
 
-Multiline literals and comments that cannot safely fit on one line retain their contents and use expanded layout even below the limit. So does a list holding a lambda or anonymous method whose body has two or more statements, or holds a block or switch section that does: each of those statements goes on a line of its own, and the body opens on its own line, indented under the lambda. On one line those statements would sit where `NETAGENTS0016` puts blank lines, and the two rules would undo each other on every pass. A lambda whose body is one statement still collapses. Lists containing preprocessor directives are left unchanged. Conditions still independently satisfy `NETAGENTS0019`; extract a call into a variable if its expanded arguments would make a condition multiline.
+```csharp
+internal static Task<int> RunDevelopmentKit(string workingDirectory,
+    string[] arguments,
+    string? expectedDiagnosticIdentifier = null,
+    string[]? expectedOutput = null,
+    bool withoutShell = false)
+{
+    return Task.Run(() =>
+    {
+        Prepare(workingDirectory, withoutShell);
+
+        return Execute(arguments, expectedDiagnosticIdentifier, expectedOutput);
+    });
+}
+
+context.RegisterCodeFix(CodeAction.Create(title: "Fix argument and parameter layout",
+        cancellationToken => FixArguments(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+        nameof(ArgumentLayoutCodeFixProvider)),
+    diagnostic);
+```
+
+Multiline literals and comments that cannot safely fit on one line retain their contents and use expanded layout even below the limit. So does a list holding a lambda or anonymous method whose body has two or more statements, or holds a block or switch section that does: each of those statements goes on a line of its own, and the body opens on its own line, indented as deep as the line the lambda starts on. On one line those statements would sit where `NETAGENTS0016` puts blank lines, and the two rules would undo each other on every pass. A lambda whose body is one statement still collapses. Lists containing preprocessor directives are left unchanged. Conditions still independently satisfy `NETAGENTS0019`; extract a call into a variable if its expanded arguments would make a condition multiline.
 
 Use **Fix argument and parameter layout** or run:
 

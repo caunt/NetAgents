@@ -22,22 +22,18 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0012";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Framework synchronization and blocking waits are forbidden",
         messageFormat: "Prefer immutable state, atomics, concurrent collections, channels, or Nito.AsyncEx; await asynchronous work",
         category: "Concurrency",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
-    private static readonly ImmutableHashSet<string> ForbiddenTypes = ImmutableHashSet.Create(
-        StringComparer.Ordinal,
+    private static readonly ImmutableHashSet<string> ForbiddenTypes = ImmutableHashSet.Create(StringComparer.Ordinal,
         items: [        "Lock", "Monitor", "Semaphore", "SemaphoreSlim", "Mutex", "ReaderWriterLock", "ReaderWriterLockSlim",
         "SpinLock", "SpinWait", "AutoResetEvent", "ManualResetEvent", "ManualResetEventSlim", "EventWaitHandle",
-        "WaitHandle", "CountdownEvent", "Barrier"]
-    );
+        "WaitHandle", "CountdownEvent", "Barrier"]);
 
     private static readonly ImmutableArray<string> BlockingMembers = ["Sleep", "Result", "Wait", "WaitAll", "WaitAny", "GetResult"];
 
@@ -51,13 +47,11 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
         context.RegisterSyntaxNodeAction(AnalyzeTypeName, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
-        context.RegisterOperationAction(
-            AnalyzeMember,
+        context.RegisterOperationAction(AnalyzeMember,
             OperationKind.Invocation,
             OperationKind.PropertyReference,
             OperationKind.MethodReference,
-            OperationKind.ObjectCreation
-        );
+            OperationKind.ObjectCreation);
     }
 
     private static void AnalyzeMember(OperationAnalysisContext context)

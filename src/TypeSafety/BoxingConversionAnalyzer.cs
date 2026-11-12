@@ -18,15 +18,13 @@ public sealed class BoxingConversionAnalyzer() : PolicyAnalyzer(Rule, analyzesRa
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0001";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Boxing conversions are forbidden",
         messageFormat: "Use a strongly typed or constrained generic operation instead of boxing a value",
         category: "TypeSafety",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

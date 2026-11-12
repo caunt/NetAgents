@@ -57,13 +57,11 @@ public sealed class EditableDocumentsTests
         Project project = CreateProject(workspace, name: "Alpha.cs", plain)
             .AddDocument(name: "Beta.cs", SourceText.From(quoting), filePath: "/workspace/Beta.cs").Project;
 
-        Project result = (await CodeFixRunner.Fix(
-            project,
+        Project result = (await CodeFixRunner.Fix(project,
             [new ArgumentLayoutAnalyzer()],
             [new ArgumentLayoutCodeFixProvider()],
             static fault => Assert.Fail(fault),
-            CancellationToken.None
-        )).Project;
+            CancellationToken.None)).Project;
 
         string alpha = await ReadDocument(result, name: "Alpha.cs");
         string beta = await ReadDocument(result, name: "Beta.cs");
@@ -86,11 +84,9 @@ public sealed class EditableDocumentsTests
         using AdhocWorkspace workspace = new();
 
         Project project = CreateProject(workspace, name, source)
-            .AddAnalyzerConfigDocument(
-                name: ".editorconfig",
+            .AddAnalyzerConfigDocument(name: ".editorconfig",
                 SourceText.From($"root = true\n\n[*.cs]\ngenerated_code = {generated}\n"),
-                filePath: "/workspace/.editorconfig"
-            ).Project;
+                filePath: "/workspace/.editorconfig").Project;
 
         Project result = (await CodeFixRunner.Fix(project, [], [], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
         string text = await ReadDocument(result, name);
@@ -128,28 +124,22 @@ public sealed class EditableDocumentsTests
     }
 
     // Reports private fields in generated code too, as an analyzer that opts into it does.
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisCorrectness",
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness",
         "RS1001",
-        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts."
-    )]
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisReleaseTracking",
+        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts.")]
+    [SuppressMessage("MicrosoftCodeAnalysisReleaseTracking",
         "RS2008",
-        Justification = "This private test rule is only used in tests and is not shipped."
-    )]
+        Justification = "This private test rule is only used in tests and is not shipped.")]
     private sealed class PrivateFieldAnalyzer : DiagnosticAnalyzer
     {
         public const string Identifier = "TEST0201";
 
-        private static readonly DiagnosticDescriptor Rule = new(
-            Identifier,
+        private static readonly DiagnosticDescriptor Rule = new(Identifier,
             title: "Private field",
             messageFormat: "Make the field internal",
             category: "Testing",
             DiagnosticSeverity.Warning,
-            isEnabledByDefault: true
-        );
+            isEnabledByDefault: true);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
 
@@ -186,14 +176,10 @@ public sealed class EditableDocumentsTests
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Make the field internal",
+            context.RegisterCodeFix(CodeAction.Create(title: "Make the field internal",
                     cancellationToken => MakeInternal(context.Document, cancellationToken),
-                    equivalenceKey: "internal"
-                ),
-                context.Diagnostics
-            );
+                    equivalenceKey: "internal"),
+                context.Diagnostics);
 
             return Task.CompletedTask;
         }
@@ -210,8 +196,7 @@ public sealed class EditableDocumentsTests
         {
             public override Task<CodeAction?> GetFixAsync(FixAllContext fixAllContext)
             {
-                CodeAction action = CodeAction.Create(
-                    title: "Make every field internal",
+                CodeAction action = CodeAction.Create(title: "Make every field internal",
                     async cancellationToken =>
                     {
                         Solution solution = fixAllContext.Project.Solution;
@@ -224,8 +209,7 @@ public sealed class EditableDocumentsTests
 
                         return solution;
                     },
-                    equivalenceKey: "internal"
-                );
+                    equivalenceKey: "internal");
 
                 return Task.FromResult<CodeAction?>(action);
             }

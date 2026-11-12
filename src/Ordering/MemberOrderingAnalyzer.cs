@@ -18,27 +18,23 @@ public sealed class MemberOrderingAnalyzer() : PolicyAnalyzer(Rule)
     /// </summary>
     public const string RuleIdentifier = MemberOrdering.RuleIdentifier;
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Type members must follow the standard order",
         messageFormat: "Order members by kind, visibility, storage, readonly modifier, and name",
         category: "Ordering",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(
-            AnalyzeOrder,
+        context.RegisterSyntaxNodeAction(AnalyzeOrder,
             SyntaxKind.ClassDeclaration,
             SyntaxKind.StructDeclaration,
             SyntaxKind.InterfaceDeclaration,
             SyntaxKind.RecordDeclaration,
-            SyntaxKind.RecordStructDeclaration
-        );
+            SyntaxKind.RecordStructDeclaration);
     }
 
     private static void AnalyzeOrder(SyntaxNodeAnalysisContext context)

@@ -33,33 +33,25 @@ public sealed class ArgumentLayoutCodeFixTests
 
     /// <summary>
     /// Expands an argument whose lambda holds statements sharing a line, nested ones included, and opens
-    /// each body beneath its lambda (#38).
+    /// each body beneath the line its lambda starts on (#38).
     /// </summary>
     /// <param name="statement">The statement passing the lambda, written on one line.</param>
     /// <param name="expected">The statement the fix lays out, indented inside the method body.</param>
     [Theory]
-    [InlineData(
-        "System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); System.Console.Out.Flush(); });",
-        "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n                System.Console.WriteLine();\n                System.Console.Out.Flush();\n            }\n        );"
-    )]
-    [InlineData(
-        "System.Threading.Tasks.Task.Run(() => { if (System.Environment.ProcessorCount > 1) { System.Console.WriteLine(); return; } });",
-        "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n                if (System.Environment.ProcessorCount > 1)\n                {\n                    System.Console.WriteLine();\n                    return;\n                }\n            }\n        );"
-    )]
-    [InlineData(
-        "System.Console.WriteLine(System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); System.Console.Out.Flush(); }).IsCompleted);",
-        "System.Console.WriteLine(\n            System.Threading.Tasks.Task.Run(\n                () =>\n                {\n                    System.Console.WriteLine();\n                    System.Console.Out.Flush();\n                }\n            ).IsCompleted\n        );"
-    )]
+    [InlineData("System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); System.Console.Out.Flush(); });",
+        "System.Threading.Tasks.Task.Run(() =>\n        {\n            System.Console.WriteLine();\n            System.Console.Out.Flush();\n        });")]
+    [InlineData("System.Threading.Tasks.Task.Run(() => { if (System.Environment.ProcessorCount > 1) { System.Console.WriteLine(); return; } });",
+        "System.Threading.Tasks.Task.Run(() =>\n        {\n            if (System.Environment.ProcessorCount > 1)\n            {\n                System.Console.WriteLine();\n                return;\n            }\n        });")]
+    [InlineData("System.Console.WriteLine(System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); System.Console.Out.Flush(); }).IsCompleted);",
+        "System.Console.WriteLine(System.Threading.Tasks.Task.Run(() =>\n        {\n            System.Console.WriteLine();\n            System.Console.Out.Flush();\n        }).IsCompleted);")]
     public async Task ExpandsLambdaStatementsSharingALine(string statement, string expected)
     {
         const string method = "public class ExampleType\n{\n    public void Execute()\n    {\n        STATEMENT\n    }\n}";
 
         string source = method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal);
 
-        Assert.Equal(
-            method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal),
-            await CodeFixTestHarness.FixArguments(source, fixAll: true)
-        );
+        Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal),
+            await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
 
     /// <summary>
@@ -74,7 +66,7 @@ public sealed class ArgumentLayoutCodeFixTests
         string first = "string " + new string(c: 'a', count: 70);
         string second = "int " + new string(c: 'b', count: 70);
         string source = $"// Record{newline}public record ExampleType({first}, {second});{newline}";
-        string expected = $"// Record{newline}public record ExampleType({newline}    {first},{newline}    {second}{newline});{newline}";
+        string expected = $"// Record{newline}public record ExampleType({first},{newline}    {second});{newline}";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
@@ -98,8 +90,8 @@ public sealed class ArgumentLayoutCodeFixTests
     public async Task FixesMixedLayoutsInOneDocument()
     {
         string parameter = "string " + new string(c: 'p', count: 122);
-        string source = $"public class ExampleType\n{{\n    public ExampleType({parameter}) {{ }}\n    public void Execute(\nint value\n) {{ }}\n}}";
-        string expected = $"public class ExampleType\n{{\n    public ExampleType(\n        {parameter}\n    ) {{ }}\n    public void Execute(int value) {{ }}\n}}";
+        string source = $"public class ExampleType\n{{\n    public ExampleType({parameter}, int count) {{ }}\n    public void Execute(\nint value\n) {{ }}\n}}";
+        string expected = $"public class ExampleType\n{{\n    public ExampleType({parameter},\n        int count) {{ }}\n    public void Execute(int value) {{ }}\n}}";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
@@ -112,9 +104,34 @@ public sealed class ArgumentLayoutCodeFixTests
     {
         string argument = "\"" + new string(c: 'x', count: 130) + "\"";
         string source = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(string.Concat({argument}, {argument})); }} }}";
-        string expected = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(\n    string.Concat(\n        {argument},\n        {argument}\n    )\n); }} }}";
+        string expected = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(string.Concat({argument},\n    {argument})); }} }}";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
+    }
+
+    /// <summary>
+    /// Indents later items one level past the line their list starts on, and one more for each enclosing
+    /// list that opens on that line and continues past it, so nested lists never share an indentation.
+    /// </summary>
+    /// <param name="statement">The statement as written, inside the method body.</param>
+    /// <param name="expected">The statement the fix lays out.</param>
+    [Theory]
+    [InlineData("string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"), \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\");",
+        "string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n                \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"),\n            \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\");")]
+    [InlineData("System.Console.WriteLine(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"));",
+        "System.Console.WriteLine(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n            \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"));")]
+    [InlineData("string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n      \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\");",
+        "string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n            \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\");")]
+    [InlineData("string.Concat(string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"), \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"), \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\");",
+        "string.Concat(string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n                    \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"),\n                \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"),\n            \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\");")]
+    public async Task IndentsLaterItems(string statement, string expected)
+    {
+        const string method = "public class ExampleType\n{\n    public void Execute()\n    {\n        STATEMENT\n    }\n}";
+
+        string source = method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal);
+
+        Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal),
+            await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
 
     /// <summary>
@@ -123,21 +140,21 @@ public sealed class ArgumentLayoutCodeFixTests
     [Fact]
     public async Task PreservesLineComments()
     {
-        const string source = "public class ExampleType { public void Execute(int first, int second) { Execute(1, // explanation\n2); } }";
-        const string expected = "public class ExampleType { public void Execute(int first, int second) { Execute(\n    1,\n    // explanation\n    2\n); } }";
+        const string source = "public class ExampleType { public void Execute(int first, int second) { Execute(\n1, // explanation\n2\n); } }";
+        const string expected = "public class ExampleType { public void Execute(int first, int second) { Execute(1,\n    // explanation\n    2); } }";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
 
     /// <summary>
-    /// Keeps multiline raw string tokens byte-for-byte while moving list delimiters.
+    /// Keeps multiline raw string tokens byte-for-byte while moving the items around them.
     /// </summary>
     [Fact]
     public async Task PreservesMultilineLiteralContent()
     {
         const string literal = "\"\"\"\nfirst line\nsecond line\n\"\"\"";
-        string source = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine({literal}); }} }}";
-        string expected = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(\n    {literal}\n); }} }}";
+        string source = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(\n{literal}, 0\n); }} }}";
+        string expected = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine({literal},\n    0); }} }}";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }

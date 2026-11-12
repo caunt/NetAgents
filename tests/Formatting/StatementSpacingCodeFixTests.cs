@@ -28,12 +28,10 @@ public sealed class StatementSpacingCodeFixTests
     [InlineData("\r\n")]
     public async Task PreservesCommentsAndLineEndings(string lineEnding)
     {
-        string source = string.Join(
-            lineEnding,
+        string source = string.Join(lineEnding,
             value:
             ["public static class ExampleType", "{", "    public static int Execute()", "    {",
-            "        int count = 0; // retain this comment", "        // explain the result", "        return count;", "    }", "}"]
-        );
+            "        int count = 0; // retain this comment", "        // explain the result", "        return count;", "    }", "}"]);
 
         string expected = source.Replace(oldValue: "        // explain the result", lineEnding + "        // explain the result", StringComparison.Ordinal);
 

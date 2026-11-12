@@ -189,10 +189,8 @@ public sealed class RazorCodeTests
     [InlineData(DescriptiveNameAnalyzer.RuleIdentifier, "private static int Measure(int x) => x;")]
     [InlineData(NullForgivingOperatorAnalyzer.RuleIdentifier, "private static string Require(string? name) => name!;")]
     [InlineData(UnconditionalLoopAnalyzer.RuleIdentifier, "private static void Spin() { while (true) { break; } }")]
-    [InlineData(
-        FrameworkSynchronizationAnalyzer.RuleIdentifier,
-        "private static void Pause() { System.Threading.Thread.Sleep(millisecondsTimeout: 1); }"
-    )]
+    [InlineData(FrameworkSynchronizationAnalyzer.RuleIdentifier,
+        "private static void Pause() { System.Threading.Thread.Sleep(millisecondsTimeout: 1); }")]
     [InlineData(IgnoredReturnValueAnalyzer.RuleIdentifier, "private static void Trim(string text) { _ = text.Trim(); }")]
     [InlineData(TupleReturnTypeAnalyzer.RuleIdentifier, "private static (int Width, int Height) Measure() => (1, 2);")]
     public async Task ChecksTheCodeBlockOnly(string ruleIdentifier, string member)

@@ -34,14 +34,10 @@ public sealed class DocumentationProseCodeFixProvider : CodeFixProvider
     {
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Wrap the description in a summary element",
+            context.RegisterCodeFix(CodeAction.Create(title: "Wrap the description in a summary element",
                     cancellationToken => Wrap(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(DocumentationProseCodeFixProvider)
-                ),
-                diagnostic
-            );
+                    nameof(DocumentationProseCodeFixProvider)),
+                diagnostic);
         }
 
         return Task.CompletedTask;

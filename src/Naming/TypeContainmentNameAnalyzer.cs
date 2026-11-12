@@ -20,29 +20,25 @@ public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0011";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Type names must differ from containing segments",
         messageFormat: "Choose a type name that differs from its namespace and containing feature directories",
         category: "Naming",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(
-            AnalyzeDeclaration,
+        context.RegisterSyntaxNodeAction(AnalyzeDeclaration,
             SyntaxKind.ClassDeclaration,
             SyntaxKind.StructDeclaration,
             SyntaxKind.InterfaceDeclaration,
             SyntaxKind.RecordDeclaration,
             SyntaxKind.RecordStructDeclaration,
             SyntaxKind.EnumDeclaration,
-            SyntaxKind.DelegateDeclaration
-        );
+            SyntaxKind.DelegateDeclaration);
     }
 
     private static void AnalyzeDeclaration(SyntaxNodeAnalysisContext context)

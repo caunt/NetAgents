@@ -40,23 +40,19 @@ internal static class EditableDocuments
     // Skipping generated code the way policy analyzers do, it marks each tree the driver hands it, so the
     // marks name exactly the trees an analyzer reads. The rule cannot be configured away, because a tree
     // left unmarked would be one the formatter stops formatting.
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisCorrectness",
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness",
         "RS1001",
-        Justification = "The formatter constructs this analyzer itself, and no compiler host may discover it."
-    )]
+        Justification = "The formatter constructs this analyzer itself, and no compiler host may discover it.")]
     [SuppressMessage("MicrosoftCodeAnalysisReleaseTracking", "RS2008", Justification = "The formatter's private marker is never shipped as a rule.")]
     private sealed class AuthoredTreeAnalyzer : DiagnosticAnalyzer
     {
-        private static readonly DiagnosticDescriptor Mark = new(
-            id: "NETAGENTSFORMAT",
+        private static readonly DiagnosticDescriptor Mark = new(id: "NETAGENTSFORMAT",
             title: "Authored source",
             messageFormat: "The analyzers read this file",
             category: "NetAgents.Formatter",
             DiagnosticSeverity.Hidden,
             isEnabledByDefault: true,
-            customTags: [WellKnownDiagnosticTags.NotConfigurable]
-        );
+            customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Mark];
 

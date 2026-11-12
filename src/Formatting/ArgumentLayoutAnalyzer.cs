@@ -20,27 +20,23 @@ public sealed class ArgumentLayoutAnalyzer() : PolicyAnalyzer(Rule)
     /// </summary>
     public const string RuleIdentifier = ArgumentLayout.RuleIdentifier;
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Argument and parameter lists must match their length",
-        messageFormat: "Keep argument and parameter lists on one line up to {0} characters; otherwise put each item and the closing delimiter on separate lines",
+        messageFormat: "Keep argument and parameter lists on one line up to {0} characters; otherwise put each item after the first on its own line and close the list after the last item",
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(
-            AnalyzeList,
+        context.RegisterSyntaxNodeAction(AnalyzeList,
             SyntaxKind.ArgumentList,
             SyntaxKind.BracketedArgumentList,
             SyntaxKind.AttributeArgumentList,
             SyntaxKind.ParameterList,
-            SyntaxKind.BracketedParameterList
-        );
+            SyntaxKind.BracketedParameterList);
     }
 
     private static void AnalyzeList(SyntaxNodeAnalysisContext context)

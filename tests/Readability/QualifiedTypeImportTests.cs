@@ -53,8 +53,7 @@ public sealed class QualifiedTypeImportTests
 
         string fixedSource = await CodeFixTestHarness.FixQualifiedTypeImports(source, fixAll: true);
 
-        Assert.Equal(
-            expected: """
+        Assert.Equal(expected: """
             using System;
             using System.Text;
 
@@ -63,8 +62,7 @@ public sealed class QualifiedTypeImportTests
                 StringBuilder Run() => new();
             }
             """,
-            fixedSource
-        );
+            fixedSource);
     }
 
     /// <summary>

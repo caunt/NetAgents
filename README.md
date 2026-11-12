@@ -35,7 +35,7 @@ Unchanged builds reuse completed formatting after checking a content fingerprint
 ## 📏 Formatting rules
 
 - **Conditions:** keep conditions on one line, with at most **128 characters**. Extract longer expressions into separate variables. Ternary conditions follow this rule; their `?` and `:` branches can span multiple lines.
-- **Arguments and parameters:** keep lists on one line when their normalized contents fit within **128 characters**, excluding the surrounding delimiters. Longer lists put each item and the closing delimiter on separate lines, and so does a list holding a lambda with several statements or a statement that holds others, such as `if` or `try`, one statement per line. This applies to calls and declarations, including constructors and records.
+- **Arguments and parameters:** keep lists on one line when their normalized contents fit within **128 characters**, excluding the surrounding delimiters. Longer lists keep the first item beside the opening delimiter, put each later item on its own line one level deeper (one more for a list nested on the same line as another that continues), and close right after the last item; so does a list holding a lambda with several statements or a statement that holds others, such as `if` or `try`, one statement per line. This applies to calls and declarations, including constructors and records.
 - **Layout:** use consistent spacing, blank lines between methods and around control flow and multiline declarations, braces based on body layout, every brace and statement of a statement block on its own line, an unbraced body on its own line below its header, and a final newline.
 - **Clarity:** name literal arguments, pass every other argument positionally, and remove unused imports.
 

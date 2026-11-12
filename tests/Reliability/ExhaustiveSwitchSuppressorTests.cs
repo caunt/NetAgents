@@ -84,24 +84,20 @@ public sealed class ExhaustiveSwitchSuppressorTests
 
         if (severity is not null)
         {
-            project = project.AddAnalyzerConfigDocument(
-                name: ".globalconfig",
+            project = project.AddAnalyzerConfigDocument(name: ".globalconfig",
                 SourceText.From($"is_global = true\ndotnet_diagnostic.{diagnosticIdentifier}.severity = {severity}\n"),
-                filePath: "/.globalconfig"
-            ).Project;
+                filePath: "/.globalconfig").Project;
         }
 
         Compilation compilation = await project.GetCompilationAsync().ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The compilation is unavailable.");
 
         // Suppressed diagnostics are reported so a suppression is distinguishable from no report at all.
-        CompilationWithAnalyzersOptions options = new(
-            project.AnalyzerOptions,
+        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions,
             onAnalyzerException: null,
             concurrentAnalysis: true,
             logAnalyzerExecutionTime: false,
-            reportSuppressedDiagnostics: true
-        );
+            reportSuppressedDiagnostics: true);
 
         CompilationWithAnalyzers analysis = compilation.WithAnalyzers([new PopulateSwitchAnalyzer(diagnosticIdentifier), new ExhaustiveSwitchSuppressor()], options);
 
@@ -112,35 +108,27 @@ public sealed class ExhaustiveSwitchSuppressorTests
 
     /// <summary>Reports a populate-switch suggestion the way the SDK's own analyzers report one.</summary>
     /// <param name="identifier">The populate-switch rule to report.</param>
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisCorrectness",
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness",
         "RS1001",
-        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts."
-    )]
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisReleaseTracking",
+        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts.")]
+    [SuppressMessage("MicrosoftCodeAnalysisReleaseTracking",
         "RS2008",
-        Justification = "This private instrumentation rule is only used in tests and is not shipped."
-    )]
+        Justification = "This private instrumentation rule is only used in tests and is not shipped.")]
     private sealed class PopulateSwitchAnalyzer(string identifier) : DiagnosticAnalyzer
     {
-        private static readonly DiagnosticDescriptor ExpressionRule = new(
-            id: "IDE0072",
+        private static readonly DiagnosticDescriptor ExpressionRule = new(id: "IDE0072",
             title: "Add missing cases",
             messageFormat: "Add missing cases",
             category: "Style",
             DiagnosticSeverity.Warning,
-            isEnabledByDefault: true
-        );
+            isEnabledByDefault: true);
 
-        private static readonly DiagnosticDescriptor StatementRule = new(
-            id: "IDE0010",
+        private static readonly DiagnosticDescriptor StatementRule = new(id: "IDE0010",
             title: "Add missing cases",
             messageFormat: "Add missing cases",
             category: "Style",
             DiagnosticSeverity.Warning,
-            isEnabledByDefault: true
-        );
+            isEnabledByDefault: true);
 
         private readonly DiagnosticDescriptor _rule = identifier == "IDE0010" ? StatementRule : ExpressionRule;
 

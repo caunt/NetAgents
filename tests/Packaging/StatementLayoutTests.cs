@@ -59,13 +59,11 @@ public sealed class StatementLayoutTests
             /// <returns>The background work.</returns>
             public static Task StartAsync(bool ready)
             {
-                return Task.Run(
-                    () =>
-                    {
-                        if (ready)
-                            Console.WriteLine(value: "ready");
-                    }
-                );
+                return Task.Run(() =>
+                {
+                    if (ready)
+                        Console.WriteLine(value: "ready");
+                });
             }
 
             /// <inheritdoc />

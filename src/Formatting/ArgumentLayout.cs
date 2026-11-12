@@ -17,11 +17,9 @@ internal static class ArgumentLayout
 
     internal static bool CanFix(SyntaxNode list)
     {
-        return !list.ContainsDirectives && list.DescendantTrivia().All(
-            static trivia =>
+        return !list.ContainsDirectives && list.DescendantTrivia().All(static trivia =>
             trivia.Kind() is SyntaxKind.WhitespaceTrivia or SyntaxKind.EndOfLineTrivia
-                or SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia
-        );
+                or SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia);
     }
 
     internal static TextChange[] GetChanges(SyntaxNode list, SourceText source)
@@ -32,22 +30,25 @@ internal static class ArgumentLayout
             return [new TextChange(list.Span, GetCompactText(list))];
 
         string indentation = GetIndentation(source, list.SpanStart);
+        string itemIndentation = GetItemIndentation(list, source);
         TextLine firstLine = source.Lines[index: 0];
 
         string newline = firstLine.EndIncludingLineBreak > firstLine.End
             ? source.ToString(TextSpan.FromBounds(firstLine.End, firstLine.EndIncludingLineBreak))
             : "\n";
 
-        List<TextChange> changes = [];
+        // The first item stays beside the opening delimiter, every later item starts a line of its own,
+        // and the closing delimiter follows the last item.
+        List<TextChange> changes = [Attach(source, list.GetFirstToken().Span.End, items[0].SpanStart, newline, itemIndentation)];
 
-        foreach (SyntaxNode item in items)
+        for (int index = 1; index < items.Length; index++)
         {
-            SyntaxToken previous = item.GetFirstToken().GetPreviousToken();
-            changes.Add(SeparateItems(source, previous.Span.End, item.SpanStart, newline, indentation + "    "));
+            SyntaxToken previous = items[index].GetFirstToken().GetPreviousToken();
+            changes.Add(SeparateItems(source, previous.Span.End, items[index].SpanStart, newline, itemIndentation));
         }
 
         SyntaxToken closing = list.GetLastToken();
-        changes.Add(SeparateItems(source, closing.GetPreviousToken().Span.End, closing.SpanStart, newline, indentation));
+        changes.Add(Attach(source, closing.GetPreviousToken().Span.End, closing.SpanStart, newline, indentation));
 
         // Separating the statements that share a line lets the whitespace formatter lay out every block
         // around them, except where a lambda's body opens. It keeps that brace wherever it already starts
@@ -64,11 +65,7 @@ internal static class ArgumentLayout
 
         foreach (AnonymousFunctionExpressionSyntax function in GetSpreadLambdas(list))
         {
-            // A lambda passed as an item starts the item's new line; any other keeps the line it is on.
-            string lambdaIndentation = function.Parent is ArgumentSyntax argument && argument.Parent == list
-                ? indentation + "    "
-                : GetIndentation(source, function.SpanStart);
-
+            string lambdaIndentation = GetLambdaIndentation(function, list, source);
             BlockSyntax body = GetBody(function);
             SyntaxToken opening = body.OpenBraceToken;
             SyntaxToken end = body.CloseBraceToken;
@@ -102,17 +99,24 @@ internal static class ArgumentLayout
         if (!multiple)
             return GetLine(source, list.SpanStart) == GetLine(source, list.Span.End);
 
-        int previousEnd = list.GetFirstToken().Span.End;
+        int opening = list.GetFirstToken().Span.End;
+        int first = items[0].SpanStart;
+        string itemIndentation = GetItemIndentation(list, source);
 
-        foreach (SyntaxNode item in items)
+        // The first item stays beside the opening delimiter, unless a comment between them moves it down.
+        if (HasComment(source, opening, first) ? !StartsLine(source, opening, first, itemIndentation) : Breaks(source, opening, first))
+            return false;
+
+        for (int index = 1; index < items.Length; index++)
         {
-            if (GetLine(source, item.SpanStart) <= GetLine(source, previousEnd))
+            if (!StartsLine(source, items[index - 1].Span.End, items[index].SpanStart, itemIndentation))
                 return false;
-
-            previousEnd = item.Span.End;
         }
 
-        if (GetLine(source, list.GetLastToken().SpanStart) <= GetLine(source, previousEnd))
+        int last = items[items.Length - 1].Span.End;
+        int closing = list.GetLastToken().SpanStart;
+
+        if (Breaks(source, last, closing) != HasComment(source, last, closing))
             return false;
 
         foreach (SyntaxList<StatementSyntax> statements in GetStatementLists(list))
@@ -159,6 +163,19 @@ internal static class ArgumentLayout
         return compact.Length - 2 > LayoutLimits.MaximumInlineLength || compact.IndexOfAny(LineBreaks) >= 0;
     }
 
+    // Joins a delimiter and its neighbouring item, unless a comment between them keeps them on separate lines.
+    private static TextChange Attach(SourceText source, int start, int end, string newline, string indentation)
+    {
+        return HasComment(source, start, end)
+            ? SeparateItems(source, start, end, newline, indentation)
+            : new TextChange(TextSpan.FromBounds(start, end), string.Empty);
+    }
+
+    private static bool Breaks(SourceText source, int start, int end)
+    {
+        return GetLine(source, end) > GetLine(source, start);
+    }
+
     private static void Classify(SyntaxNode list, SyntaxTrivia trivia, ref bool blockComment, ref bool inlineComment)
     {
         if (!list.Span.Contains(trivia.SpanStart))
@@ -193,6 +210,33 @@ internal static class ArgumentLayout
         return new([.. source.ToString(line.Span).TakeWhile(static character => character is ' ' or '\t')]);
     }
 
+    // Later items sit one level deeper than the line the list starts on, and one more for each enclosing
+    // list that opens on that line and continues past it, so nested lists never share an indentation.
+    private static string GetItemIndentation(SyntaxNode list, SourceText source)
+    {
+        int line = GetLine(source, list.SpanStart);
+
+        int depth = 1 + list.Ancestors()
+            .Count(ancestor => IsList(ancestor) && ancestor.ChildNodes().Skip(count: 1).Any() && GetLine(source, ancestor.SpanStart) == line);
+
+        return GetIndentation(source, list.SpanStart) + new string(c: ' ', 4 * depth);
+    }
+
+    // A lambda on its item's first line moves with the item, and one on a later line keeps the line it is on.
+    private static string GetLambdaIndentation(AnonymousFunctionExpressionSyntax function, SyntaxNode list, SourceText source)
+    {
+        SyntaxNode[] items = [.. list.ChildNodes()];
+        int index = Array.FindIndex(items, item => item.Span.Contains(function.Span));
+        SyntaxNode item = items[index];
+
+        if (GetLine(source, function.SpanStart) != GetLine(source, item.SpanStart))
+            return GetIndentation(source, function.SpanStart);
+
+        bool attached = index == 0 && !HasComment(source, item.GetFirstToken().GetPreviousToken().Span.End, item.SpanStart);
+
+        return attached ? GetIndentation(source, list.SpanStart) : GetItemIndentation(list, source);
+    }
+
     private static int GetLine(SourceText source, int position)
     {
         return source.Lines.GetLineFromPosition(position).LineNumber;
@@ -204,10 +248,8 @@ internal static class ArgumentLayout
     {
         return [.. list.DescendantNodes()
             .OfType<AnonymousFunctionExpressionSyntax>()
-            .Where(
-                function => function.Block is BlockSyntax body && function.Ancestors().First(IsList) == list
-                    && body.DescendantTokens().Any(HoldsSpreadStatement)
-            )];
+            .Where(function => function.Block is BlockSyntax body && function.Ancestors().First(IsList) == list
+                    && body.DescendantTokens().Any(HoldsSpreadStatement))];
     }
 
     // The statement lists this list lays out: those it encloses most closely, so a block inside a
@@ -226,6 +268,11 @@ internal static class ArgumentLayout
             if (statements.Count > 1 && node.Ancestors().First(IsList) == list)
                 yield return statements;
         }
+    }
+
+    private static bool HasComment(SourceText source, int start, int end)
+    {
+        return source.ToString(TextSpan.FromBounds(start, end)).Trim().Length > 0;
     }
 
     // Some statements never share one line inside an argument, and joining the list would undo their
@@ -298,6 +345,12 @@ internal static class ArgumentLayout
     private static bool SharesLine(SourceText source, SyntaxToken token)
     {
         return GetLine(source, token.SpanStart) == GetLine(source, token.GetPreviousToken().Span.End);
+    }
+
+    // The item starts a later line than the token before it, at the indentation given.
+    private static bool StartsLine(SourceText source, int previousEnd, int start, string indentation)
+    {
+        return GetLine(source, start) > GetLine(source, previousEnd) && GetIndentation(source, start) == indentation;
     }
 
     private readonly struct LineFitMeasurement(bool blockComment, bool inlineComment, bool lineBreak, bool spreadStatement, int tokens, int width)

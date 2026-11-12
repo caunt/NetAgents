@@ -12,12 +12,10 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// <summary>Checks the analyzers the formatter hosts when the compiler's own loader refuses them.</summary>
 public sealed class AnalyzerCatalogTests
 {
-    private static readonly string CodeStylePath = Path.Combine(
-        typeof(AnalyzerCatalogTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+    private static readonly string CodeStylePath = Path.Combine(typeof(AnalyzerCatalogTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
             .Single(static attribute => string.Equals(attribute.Key, b: "CodeStyleDirectory", StringComparison.Ordinal)).Value
             ?? throw new InvalidOperationException(message: "The building SDK's code-style directory is unknown."),
-        path2: "Microsoft.CodeAnalysis.CSharp.CodeStyle.dll"
-    );
+        path2: "Microsoft.CodeAnalysis.CSharp.CodeStyle.dll");
 
     /// <summary>Hosts a suppressor, which describes suppressions where an analyzer describes rules.</summary>
     [Fact]

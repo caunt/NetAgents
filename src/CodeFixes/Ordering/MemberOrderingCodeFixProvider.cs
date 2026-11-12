@@ -35,14 +35,10 @@ public sealed class MemberOrderingCodeFixProvider : CodeFixProvider
     {
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Sort type members",
+            context.RegisterCodeFix(CodeAction.Create(title: "Sort type members",
                     cancellationToken => SortMembers(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(MemberOrderingCodeFixProvider)
-                ),
-                diagnostic
-            );
+                    nameof(MemberOrderingCodeFixProvider)),
+                diagnostic);
         }
 
         return Task.CompletedTask;
@@ -55,10 +51,8 @@ public sealed class MemberOrderingCodeFixProvider : CodeFixProvider
         if (root is null)
             return document;
 
-        SyntaxNode updated = root.ReplaceNodes(
-            root.DescendantNodes().OfType<TypeDeclarationSyntax>(),
-            static (original, rewritten) => rewritten.WithMembers(MemberOrdering.Sort(rewritten))
-        );
+        SyntaxNode updated = root.ReplaceNodes(root.DescendantNodes().OfType<TypeDeclarationSyntax>(),
+            static (original, rewritten) => rewritten.WithMembers(MemberOrdering.Sort(rewritten)));
 
         return document.WithSyntaxRoot(updated);
     }

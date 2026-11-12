@@ -33,14 +33,10 @@ public sealed class BlockPaddingCodeFixProvider : CodeFixProvider
     {
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Remove blank line at block edge",
+            context.RegisterCodeFix(CodeAction.Create(title: "Remove blank line at block edge",
                     cancellationToken => RemoveBlankLine(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(BlockPaddingCodeFixProvider)
-                ),
-                diagnostic
-            );
+                    nameof(BlockPaddingCodeFixProvider)),
+                diagnostic);
         }
 
         return Task.CompletedTask;

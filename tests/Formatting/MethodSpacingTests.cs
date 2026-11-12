@@ -27,10 +27,8 @@ public sealed class MethodSpacingTests
     [Theory]
     [InlineData("class ExampleType { ExampleType() { } void Execute() { } }", "class ExampleType { ExampleType() { }\n\nvoid Execute() { } }")]
     [InlineData("interface ExampleType { void First(); void Second(); }", "interface ExampleType { void First();\n\nvoid Second(); }")]
-    [InlineData(
-        "class ExampleType\n{\n    void First() {}\n    /* text\n\n       text */\n    void Second() {}\n}",
-        "class ExampleType\n{\n    void First() {}\n\n    /* text\n\n       text */\n    void Second() {}\n}"
-    )]
+    [InlineData("class ExampleType\n{\n    void First() {}\n    /* text\n\n       text */\n    void Second() {}\n}",
+        "class ExampleType\n{\n    void First() {}\n\n    /* text\n\n       text */\n    void Second() {}\n}")]
     public async Task FixesAdjacentDeclarations(string source, string expected)
     {
         Assert.Equal(expected, await CodeFixTestHarness.FixMethodSpacing(source, fixAll: false));
@@ -45,12 +43,10 @@ public sealed class MethodSpacingTests
     [InlineData("\r\n")]
     public async Task SeparatesMethods(string newline)
     {
-        string source = string.Join(
-            newline,
+        string source = string.Join(newline,
             value: [
             "class ExampleType", "{", "    void First() { }", "    /// <summary>Second.</summary>",
-            "    [System.Obsolete]", "    void Second() { }", "    int Third() => 3;", "}"]
-        );
+            "    [System.Obsolete]", "    void Second() { }", "    int Third() => 3;", "}"]);
 
         string expected = source.Replace(oldValue: "    ///", newline + "    ///", StringComparison.Ordinal)
             .Replace(oldValue: "    int Third", newline + "    int Third", StringComparison.Ordinal);

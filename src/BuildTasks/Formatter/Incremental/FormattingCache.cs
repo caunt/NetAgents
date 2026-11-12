@@ -35,10 +35,8 @@ internal sealed class FormattingCache(string path)
 
         try
         {
-            DirectoryInfo directory = new(
-                Path.GetDirectoryName(Path.GetFullPath(path))
-                ?? throw new InvalidOperationException(message: "The formatting cache directory is unavailable.")
-            );
+            DirectoryInfo directory = new(Path.GetDirectoryName(Path.GetFullPath(path))
+                ?? throw new InvalidOperationException(message: "The formatting cache directory is unavailable."));
 
             directory.Create();
             await File.WriteAllTextAsync(temporaryPath, fingerprint.Value, Encoding.UTF8, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);

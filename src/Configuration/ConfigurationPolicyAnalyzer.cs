@@ -22,25 +22,21 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0013";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Consumer configuration must preserve the shared policy",
         messageFormat: "Configuration '{0}' must be '{1}'; remove the conflicting consumer override",
         category: "Configuration",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     private static readonly ImmutableDictionary<string, string> RequiredOptions = ReadRequiredOptions();
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterCompilationStartAction(
-            static compilationContext =>
-            compilationContext.RegisterSyntaxTreeAction(treeContext => AnalyzeConfiguration(treeContext, compilationContext.Compilation))
-        );
+        context.RegisterCompilationStartAction(static compilationContext =>
+            compilationContext.RegisterSyntaxTreeAction(treeContext => AnalyzeConfiguration(treeContext, compilationContext.Compilation)));
     }
 
     private static void AnalyzeConfiguration(SyntaxTreeAnalysisContext context, Compilation compilation)

@@ -26,10 +26,8 @@ public sealed class DirectoryFileCountAnalyzerTests
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(analyzer, files));
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, diagnostic.Id);
         Assert.Equal(expected: "Features/Source00.cs", diagnostic.Location.SourceTree?.FilePath);
-        Assert.Equal(
-            expected: "Directory 'Features' contains 17 authored C# files (maximum 16); organize these files into subdirectories with narrower responsibilities",
-            diagnostic.GetMessage(CultureInfo.InvariantCulture)
-        );
+        Assert.Equal(expected: "Directory 'Features' contains 17 authored C# files (maximum 16); organize these files into subdirectories with narrower responsibilities",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture));
     }
 
     /// <summary>
@@ -110,13 +108,9 @@ public sealed class DirectoryFileCountAnalyzerTests
     [Fact]
     public async Task RejectsSuppression()
     {
-        SyntaxTree[] files = [.. Enumerable.Range(start: 0, count: 17).Select(
-            static index =>
-            CSharpSyntaxTree.ParseText(
-                text: "#pragma warning disable NETAGENTS0018\n",
-                path: "Features/Source" + index.ToString(format: "D2", CultureInfo.InvariantCulture) + ".cs"
-            )
-        )];
+        SyntaxTree[] files = [.. Enumerable.Range(start: 0, count: 17).Select(static index =>
+            CSharpSyntaxTree.ParseText(text: "#pragma warning disable NETAGENTS0018\n",
+                path: "Features/Source" + index.ToString(format: "D2", CultureInfo.InvariantCulture) + ".cs"))];
 
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new DirectoryFileCountAnalyzer(), files));
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, diagnostic.Id);
@@ -140,8 +134,6 @@ public sealed class DirectoryFileCountAnalyzerTests
     {
         string prefix = directory.Length == 0 ? string.Empty : directory + "/";
 
-        return [.. Enumerable.Range(start: 0, count).Select(
-            index => CSharpSyntaxTree.ParseText(text: "// Authored source.\n", path: prefix + "Source" + index.ToString(format: "D2", CultureInfo.InvariantCulture) + ".cs")
-        )];
+        return [.. Enumerable.Range(start: 0, count).Select(index => CSharpSyntaxTree.ParseText(text: "// Authored source.\n", path: prefix + "Source" + index.ToString(format: "D2", CultureInfo.InvariantCulture) + ".cs"))];
     }
 }

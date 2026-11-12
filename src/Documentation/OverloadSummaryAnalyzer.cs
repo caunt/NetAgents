@@ -21,27 +21,23 @@ public sealed class OverloadSummaryAnalyzer() : PolicyAnalyzer(Rule)
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0030";
 
-    private static readonly DiagnosticDescriptor Rule = new(
-        RuleIdentifier,
+    private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Overloads describe what separates them",
         messageFormat: "Say what this overload of '{0}' does differently; an earlier one already carries this summary",
         category: "Documentation",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        customTags: [WellKnownDiagnosticTags.NotConfigurable]
-    );
+        customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(
-            AnalyzeType,
+        context.RegisterSyntaxNodeAction(AnalyzeType,
             SyntaxKind.ClassDeclaration,
             SyntaxKind.StructDeclaration,
             SyntaxKind.RecordDeclaration,
             SyntaxKind.RecordStructDeclaration,
-            SyntaxKind.InterfaceDeclaration
-        );
+            SyntaxKind.InterfaceDeclaration);
     }
 
     // Overloads are siblings, so the comparison belongs to the type that declares them. Members of

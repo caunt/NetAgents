@@ -27,10 +27,8 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return FixAllProvider.Create(
-            static async (context, document, diagnostics) =>
-            await FixArguments(document, requestedSpan: null, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false)
-        );
+        return FixAllProvider.Create(static async (context, document, diagnostics) =>
+            await FixArguments(document, requestedSpan: null, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
     }
 
     /// <inheritdoc />
@@ -48,14 +46,10 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
             if (!ArgumentLayout.IsList(list) || !ArgumentLayout.CanFix(list))
                 continue;
 
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Fix argument and parameter layout",
+            context.RegisterCodeFix(CodeAction.Create(title: "Fix argument and parameter layout",
                     cancellationToken => FixArguments(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(ArgumentLayoutCodeFixProvider)
-                ),
-                diagnostic
-            );
+                    nameof(ArgumentLayoutCodeFixProvider)),
+                diagnostic);
         }
     }
 
@@ -73,12 +67,10 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
 
             SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            SyntaxNode? list = root.DescendantNodes().FirstOrDefault(
-                node => ArgumentLayout.IsList(node)
+            SyntaxNode? list = root.DescendantNodes().FirstOrDefault(node => ArgumentLayout.IsList(node)
                 && !node.ContainsDiagnostics && ArgumentLayout.CanFix(node)
                 && (requestedSpan is null || node.Span == requestedSpan)
-                && !ArgumentLayout.HasExpectedLayout(node, source)
-            );
+                && !ArgumentLayout.HasExpectedLayout(node, source));
 
             if (list is null)
                 return document;

@@ -30,14 +30,12 @@ public sealed class FormattingAnalysisTests
         DependencyAnalyzer analyzer = new(offerFixes: true);
         List<string> messages = [];
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
-            project,
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
             [analyzer],
             [new CandidateFix(rejected: true), new CandidateFix(rejected: false)],
             static fault => Assert.Fail(fault),
             CancellationToken.None,
-            new(project.Name, messages.Add)
-        );
+            new(project.Name, messages.Add));
 
         Assert.True(result.Blocking.IsEmpty);
         Assert.Equal(expected: 4, analyzer.Runs);
@@ -47,22 +45,18 @@ public sealed class FormattingAnalysisTests
     }
 
     /// <summary>Counts errors by identity, so a moved one is not new and a repeated one is.</summary>
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisReleaseTracking",
+    [SuppressMessage("MicrosoftCodeAnalysisReleaseTracking",
         "RS2008",
-        Justification = "This private instrumentation rule is only used in tests and is not shipped."
-    )]
+        Justification = "This private instrumentation rule is only used in tests and is not shipped.")]
     [Fact]
     public void CountsOnlyErrorsBeyondTheBaseline()
     {
-        DiagnosticDescriptor rule = new(
-            id: "PERF0006",
+        DiagnosticDescriptor rule = new(id: "PERF0006",
             title: "Repeated error",
             messageFormat: "Repeated error",
             category: "Testing",
             DiagnosticSeverity.Error,
-            isEnabledByDefault: true
-        );
+            isEnabledByDefault: true);
 
         Diagnostic first = Diagnostic.Create(rule, Location.None);
         Diagnostic second = Diagnostic.Create(rule, Location.None);
@@ -82,11 +76,9 @@ public sealed class FormattingAnalysisTests
         Project before = CreateProject(workspace)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, generalDiagnosticOption: ReportDiagnostic.Error));
 
-        FormattingAnalysis analysis = new(
-            [new UnusedValueSuppressor()],
+        FormattingAnalysis analysis = new([new UnusedValueSuppressor()],
             static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
-            new(before.Name, report: null)
-        );
+            new(before.Name, report: null));
 
         ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None);
         Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() { int unused = 0; return 1; } }\n");
@@ -178,16 +170,12 @@ public sealed class FormattingAnalysisTests
         return workspace.AddProject(name: "Validation", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(
-                name: "Reader.cs",
+            .AddDocument(name: "Reader.cs",
                 SourceText.From(text: "internal static class Reader { internal static int Read() => 1; }\n"),
-                filePath: "Reader.cs"
-            ).Project
-            .AddDocument(
-                name: "Dependency.cs",
+                filePath: "Reader.cs").Project
+            .AddDocument(name: "Dependency.cs",
                 SourceText.From(text: "internal static class Dependency { internal const int Value = 0; }\n"),
-                filePath: "Dependency.cs"
-            ).Project;
+                filePath: "Dependency.cs").Project;
     }
 
     private static async Task<List<string>> ValidateBrokenCandidate(string suppressedDiagnosticIdentifier)
@@ -197,11 +185,9 @@ public sealed class FormattingAnalysisTests
         Project before = CreateProject(workspace);
         List<string> messages = [];
 
-        FormattingAnalysis analysis = new(
-            [new ClaimingSuppressor(suppressedDiagnosticIdentifier)],
+        FormattingAnalysis analysis = new([new ClaimingSuppressor(suppressedDiagnosticIdentifier)],
             static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
-            new(before.Name, messages.Add)
-        );
+            new(before.Name, messages.Add));
 
         ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
 
@@ -228,9 +214,7 @@ public sealed class FormattingAnalysisTests
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: "Change optional candidate",
+            context.RegisterCodeFix(CodeAction.Create(title: "Change optional candidate",
                     async cancellationToken =>
                     {
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -238,10 +222,8 @@ public sealed class FormattingAnalysisTests
 
                         return context.Document.WithText(text.WithChanges(new TextChange(context.Span, next)));
                     },
-                    rejected ? "RejectOptionalCandidate" : "AcceptOptionalCandidate"
-                ),
-                context.Diagnostics
-            );
+                    rejected ? "RejectOptionalCandidate" : "AcceptOptionalCandidate"),
+                context.Diagnostics);
 
             return Task.CompletedTask;
         }
@@ -249,11 +231,9 @@ public sealed class FormattingAnalysisTests
 
     /// <summary>Claims one diagnostic without suppressing anything, to exercise the shortcut guard.</summary>
     /// <param name="suppressedDiagnosticIdentifier">The diagnostic this suppressor claims.</param>
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisCorrectness",
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness",
         "RS1001",
-        Justification = "This private test suppressor is constructed explicitly and is not shipped."
-    )]
+        Justification = "This private test suppressor is constructed explicitly and is not shipped.")]
     private sealed class ClaimingSuppressor(string suppressedDiagnosticIdentifier) : DiagnosticSuppressor
     {
         public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions =>
@@ -264,47 +244,37 @@ public sealed class FormattingAnalysisTests
         }
     }
 
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisCorrectness",
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness",
         "RS1001",
-        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts."
-    )]
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisReleaseTracking",
+        Justification = "This private test analyzer is constructed explicitly and must not be discovered by compiler hosts.")]
+    [SuppressMessage("MicrosoftCodeAnalysisReleaseTracking",
         "RS2008",
-        Justification = "This private instrumentation rule is only used in tests and is not shipped."
-    )]
+        Justification = "This private instrumentation rule is only used in tests and is not shipped.")]
     private sealed class DependencyAnalyzer(bool offerFixes = false) : DiagnosticAnalyzer
     {
-        private static readonly DiagnosticDescriptor RejectedSuggestion = new(
-            id: "PERF0004",
+        private static readonly DiagnosticDescriptor RejectedSuggestion = new(id: "PERF0004",
             title: "Rejected candidate",
             messageFormat: "Rejected candidate",
             category: "Testing",
             DiagnosticSeverity.Info,
             isEnabledByDefault: true,
-            customTags: [WellKnownDiagnosticTags.CompilationEnd]
-        );
+            customTags: [WellKnownDiagnosticTags.CompilationEnd]);
 
-        private static readonly DiagnosticDescriptor AcceptedSuggestion = new(
-            id: "PERF0005",
+        private static readonly DiagnosticDescriptor AcceptedSuggestion = new(id: "PERF0005",
             title: "Accepted candidate",
             messageFormat: "Accepted candidate",
             category: "Testing",
             DiagnosticSeverity.Info,
             isEnabledByDefault: true,
-            customTags: [WellKnownDiagnosticTags.CompilationEnd]
-        );
+            customTags: [WellKnownDiagnosticTags.CompilationEnd]);
 
-        private static readonly DiagnosticDescriptor Rule = new(
-            id: "PERF0003",
+        private static readonly DiagnosticDescriptor Rule = new(id: "PERF0003",
             title: "Dependent error",
             messageFormat: "Dependent error",
             category: "Testing",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
-            customTags: [WellKnownDiagnosticTags.CompilationEnd]
-        );
+            customTags: [WellKnownDiagnosticTags.CompilationEnd]);
 
         public int Runs { get; private set; }
 
@@ -314,38 +284,34 @@ public sealed class FormattingAnalysisTests
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterCompilationAction(
-                compilation =>
+            context.RegisterCompilationAction(compilation =>
+            {
+                Runs++;
+                SyntaxTree reader = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Reader.cs");
+                SyntaxTree dependency = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Dependency.cs");
+                string source = reader.GetText().ToString();
+                string dependencySource = dependency.GetText().ToString();
+
+                bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal) && dependencySource.Contains(value: "= 0;", StringComparison.Ordinal);
+
+                if (invalid)
+                    compilation.ReportDiagnostic(Diagnostic.Create(Rule, reader.GetRoot().GetFirstToken().GetLocation()));
+
+                if (offerFixes)
                 {
-                    Runs++;
-                    SyntaxTree reader = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Reader.cs");
-                    SyntaxTree dependency = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Dependency.cs");
-                    string source = reader.GetText().ToString();
-                    string dependencySource = dependency.GetText().ToString();
+                    SyntaxToken token = reader.GetRoot().DescendantTokens().Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
+                    compilation.ReportDiagnostic(Diagnostic.Create(RejectedSuggestion, token.GetLocation()));
 
-                    bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal) && dependencySource.Contains(value: "= 0;", StringComparison.Ordinal);
-
-                    if (invalid)
-                        compilation.ReportDiagnostic(Diagnostic.Create(Rule, reader.GetRoot().GetFirstToken().GetLocation()));
-
-                    if (offerFixes)
-                    {
-                        SyntaxToken token = reader.GetRoot().DescendantTokens().Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
-                        compilation.ReportDiagnostic(Diagnostic.Create(RejectedSuggestion, token.GetLocation()));
-
-                        if (token.ValueText != "4")
-                            compilation.ReportDiagnostic(Diagnostic.Create(AcceptedSuggestion, token.GetLocation()));
-                    }
+                    if (token.ValueText != "4")
+                        compilation.ReportDiagnostic(Diagnostic.Create(AcceptedSuggestion, token.GetLocation()));
                 }
-            );
+            });
         }
     }
 
-    [SuppressMessage(
-        "MicrosoftCodeAnalysisCorrectness",
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness",
         "RS1001",
-        Justification = "This private test suppressor is constructed explicitly and is not shipped."
-    )]
+        Justification = "This private test suppressor is constructed explicitly and is not shipped.")]
     private sealed class UnusedValueSuppressor : DiagnosticSuppressor
     {
         private static readonly SuppressionDescriptor Descriptor = new(id: "PERFSP0001", suppressedDiagnosticId: "CS0219", justification: "Exercise effective compiler diagnostics.");
