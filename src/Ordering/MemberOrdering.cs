@@ -64,7 +64,7 @@ internal static class MemberOrdering
         return SyntaxFactory.List(sorted);
     }
 
-    private static int CountLeadingWhitespace(SyntaxTriviaList trivia)
+    private static int CountSeparator(SyntaxTriviaList trivia)
     {
         int count = 0;
 
@@ -169,8 +169,8 @@ internal static class MemberOrdering
     {
         SyntaxTriviaList trivia = member.GetLeadingTrivia();
         SyntaxTriviaList separator = slot.GetLeadingTrivia();
-        int adopted = CountLeadingWhitespace(separator);
-        int discarded = CountLeadingWhitespace(trivia);
+        int adopted = CountSeparator(separator);
+        int discarded = CountSeparator(trivia);
         List<SyntaxTrivia> replacement = [];
 
         for (int index = 0; index < adopted; index++)

@@ -63,7 +63,7 @@ public sealed class ExhaustiveSwitchSuppressorTests
     [Theory]
     [InlineData("error")]
     [InlineData("warning")]
-    public async Task SuppressesWhileConfigurationRaisesSeverity(string severity)
+    public async Task SuppressesWhenConfigurationEscalates(string severity)
     {
         const string body = "int Read(Width width) => width switch { Width.Int32 => 4, _ => 0 };";
         Diagnostic diagnostic = await Analyze(body, diagnosticIdentifier: "IDE0072", severity);

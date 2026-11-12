@@ -87,8 +87,7 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
         TextChange[] orderedChanges = [.. changes.OrderBy(static change => change.Span.Start).ThenBy(static change => change.Span.Length)];
         Document changedDocument = document.WithText(source.WithChanges(orderedChanges));
 
-        IEnumerable<TextSpan> formattingSpans = affectedSpans.Select(span => TextSpan.FromBounds(TranslatePosition(span.Start, orderedChanges, includeInsertions: false),
-            TranslatePosition(span.End, orderedChanges, includeInsertions: true)));
+        IEnumerable<TextSpan> formattingSpans = affectedSpans.Select(span => TextSpan.FromBounds(Translate(span.Start, orderedChanges, includeInsertions: false), Translate(span.End, orderedChanges, includeInsertions: true)));
 
         OptionSet options = await document.GetOptionsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
         options = options.WithChangedOption(FormattingOptions.NewLine, LanguageNames.CSharp, lineEnding);
@@ -145,7 +144,7 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
         return new TextChange(ownsLine ? line.SpanIncludingLineBreak : brace.Span, string.Empty);
     }
 
-    private static int TranslatePosition(int position, TextChange[] changes, bool includeInsertions)
+    private static int Translate(int position, TextChange[] changes, bool includeInsertions)
     {
         int translated = position;
 

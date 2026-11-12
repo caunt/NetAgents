@@ -77,15 +77,15 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
 
         INamespaceSymbol containingNamespace = containingType.ContainingNamespace;
 
-        bool isThreadSleep = containingType.Name == "Thread" && member.Name == "Sleep" && IsWithin(containingNamespace, Threading);
+        bool isThreadSleep = containingType.Name == "Thread" && member.Name == "Sleep" && IsNamespace(containingNamespace, Threading);
 
         bool isBlockingTask = containingType.Name is "Task" or "ValueTask"
             && member.Name is "Result" or "Wait" or "WaitAll" or "WaitAny"
-            && IsWithin(containingNamespace, Tasks);
+            && IsNamespace(containingNamespace, Tasks);
 
         bool isBlockingAwaiter = member.Name == "GetResult"
             && containingType.Name.EndsWith(value: "Awaiter", StringComparison.Ordinal)
-            && IsWithin(containingNamespace, CompilerServices);
+            && IsNamespace(containingNamespace, CompilerServices);
 
         if (IsForbidden(containingType) || isThreadSleep || isBlockingTask || isBlockingAwaiter)
             context.ReportDiagnostic(Diagnostic.Create(Rule, context.Operation.Syntax.GetLocation()));
@@ -119,12 +119,12 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
 
     private static bool IsForbidden(INamedTypeSymbol? type)
     {
-        return type is not null && ForbiddenTypes.Contains(type.Name) && IsWithin(type.ContainingNamespace, Threading);
+        return type is not null && ForbiddenTypes.Contains(type.Name) && IsNamespace(type.ContainingNamespace, Threading);
     }
 
     // Comparing the segments outward costs nothing, where rendering the namespace to a string
     // allocates one for every member this analyzer looks at.
-    private static bool IsWithin(INamespaceSymbol? symbol, ImmutableArray<string> segments)
+    private static bool IsNamespace(INamespaceSymbol? symbol, ImmutableArray<string> segments)
     {
         foreach (string segment in segments)
         {

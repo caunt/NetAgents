@@ -31,7 +31,7 @@ public sealed class PackageConsumptionTests
             /// <summary>Measures the width.</summary>
             /// <param name="width">The width to measure.</param>
             /// <returns>The width in bytes.</returns>
-            public static int MeasureWidth(CountWidth width)
+            public static int Measure(CountWidth width)
             {
                 return width switch
                 {
@@ -43,7 +43,7 @@ public sealed class PackageConsumptionTests
             /// <summary>Names the width.</summary>
             /// <param name="width">The width to name.</param>
             /// <returns>The width name.</returns>
-            public static string NameWidth(CountWidth width)
+            public static string Name(CountWidth width)
             {
                 switch (width)
                 {

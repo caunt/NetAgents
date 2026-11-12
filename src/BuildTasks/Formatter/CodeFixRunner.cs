@@ -27,7 +27,7 @@ internal static class CodeFixRunner
         // Without a handler an analyzer that throws becomes an AD0001 this compilation escalates to an
         // error nothing can fix, and a hosted analyzer built for a newer Roslyn is where that happens.
         // Several candidate projects can invoke the same analyzer, so an identical fault is announced once.
-        void OnAnalyzerException(Exception exception, DiagnosticAnalyzer analyzer, Diagnostic diagnostic)
+        void OnAnalyzerFailure(Exception exception, DiagnosticAnalyzer analyzer, Diagnostic diagnostic)
         {
             string fault = $"NetAgents cannot run the {analyzer.GetType().FullName} analyzer ({diagnostic.Id}): {exception.Message}";
 
@@ -39,7 +39,7 @@ internal static class CodeFixRunner
         progress.Report(activity: "checking source syntax");
         await FormattingSyntax.Verify(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-        FormattingAnalysis analysis = new(analyzers, OnAnalyzerException, progress);
+        FormattingAnalysis analysis = new(analyzers, OnAnalyzerFailure, progress);
 
         // A project-wide action rejected once stays rejected for the rest of the run. Validating it
         // again costs a full analysis per pass, and only an optional suggestion can land here: a
@@ -86,7 +86,7 @@ internal static class CodeFixRunner
                 // including reference remarks the consumer build never fails for.
                 progress.Report(activity: "finished applying available fixes");
 
-                ImmutableArray<Diagnostic> introduced = [.. FormattingAnalysis.FindIntroduced(diagnostics, baseline).Where(IsBlockingError)];
+                ImmutableArray<Diagnostic> introduced = [.. FormattingAnalysis.IntroducedErrors(diagnostics, baseline).Where(IsBlockingError)];
 
                 // Individual passes may introduce an error a later pass repairs, so only the state the
                 // run settles in decides. Handing back the project as it arrived is what withholds the
@@ -100,7 +100,7 @@ internal static class CodeFixRunner
             project = application.Project;
             diagnostics = application.Diagnostics;
 
-            if (regression is null && !FormattingAnalysis.FindIntroduced(diagnostics, baseline).IsEmpty)
+            if (regression is null && !FormattingAnalysis.IntroducedErrors(diagnostics, baseline).IsEmpty)
                 regression = application.Attempt;
         }
 

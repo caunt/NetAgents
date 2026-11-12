@@ -213,14 +213,14 @@ internal static class ProjectFormatter
         CodeFixProvider[] providers = [.. composition.GetExports<CodeFixProvider>()];
         bool analyzerFault = false;
 
-        void ReportAnalyzerFault(string fault)
+        void ReportBrokenAnalyzer(string fault)
         {
             analyzerFault = true;
             inputs.Log.LogWarning(fault);
         }
 
         CodeFixRunner.CodeFixResult codeFixes = await CodeFixRunner
-            .Fix(original, analyzers, providers, ReportAnalyzerFault, cancellationToken, progress)
+            .Fix(original, analyzers, providers, ReportBrokenAnalyzer, cancellationToken, progress)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         List<string> rewritten = [];

@@ -59,7 +59,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
             // Only an identical complete candidate can reuse a rejection: edits in another file can
             // change binding or a project-wide analyzer's result. Compare against today's baseline
             // too, since a previously introduced error might already exist in that baseline now.
-            ImmutableArray<Diagnostic> remaining = FindIntroduced(rejected.Errors, before);
+            ImmutableArray<Diagnostic> remaining = IntroducedErrors(rejected.Errors, before);
 
             if (!remaining.IsEmpty)
             {
@@ -80,7 +80,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
                 ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
             ImmutableArray<Diagnostic> compilerDiagnostics = compilation.GetDiagnostics(cancellationToken);
-            ImmutableArray<Diagnostic> compilerErrors = FindIntroduced(compilerDiagnostics, before);
+            ImmutableArray<Diagnostic> compilerErrors = IntroducedErrors(compilerDiagnostics, before);
 
             // A candidate that already breaks compilation cannot be accepted at any severity.
             // Avoid executing all analyzers just to rediscover that.
@@ -93,7 +93,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
         }
 
         ImmutableArray<Diagnostic> diagnostics = await GetDiagnostics(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-        ImmutableArray<Diagnostic> introduced = FindIntroduced(diagnostics, before);
+        ImmutableArray<Diagnostic> introduced = IntroducedErrors(diagnostics, before);
 
         if (!introduced.IsEmpty)
             Remember(actionKey, fingerprint, diagnostics);
@@ -103,7 +103,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
 
     // Counting by identity rather than position keeps a diagnostic that merely moved out of the
     // result, while a second copy of an identical one still counts as introduced.
-    internal static ImmutableArray<Diagnostic> FindIntroduced(ImmutableArray<Diagnostic> after, ImmutableArray<Diagnostic> before)
+    internal static ImmutableArray<Diagnostic> IntroducedErrors(ImmutableArray<Diagnostic> after, ImmutableArray<Diagnostic> before)
     {
         Dictionary<DiagnosticIdentity, int> existing = before.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .CountBy(ErrorKey).ToDictionary();

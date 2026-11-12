@@ -105,11 +105,11 @@ internal static class ExplicitLiteralArgumentName
             elements.Add(SyntaxFactory.ExpressionElement(arguments[index].Expression.WithoutTrivia()));
         }
 
-        SyntaxToken comma = CreatePlain(SyntaxKind.CommaToken).WithTrailingTrivia(SyntaxFactory.Space);
+        SyntaxToken comma = CreateToken(SyntaxKind.CommaToken).WithTrailingTrivia(SyntaxFactory.Space);
 
         SeparatedSyntaxList<CollectionElementSyntax> items = SyntaxFactory.SeparatedList(elements, Enumerable.Repeat(comma, elements.Count - 1));
 
-        CollectionExpressionSyntax collection = SyntaxFactory.CollectionExpression(CreatePlain(SyntaxKind.OpenBracketToken), items, CreatePlain(SyntaxKind.CloseBracketToken));
+        CollectionExpressionSyntax collection = SyntaxFactory.CollectionExpression(CreateToken(SyntaxKind.OpenBracketToken), items, CreateToken(SyntaxKind.CloseBracketToken));
 
         return SyntaxFactory.Argument(collection)
             .WithNameColon(name)
@@ -128,7 +128,7 @@ internal static class ExplicitLiteralArgumentName
             ? SyntaxFactory.Identifier(SyntaxTriviaList.Empty, name, SyntaxTriviaList.Empty)
             : SyntaxFactory.Identifier(SyntaxTriviaList.Empty, SyntaxKind.IdentifierToken, "@" + name, name, SyntaxTriviaList.Empty);
 
-        return SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(identifier), CreatePlain(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
+        return SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(identifier), CreateToken(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
     }
 
     private static ArgumentNaming? CreateNaming(BaseArgumentListSyntax list, SemanticModel model, CancellationToken cancellationToken)
@@ -182,7 +182,7 @@ internal static class ExplicitLiteralArgumentName
             : null;
     }
 
-    private static SyntaxToken CreatePlain(SyntaxKind kind)
+    private static SyntaxToken CreateToken(SyntaxKind kind)
     {
         // The plain token factories carry elastic markers, which make code actions reformat the region.
         return SyntaxFactory.Token(SyntaxTriviaList.Empty, kind, SyntaxTriviaList.Empty);

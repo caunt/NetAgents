@@ -13,8 +13,8 @@ using NetAgents.Analyzers.Diagnostics;
 namespace NetAgents.Analyzers.Naming;
 
 /// <summary>
-/// Rejects calls whose method name ends with a word its first argument already says, such as
-/// <c>UpdateValue(value: 1)</c> or <c>FromJob(jobAbc)</c>.
+/// Rejects method declarations whose name ends with a word their first parameter's name already says,
+/// such as <c>UpdateValue(int value)</c>, which should be <c>Update(int value)</c>.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class RedundantMethodSuffixAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
@@ -25,8 +25,8 @@ public sealed class RedundantMethodSuffixAnalyzer() : PolicyAnalyzer(Rule, analy
     public const string RuleIdentifier = "NETAGENTS0031";
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
-        title: "Method names must not repeat their first argument",
-        messageFormat: "Rename '{0}' so it does not end with '{1}', which its first argument '{2}' already says",
+        title: "Method names must not repeat their first parameter",
+        messageFormat: "Rename '{0}' so it does not end with '{1}', which its first parameter '{2}' already says",
         category: "Naming",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
@@ -37,75 +37,43 @@ public sealed class RedundantMethodSuffixAnalyzer() : PolicyAnalyzer(Rule, analy
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(AnalyzeInvocation, SyntaxKind.InvocationExpression);
+        context.RegisterSyntaxNodeAction(AnalyzeDeclaration, SyntaxKind.MethodDeclaration, SyntaxKind.LocalFunctionStatement);
     }
 
-    private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+    // Only the declaration is checked: the name of the method and the name of its first parameter. What
+    // a caller passes, or what its variables are called, says nothing about the method's name.
+    private static void AnalyzeDeclaration(SyntaxNodeAnalysisContext context)
     {
-        InvocationExpressionSyntax invocation = (InvocationExpressionSyntax)context.Node;
-
-        if (invocation.ArgumentList.Arguments.Count == 0 || invocation.ContainsDiagnostics)
-            return;
-
-        SyntaxToken nameToken = invocation.Expression switch
+        SyntaxToken identifier = context.Node switch
         {
-            MemberAccessExpressionSyntax access => access.Name.Identifier,
-            SimpleNameSyntax simple => simple.Identifier,
-            MemberBindingExpressionSyntax binding => binding.Name.Identifier,
+            MethodDeclarationSyntax declaration => declaration.Identifier,
+            LocalFunctionStatementSyntax function => function.Identifier,
             _ => default,
         };
 
-        if (nameToken.IsKind(SyntaxKind.None))
-            return;
-
-        if (context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol is not IMethodSymbol method)
-            return;
-
-        IMethodSymbol declared = (method.ReducedFrom ?? method).OriginalDefinition;
-
-        if (!IsRenamable(declared, context.Compilation))
-            return;
-
-        string? suffix = GetSuffix(declared.Name);
-
-        if (suffix is null)
-            return;
-
-        ArgumentSyntax first = invocation.ArgumentList.Arguments[index: 0];
-
-        foreach (string name in GetArgumentNames(first))
+        ParameterListSyntax? parameters = context.Node switch
         {
-            if (GetWords(name).Contains(suffix, StringComparer.OrdinalIgnoreCase))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(Rule, nameToken.GetLocation(), declared.Name, suffix, name));
-
-                return;
-            }
-        }
-    }
-
-    // The names a reader sees for the first argument: the parameter it is passed to by name, and the
-    // variable, field, or property it is read from.
-    private static IEnumerable<string> GetArgumentNames(ArgumentSyntax argument)
-    {
-        if (argument.NameColon is not null)
-            yield return argument.NameColon.Name.Identifier.ValueText;
-
-        ExpressionSyntax expression = argument.Expression;
-
-        while (expression is ParenthesizedExpressionSyntax parenthesized)
-            expression = parenthesized.Expression;
-
-        SyntaxToken identifier = expression switch
-        {
-            SimpleNameSyntax simple => simple.Identifier,
-            MemberAccessExpressionSyntax access => access.Name.Identifier,
-            DeclarationExpressionSyntax { Designation: SingleVariableDesignationSyntax designation } => designation.Identifier,
-            _ => default,
+            MethodDeclarationSyntax declaration => declaration.ParameterList,
+            LocalFunctionStatementSyntax function => function.ParameterList,
+            _ => null,
         };
 
-        if (!identifier.IsKind(SyntaxKind.None))
-            yield return identifier.ValueText;
+        if (parameters is null || parameters.Parameters.Count == 0)
+            return;
+
+        string? suffix = GetSuffix(identifier.ValueText);
+        string parameter = parameters.Parameters[index: 0].Identifier.ValueText;
+
+        if (suffix is null || !GetWords(parameter).Contains(suffix, StringComparer.OrdinalIgnoreCase))
+            return;
+
+        // Binding waits until the names repeat, since most declarations never get this far.
+        ISymbol? declared = context.SemanticModel.GetDeclaredSymbol(context.Node, context.CancellationToken);
+
+        if (declared is not IMethodSymbol method || !IsRenamable(method))
+            return;
+
+        context.ReportDiagnostic(Diagnostic.Create(Rule, identifier.GetLocation(), identifier.ValueText, suffix, parameter));
     }
 
     // The last word of the method's name, ignoring an Async suffix, or nothing for a one-word name,
@@ -125,26 +93,22 @@ public sealed class RedundantMethodSuffixAnalyzer() : PolicyAnalyzer(Rule, analy
         return [.. WordPattern.Matches(name.TrimStart(trimChars: ['_', '@'])).Cast<Match>().Select(static match => match.Value)];
     }
 
-    // Only a method this project declares can be renamed by its authors: a framework or package
-    // method keeps its name, and so does a member whose name another assembly's contract fixes.
-    private static bool IsRenamable(IMethodSymbol method, Compilation compilation)
+    // A method whose name comes from somewhere else is not renamed where it is implemented: an override
+    // or an interface implementation follows the member it implements, which is reported where it is
+    // declared or cannot be renamed when another assembly declares it, a partial method's implementation
+    // follows its definition, and an extern method's name can be the native entry point.
+    private static bool IsRenamable(IMethodSymbol method)
     {
-        bool declaredHere = SymbolEqualityComparer.Default.Equals(method.ContainingAssembly, compilation.Assembly);
+        bool inherited = method.IsOverride || method.ExplicitInterfaceImplementations.Length > 0;
 
-        if (!declaredHere || method.IsOverride || method.ExplicitInterfaceImplementations.Length > 0)
+        if (inherited || method.IsExtern || method.PartialDefinitionPart is not null)
             return false;
 
-        if (method.MethodKind is not (MethodKind.Ordinary or MethodKind.LocalFunction))
-            return false;
-
-        if (method.ContainingType is not INamedTypeSymbol type)
+        if (method.MethodKind is MethodKind.LocalFunction || method.ContainingType is not INamedTypeSymbol type)
             return true;
 
         foreach (INamedTypeSymbol contract in type.AllInterfaces)
         {
-            if (SymbolEqualityComparer.Default.Equals(contract.ContainingAssembly, compilation.Assembly))
-                continue;
-
             foreach (ISymbol member in contract.GetMembers(method.Name))
             {
                 if (SymbolEqualityComparer.Default.Equals(type.FindImplementationForInterfaceMember(member), method))
