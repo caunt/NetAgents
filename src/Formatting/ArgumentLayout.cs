@@ -283,7 +283,7 @@ internal static class ArgumentLayout
     {
         return token.Parent switch
         {
-            BlockSyntax block => token.IsKind(SyntaxKind.OpenBraceToken) && (block.Statements.Count > 1 || ControlFlowBraces.IsStatementBlock(block)),
+            BlockSyntax block => token.IsKind(SyntaxKind.OpenBraceToken) && (block.Statements.Count > 1 || ControlFlowBraces.BelongsToStatement(block)),
             SwitchLabelSyntax { Parent: SwitchSectionSyntax section } => section.Statements.Count > 1,
             IfStatementSyntax or ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
                 or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax or TryStatementSyntax

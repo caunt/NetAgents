@@ -41,9 +41,9 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
 
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
-            SyntaxNode list = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
+            SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
 
-            if (!ArgumentLayout.IsList(list) || !ArgumentLayout.CanFix(list))
+            if (!ArgumentLayout.IsList(node) || !ArgumentLayout.CanFix(node))
                 continue;
 
             context.RegisterCodeFix(CodeAction.Create(title: "Fix argument and parameter layout",

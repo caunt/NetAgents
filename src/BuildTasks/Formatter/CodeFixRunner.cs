@@ -86,7 +86,7 @@ internal static class CodeFixRunner
                 // including reference remarks the consumer build never fails for.
                 progress.Report(activity: "finished applying available fixes");
 
-                ImmutableArray<Diagnostic> introduced = [.. FormattingAnalysis.IntroducedErrors(diagnostics, baseline).Where(IsBlockingError)];
+                ImmutableArray<Diagnostic> introduced = [.. FormattingAnalysis.FindIntroduced(diagnostics, baseline).Where(IsBlockingError)];
 
                 // Individual passes may introduce an error a later pass repairs, so only the state the
                 // run settles in decides. Handing back the project as it arrived is what withholds the
@@ -100,7 +100,7 @@ internal static class CodeFixRunner
             project = application.Project;
             diagnostics = application.Diagnostics;
 
-            if (regression is null && !FormattingAnalysis.IntroducedErrors(diagnostics, baseline).IsEmpty)
+            if (regression is null && !FormattingAnalysis.FindIntroduced(diagnostics, baseline).IsEmpty)
                 regression = application.Attempt;
         }
 
@@ -174,7 +174,7 @@ internal static class CodeFixRunner
                     while (!selected.NestedActions.IsEmpty)
                         selected = selected.NestedActions[index: 0];
 
-                    FixAllProvider? fixAllProvider = GetProjectFixAllProvider(provider);
+                    FixAllProvider? fixAllProvider = GetProjectFixAll(provider);
                     bool canFixProject = fixAllProvider is not null && selected.EquivalenceKey is not null;
 
                     string? fixAllKey = canFixProject
@@ -503,7 +503,7 @@ internal static class CodeFixRunner
         }
     }
 
-    private static FixAllProvider? GetProjectFixAllProvider(CodeFixProvider provider)
+    private static FixAllProvider? GetProjectFixAll(CodeFixProvider provider)
     {
         try
         {

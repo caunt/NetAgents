@@ -62,8 +62,8 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
         {
             if (body is BlockSyntax block && ControlFlowBraces.CanRemove(block, source))
             {
-                changes.Add(RemoveBrace(block.OpenBraceToken, source));
-                changes.Add(RemoveBrace(block.CloseBraceToken, source));
+                changes.Add(Remove(block.OpenBraceToken, source));
+                changes.Add(Remove(block.CloseBraceToken, source));
             }
             else if (body is BlockSyntax crowded)
             {
@@ -135,7 +135,7 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
         return new TextChange(new TextSpan(position, length: 0), prefix + brace + lineEnding);
     }
 
-    private static TextChange RemoveBrace(SyntaxToken brace, SourceText source)
+    private static TextChange Remove(SyntaxToken brace, SourceText source)
     {
         TextLine line = source.Lines.GetLineFromPosition(brace.SpanStart);
 

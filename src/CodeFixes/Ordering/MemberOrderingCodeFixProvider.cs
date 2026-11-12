@@ -27,7 +27,7 @@ public sealed class MemberOrderingCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return FixAllProvider.Create(static (context, document, diagnostics) => SortDocument(document, context.CancellationToken));
+        return FixAllProvider.Create(static (context, document, diagnostics) => Sort(document, context.CancellationToken));
     }
 
     /// <inheritdoc />
@@ -44,7 +44,7 @@ public sealed class MemberOrderingCodeFixProvider : CodeFixProvider
         return Task.CompletedTask;
     }
 
-    private static async Task<Document?> SortDocument(Document document, CancellationToken cancellationToken)
+    private static async Task<Document?> Sort(Document document, CancellationToken cancellationToken)
     {
         SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 

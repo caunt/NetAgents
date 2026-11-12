@@ -33,3 +33,4 @@ NETAGENTS0027 | Readability | Error | Imported type names instead of namespace-q
 NETAGENTS0028 | Documentation | Error | Documentation elements that add to the name they describe
 NETAGENTS0029 | Documentation | Error | Documentation prose inside an element
 NETAGENTS0030 | Documentation | Error | Distinct summaries across overloads sharing a name
+NETAGENTS0031 | Naming | Error | Method names that do not repeat their first argument

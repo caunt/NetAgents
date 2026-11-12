@@ -98,7 +98,7 @@ public sealed class TupleReturnTypeAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
         if (!ContainsTuple(resultType))
             return;
 
-        if (HasPrescribedResult(resultOwner))
+        if (IsPrescribed(resultOwner))
             return;
 
         TypeSyntax resultSyntax = context.Node switch
@@ -141,7 +141,7 @@ public sealed class TupleReturnTypeAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
         };
     }
 
-    private static bool HasPrescribedResult(ISymbol symbol)
+    private static bool IsPrescribed(ISymbol symbol)
     {
         bool prescribed = symbol switch
         {

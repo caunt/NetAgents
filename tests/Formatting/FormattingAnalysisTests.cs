@@ -61,8 +61,8 @@ public sealed class FormattingAnalysisTests
         Diagnostic first = Diagnostic.Create(rule, Location.None);
         Diagnostic second = Diagnostic.Create(rule, Location.None);
 
-        Assert.Empty(FormattingAnalysis.IntroducedErrors(after: [first], before: [second]).ToArray());
-        Diagnostic repeated = Assert.Single(FormattingAnalysis.IntroducedErrors(after: [first, second], before: [first]).ToArray());
+        Assert.Empty(FormattingAnalysis.FindIntroduced(after: [first], before: [second]).ToArray());
+        Diagnostic repeated = Assert.Single(FormattingAnalysis.FindIntroduced(after: [first, second], before: [first]).ToArray());
 
         Assert.Equal(rule.Id, repeated.Id);
     }

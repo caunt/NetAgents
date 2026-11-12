@@ -18,7 +18,7 @@ internal static class StatementSpacing
 
         foreach (StatementSyntax statement in root.DescendantNodes().OfType<StatementSyntax>())
         {
-            StatementSyntax? previous = GetPreviousStatement(statement);
+            StatementSyntax? previous = GetPrevious(statement);
 
             if (previous is null || (!RequiresSeparation(previous, source) && !RequiresSeparation(statement, source)))
                 continue;
@@ -32,14 +32,14 @@ internal static class StatementSpacing
         return changes.ToImmutable();
     }
 
-    private static StatementSyntax? GetPreviousStatement(StatementSyntax statement)
+    private static StatementSyntax? GetPrevious(StatementSyntax statement)
     {
         switch (statement.Parent)
         {
             case BlockSyntax block:
-                return GetPreviousStatement(block.Statements, statement);
+                return GetPrevious(block.Statements, statement);
             case SwitchSectionSyntax section:
-                return GetPreviousStatement(section.Statements, statement);
+                return GetPrevious(section.Statements, statement);
             case GlobalStatementSyntax global when global.Parent is CompilationUnitSyntax compilation:
                 {
                     int position = compilation.Members.IndexOf(global);
@@ -51,7 +51,7 @@ internal static class StatementSpacing
         }
     }
 
-    private static StatementSyntax? GetPreviousStatement(SyntaxList<StatementSyntax> statements, StatementSyntax statement)
+    private static StatementSyntax? GetPrevious(SyntaxList<StatementSyntax> statements, StatementSyntax statement)
     {
         int position = statements.IndexOf(statement);
 

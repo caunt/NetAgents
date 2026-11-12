@@ -16,7 +16,7 @@ internal sealed class FormattingLock(List<FileStream> streams) : IAsyncDisposabl
 
             // Global ordering also serializes projects that compile the same linked source files.
             foreach (string directory in directories)
-                acquired.Add(await AcquireDirectory(directory, cancellationToken).ConfigureAwait(continueOnCapturedContext: false));
+                acquired.Add(await Lock(directory, cancellationToken).ConfigureAwait(continueOnCapturedContext: false));
 
             return new FormattingLock(acquired);
         }
@@ -29,7 +29,7 @@ internal sealed class FormattingLock(List<FileStream> streams) : IAsyncDisposabl
         }
     }
 
-    private static async Task<FileStream> AcquireDirectory(string directory, CancellationToken cancellationToken)
+    private static async Task<FileStream> Lock(string directory, CancellationToken cancellationToken)
     {
         string identifier = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(directory)));
         string path = Path.Combine(Path.GetTempPath(), "netagents-format-" + identifier + ".lock");

@@ -12,6 +12,13 @@ internal static class ControlFlowBraces
 {
     public const string RuleIdentifier = "NETAGENTS0017";
 
+    // The block belongs to a statement, rather than being the body of a function or member.
+    public static bool BelongsToStatement(BlockSyntax block)
+    {
+        return block.Parent is (StatementSyntax and not LocalFunctionStatementSyntax)
+            or ElseClauseSyntax or CatchClauseSyntax or FinallyClauseSyntax or SwitchSectionSyntax;
+    }
+
     public static bool CanRemove(BlockSyntax block, SourceText source)
     {
         return HasSingleLineBody(block, source) && block.Parent switch
@@ -51,7 +58,7 @@ internal static class ControlFlowBraces
     // local functions and lambdas are declarations rather than statements, and keep the layout written.
     public static SyntaxToken[] GetCrowdedTokens(BlockSyntax block, SourceText source)
     {
-        if (!IsStatementBlock(block) || block.ContainsDiagnostics || block.ContainsDirectives || CanRemove(block, source))
+        if (!BelongsToStatement(block) || block.ContainsDiagnostics || block.ContainsDirectives || CanRemove(block, source))
             return [];
 
         List<SyntaxToken> crowded = [];
@@ -69,13 +76,6 @@ internal static class ControlFlowBraces
             crowded.Add(block.CloseBraceToken);
 
         return [.. crowded];
-    }
-
-    // The block belongs to a statement, rather than being the body of a function or member.
-    public static bool IsStatementBlock(BlockSyntax block)
-    {
-        return block.Parent is (StatementSyntax and not LocalFunctionStatementSyntax)
-            or ElseClauseSyntax or CatchClauseSyntax or FinallyClauseSyntax or SwitchSectionSyntax;
     }
 
     private static bool CanAbsorbElse(StatementSyntax statement)

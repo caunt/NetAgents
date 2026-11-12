@@ -17,7 +17,7 @@ namespace NetAgents.Analyzers.Diagnostics;
 /// </param>
 public abstract class PolicyAnalyzer(DiagnosticDescriptor rule, bool analyzesRazorCode = false) : DiagnosticAnalyzer
 {
-    private readonly ImmutableArray<DiagnosticDescriptor> _supportedDiagnostics = [ValidateRule(rule)];
+    private readonly ImmutableArray<DiagnosticDescriptor> _supportedDiagnostics = [Validate(rule)];
 
     /// <inheritdoc />
     public sealed override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => _supportedDiagnostics;
@@ -45,7 +45,7 @@ public abstract class PolicyAnalyzer(DiagnosticDescriptor rule, bool analyzesRaz
     /// <param name="context">The context receiving this analyzer's callbacks.</param>
     protected abstract void RegisterAnalysisActions(AnalysisContext context);
 
-    private static DiagnosticDescriptor ValidateRule(DiagnosticDescriptor rule)
+    private static DiagnosticDescriptor Validate(DiagnosticDescriptor rule)
     {
         if (rule is null)
             throw new ArgumentNullException(nameof(rule));
