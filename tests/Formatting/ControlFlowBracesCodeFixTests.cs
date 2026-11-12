@@ -338,6 +338,7 @@ public sealed class ControlFlowBracesCodeFixTests
     /// </summary>
     /// <param name="header">The statement controlling the body.</param>
     /// <param name="suffix">The trailing condition for a do loop, if present.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a data row supplies no <paramref name="suffix"/>; an empty string stands for a statement without one.</exception>
     [Theory]
     [InlineData("if (count > 0)", "")]
     [InlineData("while (count > 0)", "")]

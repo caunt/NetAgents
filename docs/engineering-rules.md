@@ -47,11 +47,17 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0025 | Require one `<summary>` element per documentation comment, so a declaration is described once. Describe parameters, results, and detail with `<param>`, `<returns>`, and `<remarks>` instead. |
 | NETAGENTS0026 | Omit the optional parentheses around a lambda's single inferred parameter. Includes an automatic fix and Fix All support. |
 | NETAGENTS0027 | Import a type's namespace and name the type directly instead of writing it fully or partly qualified, whether as a type name or at the start of an expression such as `System.Math.Min(first, second)` or `System.StringComparison.Ordinal`. Includes an automatic fix and Fix All support, except where the name is already taken. |
-| NETAGENTS0028 | Require a `<summary>`, `<param>`, or `<typeparam>` element to say something the name it describes does not already say. A description built only from the name's own words, from documentation boilerplate, or left empty is rejected. Comments carrying `<inheritdoc>` are exempt. No automatic fix: the wording is the author's. |
+| NETAGENTS0028 | Require a `<summary>`, `<param>`, or `<typeparam>` element to say something the name it describes does not already say, and a `<returns>`, `<value>`, `<exception>`, or `<remarks>` element to say anything at all. A description built only from the name's own words, from documentation boilerplate, or left empty is rejected. Comments carrying `<inheritdoc>` are exempt. No automatic fix: the wording is the author's. |
 | NETAGENTS0029 | Require documentation prose to sit inside an element. Text written between or before elements never reaches the generated documentation, so it is wrapped in `<summary>`. Comments carrying `<inheritdoc>` may still add a note. Includes an automatic fix and Fix All support. |
 | NETAGENTS0030 | Require overloads sharing a name to carry different `<summary>` text, so a reader choosing between them learns which to call. Members of different types may describe themselves identically. No automatic fix: the distinction is the author's to state. |
 | NETAGENTS0031 | Reject a method declaration whose name ends with a word its first parameter's name already says: `UpdateValue(int value)` should be `Update(int value)`, and `FromJob(string jobAbc)` should be `From`. Only declarations are checked; what a caller passes, or what its variables are called, does not matter. An `Async` suffix is ignored, and one-word names are exempt. An override, an interface implementation, a partial method's implementation, and an `extern` method take their name from elsewhere and are not reported; an interface member declared in the project is reported on the interface. No automatic fix: renaming the method or the parameter is the author's call. |
 | NETAGENTS0032 | Reject numeric casts and implicit numeric conversions of values computed at run time, such as `(int)value`, `long total = count;`, or the promotion in `first + second` on bytes; convert with `CreateChecked`, `CreateSaturating`, or `CreateTruncating` so the code says what happens to a value out of range. Constants, `char` code points, nullable, enum, and user-defined conversions, expression trees, and target frameworks without generic math are left alone. Includes an automatic fix and Fix All support that keeps each conversion's behavior: an implicit conversion, a cast in a `checked` context, and a cast to or from `decimal` become `CreateChecked`, and any other cast becomes `CreateTruncating`. |
+| NETAGENTS0033 | Require the documentation of a public or protected member to carry every tag its signature calls for: a `<param>` for each parameter of a method, constructor, indexer, delegate, operator, record, or primary constructor; a `<typeparam>` for each type parameter; `<returns>` for any result, including `Task<T>` and `ValueTask<T>`; `<value>` on properties and indexers; and an `<exception>` for each exception the member's own body throws, through `throw` or a throw helper such as `ArgumentNullException.ThrowIfNull`. A documented base exception covers the ones derived from it, and exceptions the body catches, rethrows, or leaves to a lambda are not counted. Comments carrying `<inheritdoc>` or `<include>` are exempt. No automatic fix: the text is the author's. |
+| NETAGENTS0034 | Reject tags that do not fit a public or protected member: `<returns>` where nothing is returned (`void`, a `Task` or `ValueTask` without a result, a constructor), `<value>` outside properties and indexers, `<param>` and `<typeparam>` out of declaration order, `<inheritdoc>` without a `cref` on a member that overrides and implements nothing, and leftover `<placeholder>` elements. Includes an automatic fix and Fix All support that removes the misplaced tags and placeholders and reorders the parameter tags; an `<inheritdoc>` with nothing to inherit is reported only, since its text is the author's. |
+| NETAGENTS0035 | Require the tags documenting one public or protected member to say different things: two tags carrying the same text, compared without case, layout, or a closing full stop, are reported. No automatic fix. |
+| NETAGENTS0036 | Require the text of a public or protected member's `<summary>`, `<param>`, `<typeparam>`, `<returns>`, `<value>`, `<exception>`, and `<remarks>` to end with a full stop, question mark, or exclamation mark. Text closing on a list, a code block, or a table is left alone, and a closing `<para>` is judged by its own last sentence. Includes an automatic fix and Fix All support. |
+| NETAGENTS0037 | Require public and protected summaries to open as the .NET API documentation does: a property with "Gets", "Sets", or "Gets or sets" to match the accessors a caller outside the assembly can use ("Gets or initializes" is accepted for `init`), and a constructor with "Initializes a new instance of the `<see cref="T"/>` class", "struct", or "record". Includes an automatic fix and Fix All support for constructors, which replaces an opening written another way or places the standard sentence before the author's text; property summaries are reported only. |
+| NETAGENTS0038 | Require `null`, `true`, and `false` in public and protected documentation text to be written as `<see langword="…"/>`, including a `<c>` element holding only the keyword, and a Boolean `<returns>` or `<value>` to read "`<see langword="true"/>` if …; otherwise, `<see langword="false"/>`." Keywords inside code and hyphenated prose such as "non-null" are left alone. Includes an automatic fix and Fix All support for keywords; Boolean wording is reported only. |
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
@@ -258,6 +264,28 @@ Framework-owned overrides and explicit interface implementations are exempt
 from renaming their prescribed member names, and `NETAGENTS0002` likewise
 accepts the `object` parameters and results those signatures prescribe. Referencing existing framework
 names does not require renaming framework APIs.
+
+## Documentation
+
+The documentation rules exist so that a reader learns something a member's name and signature do not
+already say. CS1591 makes a comment exist, NETAGENTS0033 makes it cover every parameter, result,
+value, and thrown exception, and the remaining rules keep each tag in the right place, worded as the
+.NET API documentation words it. None of that makes documentation useful by itself, and none of it
+should be satisfied with boilerplate.
+
+Write documentation by hand, for the people who will call the member:
+
+- Say what actually happens: what the member does with its arguments, what state it reads or
+  changes, what it costs, and what it hands back in the edge cases (nothing found, empty input,
+  cancellation).
+- Give each `<param>` the valid values, units or format, and what happens with an empty, missing,
+  or out-of-range argument. Give each `<exception>` the exact condition that causes it.
+- Use `<remarks>` for the behavior behind the member that a caller needs to rely on it, and an
+  `<example>` with a short code sample wherever its use is not obvious.
+
+Every report that asks for words says this in its message, because a rule can tell that a tag is
+missing or empty, but only its author can make it worth reading. The rules that fix themselves only
+rearrange or punctuate what was written; they never write descriptions.
 
 ## Automatic formatting and the public API
 

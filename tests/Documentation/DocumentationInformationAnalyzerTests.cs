@@ -78,6 +78,33 @@ public sealed class DocumentationInformationAnalyzerTests
     }
 
     /// <summary>
+    /// Verifies that a result, value, exception, or remarks element with nothing written in it is reported, and
+    /// that the report asks for hand-written text about what really happens.
+    /// </summary>
+    /// <param name="members">The documented members of a public class.</param>
+    [Theory]
+    [InlineData("/// <summary>Reads the next record.</summary>\n/// <returns></returns>\npublic int Read() => 0;")]
+    [InlineData("/// <summary>Reads the next record.</summary>\n/// <returns/>\npublic int Read() => 0;")]
+    [InlineData("/// <summary>Counts the records held right now.</summary>\n/// <value>\n/// </value>\npublic int Count { get; }")]
+    [InlineData("/// <summary>Stops reading records.</summary>\n/// <exception cref=\"System.InvalidOperationException\"></exception>\npublic void Stop() { }")]
+    [InlineData("/// <summary>Stops reading records.</summary>\n/// <remarks> </remarks>\npublic void Stop() { }")]
+    public async Task RejectsEmptyDescriptions(string members)
+    {
+        string source = $$"""
+            /// <summary>Reads records from a fixed list.</summary>
+            public sealed class ExampleType
+            {
+            {{members}}
+            }
+            """;
+
+        Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new DocumentationInformationAnalyzer(), source));
+
+        Assert.Contains(expectedSubstring: "an empty one", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "Write it by hand", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Verifies that a parameter description repeating only its own name is rejected.
     /// </summary>
     [Fact]

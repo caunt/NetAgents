@@ -46,6 +46,7 @@ public sealed class ArgumentLayoutAnalyzerTests
     /// direct read of that decision and a bound that is too tight fail here.
     /// </remarks>
     /// <param name="trailer">Content placed before the second parameter, inside the list.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a data row supplies no <paramref name="trailer"/>; an empty string stands for no extra content.</exception>
     [Theory]
     [InlineData("")]
     [InlineData("/* Explanation */ ")]
@@ -188,6 +189,7 @@ public sealed class ArgumentLayoutAnalyzerTests
     /// and the closing delimiter after the last, for long lists.
     /// </summary>
     /// <param name="layout">A layout with a boundary that breaks or joins the wrong way.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a data row supplies no <paramref name="layout"/> to fill in.</exception>
     [Theory]
     [InlineData("FIRST, SECOND")]
     [InlineData("FIRST,\nSECOND\n")]

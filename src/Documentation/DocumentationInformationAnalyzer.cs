@@ -9,7 +9,8 @@ using NetAgents.Analyzers.Diagnostics;
 namespace NetAgents.Analyzers.Documentation;
 
 /// <summary>
-/// Requires a documentation element to state something its subject's name does not already.
+/// Requires a documentation element to state something its subject's name does not already, and a
+/// <c>returns</c>, <c>value</c>, <c>exception</c>, or <c>remarks</c> element to say anything at all.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class DocumentationInformationAnalyzer() : PolicyAnalyzer(Rule)
@@ -21,7 +22,7 @@ public sealed class DocumentationInformationAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Documentation comments add to the name they describe",
-        messageFormat: "Describe what '{0}' is for; repeating its name leaves the reader where they started",
+        messageFormat: "{0}",
         category: "Documentation",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
@@ -123,6 +124,31 @@ public sealed class DocumentationInformationAnalyzer() : PolicyAnalyzer(Rule)
         return false;
     }
 
+    // Nothing written between the tags, or a self-closing element: whitespace and the exterior markers
+    // of a wrapped comment do not count as text, while a reference such as a cref does.
+    private static bool IsEmpty(XmlNodeSyntax node)
+    {
+        if (node is XmlEmptyElementSyntax)
+            return true;
+
+        if (node is not XmlElementSyntax element)
+            return false;
+
+        foreach (XmlNodeSyntax content in element.Content)
+        {
+            if (content is not XmlTextSyntax text)
+                return false;
+
+            foreach (SyntaxToken token in text.TextTokens)
+            {
+                if (!string.IsNullOrWhiteSpace(token.ValueText))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
     private static void ReportEmptyElements(DocumentationCommentTriviaSyntax documentation, SyntaxTreeAnalysisContext context)
     {
         if (Inherits(documentation))
@@ -131,6 +157,17 @@ public sealed class DocumentationInformationAnalyzer() : PolicyAnalyzer(Rule)
         foreach (XmlNodeSyntax node in documentation.Content)
         {
             string? element = GetName(node);
+
+            // These describe no name, so only an element that says nothing at all leaves nothing behind.
+            if (element is "returns" or "value" or "exception" or "remarks" && IsEmpty(node))
+            {
+                string message = $"Write what this <{element}> element says; an empty one leaves the reader where they started. "
+                    + DocumentationTags.HandWritten;
+
+                context.ReportDiagnostic(Diagnostic.Create(Rule, node.GetLocation(), message));
+
+                continue;
+            }
 
             bool describes = string.Equals(element, b: "summary", StringComparison.Ordinal)
                 || string.Equals(element, b: "param", StringComparison.Ordinal)
@@ -146,7 +183,10 @@ public sealed class DocumentationInformationAnalyzer() : PolicyAnalyzer(Rule)
             if (subject is null || !DocumentationInformation.RestatesName(node.ToString(), subject))
                 continue;
 
-            context.ReportDiagnostic(Diagnostic.Create(Rule, node.GetLocation(), subject));
+            string restated = $"Describe what '{subject}' is for and how it behaves; repeating its name leaves the reader where they "
+                + "started. " + DocumentationTags.HandWritten;
+
+            context.ReportDiagnostic(Diagnostic.Create(Rule, node.GetLocation(), restated));
         }
     }
 }

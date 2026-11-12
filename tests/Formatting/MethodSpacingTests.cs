@@ -11,6 +11,7 @@ public sealed class MethodSpacingTests
     /// <summary>
     /// Verifies existing separation and unrelated members are left alone.
     /// </summary>
+    /// <param name="source">A file with a single method, methods already apart, a field between them, or generated code.</param>
     [Theory]
     [InlineData("class ExampleType { void Execute() {} }")]
     [InlineData("class ExampleType { void First() {}\n \t\nvoid Second() {} }")]
@@ -24,6 +25,8 @@ public sealed class MethodSpacingTests
     /// <summary>
     /// Verifies constructors, interface methods, and declarations on a shared line.
     /// </summary>
+    /// <param name="source">A type whose methods or constructor follow one another without a blank line.</param>
+    /// <param name="expected">That type with one blank line before the second declaration and any comment above it.</param>
     [Theory]
     [InlineData("class ExampleType { ExampleType() { } void Execute() { } }", "class ExampleType { ExampleType() { }\n\nvoid Execute() { } }")]
     [InlineData("interface ExampleType { void First(); void Second(); }", "interface ExampleType { void First();\n\nvoid Second(); }")]

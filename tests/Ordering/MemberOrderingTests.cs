@@ -15,6 +15,7 @@ public sealed class MemberOrderingTests
     /// <summary>
     /// Verifies directive boundaries, existing order, and generated files are respected.
     /// </summary>
+    /// <param name="source">A file whose members must keep their order: already sorted, separated by preprocessor directives, or generated.</param>
     [Theory]
     [InlineData("class ExampleType { void Alpha() {} void Zebra() {} }")]
     [InlineData("class ExampleType {\n#region Methods\nvoid Zebra() {}\nvoid Alpha() {}\n#endregion\n}")]

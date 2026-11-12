@@ -35,3 +35,9 @@ NETAGENTS0029 | Documentation | Error | Documentation prose inside an element
 NETAGENTS0030 | Documentation | Error | Distinct summaries across overloads sharing a name
 NETAGENTS0031 | Naming | Error | Method names that do not repeat their first parameter
 NETAGENTS0032 | TypeSafety | Error | Numeric conversions through CreateChecked, CreateSaturating, or CreateTruncating
+NETAGENTS0033 | Documentation | Error | Documentation carries every tag the signature calls for
+NETAGENTS0034 | Documentation | Error | Documentation tags fit the member they describe
+NETAGENTS0035 | Documentation | Error | Documentation tags of one member say different things
+NETAGENTS0036 | Documentation | Error | Documentation text ends with a full stop
+NETAGENTS0037 | Documentation | Error | Property and constructor summaries open as the .NET documentation does
+NETAGENTS0038 | Documentation | Error | Language keywords written as langword references in documentation

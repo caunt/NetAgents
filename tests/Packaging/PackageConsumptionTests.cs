@@ -221,6 +221,9 @@ public sealed class PackageConsumptionTests
                 .Replace(oldValue: "    /// <summary>Returns the supplied recipient name.</summary>",
                     tupleLocals + "    /// <summary>Returns the supplied recipient name.</summary>",
                     StringComparison.Ordinal)
+                .Replace(oldValue: "    /// <returns>The supplied name.</returns>",
+                    newValue: "    /// <returns>The supplied name.</returns>\n    /// <exception cref=\"ArgumentNullException\">Thrown when no recipient name is given.</exception>",
+                    StringComparison.Ordinal)
                 .Replace(oldValue: "return recipientName;",
                     newValue: "System.ArgumentNullException.ThrowIfNull(recipientName);\nvar habitat = Resolve(recipientName);\nvar coordinateOffset = SubtractCoordinates();\nreturn string.Concat(habitat, new string(c: ' ', coordinateOffset));",
                     StringComparison.Ordinal);
@@ -476,6 +479,7 @@ public sealed class PackageConsumptionTests
     /// <summary>
     /// Verifies SDK defaults, consumer diagnostics, and rejected policy overrides.
     /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when the package path has no directory, so no local package source can be written for it.</exception>
     [Fact]
     public async Task PackageEnforcesPolicyInConsumerBuilds()
     {

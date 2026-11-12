@@ -62,6 +62,7 @@ public sealed class DirectoryFileCountAnalyzerTests
     /// Verifies source files at the project root or outside it are still counted.
     /// </summary>
     /// <param name="directory">The physical directory represented by the syntax paths.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a data row supplies no <paramref name="directory"/> for the syntax paths.</exception>
     [Theory]
     [InlineData("")]
     [InlineData("../Shared")]

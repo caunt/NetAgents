@@ -19,6 +19,7 @@ public sealed class BlockPaddingTests
     /// <summary>
     /// Verifies unpadded blocks, literal content, and directive boundaries are left alone.
     /// </summary>
+    /// <param name="source">A whole file whose braces hold no blank edge line, or whose blank lines belong to a comment, a raw string, a region, or generated code.</param>
     [Theory]
     [InlineData("class ExampleType { }")]
     [InlineData("class ExampleType\n{\n    void Execute()\n    {\n    }\n}")]
@@ -64,6 +65,8 @@ public sealed class BlockPaddingTests
     /// <summary>
     /// Verifies every block kind loses padding and keeps its line endings.
     /// </summary>
+    /// <param name="source">A file with a blank line just inside the braces of one kind of block.</param>
+    /// <param name="expected">That file with the blank edge line gone and every other line ending kept.</param>
     [Theory]
     [InlineData("class ExampleType\n{\n\n    void Execute() { }\n}", "class ExampleType\n{\n    void Execute() { }\n}")]
     [InlineData("class ExampleType\n{\n    void Execute() { }\n\n}", "class ExampleType\n{\n    void Execute() { }\n}")]

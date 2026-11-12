@@ -331,6 +331,7 @@ public sealed class CodeFixRunnerTests
     }
 
     /// <summary>Still applies valid automatic fixes to analyzer errors.</summary>
+    /// <param name="firstAction"><c>valid</c> to offer only the working fix, or <c>noop</c> to offer one that changes nothing ahead of it, which the runner must pass over without giving up on the working one.</param>
     [Theory]
     [InlineData("valid")]
     [InlineData("noop")]
@@ -381,6 +382,9 @@ public sealed class CodeFixRunnerTests
     }
 
     /// <summary>Rejects new compiler errors before accepting an automatic fix.</summary>
+    /// <param name="before">Statements written after a local declaration, so the method compiles before the fix; empty, or a call the compiler already rejects.</param>
+    /// <param name="after">The method body the fix writes, which introduces a compiler error the original did not have.</param>
+    /// <param name="diagnosticIdentifier">The compiler error the refusal has to name, such as <c>CS0131</c>.</param>
     [Theory]
     [InlineData("", "0 = 1;", "CS0131")]
     [InlineData("Missing();", "0 = 1;", "CS0131")]
@@ -452,6 +456,7 @@ public sealed class CodeFixRunnerTests
     }
 
     /// <summary>Reports stalled actions without exhausting the pass limit.</summary>
+    /// <param name="mode">How the repair stalls: <c>noop</c> changes nothing, <c>whitespace</c> only respaces the declaration, and <c>cycle</c> alternates between two rewrites.</param>
     [Theory]
     [InlineData("noop")]
     [InlineData("whitespace")]

@@ -64,10 +64,25 @@ internal static class CodeFixTestHarness
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 
+    public static async Task<string> FixDocumentationSentences(string source, bool fixAll)
+    {
+        return await Fix(source, new DocumentationSentenceAnalyzer(), new DocumentationSentenceCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixDocumentationTagFit(string source, bool fixAll)
+    {
+        return await Fix(source, new DocumentationTagFitAnalyzer(), new DocumentationTagFitCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     public static async Task<string> FixLambdaParameters(string source, bool fixAll)
     {
         return await Fix(source, new LambdaParameterLayoutAnalyzer(), new LambdaParameterLayoutCodeFixProvider(), fixAll)
             .ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixLanguageKeywords(string source, bool fixAll)
+    {
+        return await Fix(source, new LanguageKeywordAnalyzer(), new LanguageKeywordCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<string> FixLiteralArgumentNames(string source, bool fixAll)
@@ -100,6 +115,11 @@ internal static class CodeFixTestHarness
     public static async Task<string> FixSpacing(string source, bool fixAll)
     {
         return await Fix(source, new StatementSpacingAnalyzer(), new StatementSpacingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixSummaryOpenings(string source, bool fixAll)
+    {
+        return await Fix(source, new SummaryOpeningAnalyzer(), new SummaryOpeningCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<ImmutableArray<Diagnostic>> GetDiagnostics(Document document, DiagnosticAnalyzer analyzer)

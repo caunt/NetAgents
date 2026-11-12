@@ -38,6 +38,7 @@ public sealed class FormattingFingerprintTests
 
     /// <summary>Detects item additions and removals, including missing dependencies becoming available.</summary>
     /// <param name="change">The item-list change to apply.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="change"/> names a change this test cannot apply, which only a mistyped data row causes.</exception>
     [Theory]
     [InlineData("source-added")]
     [InlineData("source-removed")]
@@ -119,6 +120,7 @@ public sealed class FormattingFingerprintTests
 
     /// <summary>Includes compiler settings and the metadata controlling source layout and binding.</summary>
     /// <param name="setting">The evaluated setting to change.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="setting"/> names a setting this test cannot change, which only a mistyped data row causes.</exception>
     [Theory]
     [InlineData("assembly-name")]
     [InlineData("root-namespace")]

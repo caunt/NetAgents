@@ -54,6 +54,7 @@ public sealed class ConditionLayoutAnalyzerTests
     /// Rejects long expressions in every supported condition position.
     /// </summary>
     /// <param name="template">A statement with a condition placeholder.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a data row supplies no <paramref name="template"/> to place the condition in.</exception>
     [Theory]
     [InlineData("if (CONDITION) return;")]
     [InlineData("while (CONDITION) value--;")]

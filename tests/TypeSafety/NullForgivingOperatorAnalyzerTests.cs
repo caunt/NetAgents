@@ -8,7 +8,7 @@ using NetAgents.Analyzers.TypeSafety;
 namespace NetAgents.Analyzers.Tests.TypeSafety;
 
 /// <summary>
-/// Verifies null suppression is rejected regardless of its expression context.
+/// Verifies the null-forgiving operator is rejected regardless of its expression context.
 /// </summary>
 public sealed class NullForgivingOperatorAnalyzerTests
 {
@@ -28,7 +28,7 @@ public sealed class NullForgivingOperatorAnalyzerTests
     /// <summary>
     /// Verifies every suppression expression is reported as a build error.
     /// </summary>
-    /// <param name="member">The type member containing null suppression.</param>
+    /// <param name="member">The type member applying the null-forgiving operator.</param>
     [Theory]
     [InlineData("string value = null!;")]
     [InlineData("static string value = default!;")]

@@ -18,7 +18,6 @@ public sealed class StatementLayoutTests
 
             /// <summary>Starts the connection in the background.</summary>
             /// <param name="ready">Whether the connection may start.</param>
-            /// <returns>The background work.</returns>
             public static Task StartAsync(bool ready)
             {
                 return Task.Run(() => { if (ready) Console.WriteLine(value: "ready"); });
@@ -56,7 +55,6 @@ public sealed class StatementLayoutTests
 
             /// <summary>Starts the connection in the background.</summary>
             /// <param name="ready">Whether the connection may start.</param>
-            /// <returns>The background work.</returns>
             public static Task StartAsync(bool ready)
             {
                 return Task.Run(() =>
