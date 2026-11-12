@@ -8,73 +8,69 @@ using NetAgents.Analyzers.TypeSafety;
 namespace NetAgents.Analyzers.Tests.TypeSafety;
 
 /// <summary>
-/// Covers numeric casts and implicit numeric conversions, and the conversions the rule leaves alone.
+/// Covers numeric casts written in the source, and the conversions the rule leaves alone.
 /// </summary>
 public sealed class NumericConversionAnalyzerTests
 {
     /// <summary>
-    /// Verifies constants, char code points, nullable, enum and identity conversions, and expression trees
-    /// are accepted.
+    /// Verifies casts of constants, char code points, nullable values, enums, and casts inside expression trees
+    /// are accepted, since no factory applies to them.
     /// </summary>
-    /// <param name="member">A member whose conversions the rule leaves alone.</param>
+    /// <param name="member">A member casting where the rule has no factory to offer.</param>
     [Theory]
-    [InlineData("long Constant() => 5;")]
-    [InlineData("const long Limit = int.MaxValue;")]
     [InlineData("byte Folded() => (byte)(200 + 55);")]
     [InlineData("long Shifted(int value) => (long)1 << value;")]
-    [InlineData("int Code(char character) => character;")]
     [InlineData("char Letter(int value) => (char)value;")]
-    [InlineData("int Plain(int value) => value;")]
-    [InlineData("long? Lifted(int? value) => value;")]
+    [InlineData("int? Lifted(long? value) => (int?)value;")]
     [InlineData("int Order(System.DayOfWeek day) => (int)day;")]
-    [InlineData("System.Linq.Expressions.Expression<System.Func<int, long>> Tree() => value => value;")]
-    public async Task AllowsConversionsWithoutAFactory(string member)
+    [InlineData("System.Linq.Expressions.Expression<System.Func<long, int>> Tree() => value => (int)value;")]
+    public async Task AllowsCastsWithoutAFactory(string member)
     {
         Assert.Empty(await Analyze(member));
     }
 
     /// <summary>
-    /// Verifies a narrowing compound assignment whose target could change when read twice, such as an element
-    /// reached through an incremented index or a property, is reported with no fix and told how to rewrite it.
+    /// Verifies every implicit conversion is accepted, whether it widens a value into a variable, an argument,
+    /// or a result, or widens the operands of a comparison, an equality, arithmetic, a shift, or a compound
+    /// assignment, as in the frame comparison reported in issue 52.
     /// </summary>
-    /// <param name="member">A member assigning through a target the fix cannot read a second time.</param>
+    /// <param name="member">A member converting numbers without a cast.</param>
     [Theory]
-    [InlineData("void Mark(byte[] buffer, int index, byte bit) { buffer[index++] |= bit; }")]
-    [InlineData("byte Level { get; set; } void Raise(byte step) { Level += step; }")]
-    public async Task LeavesUnrepeatableTargetsToTheirAuthor(string member)
+    [InlineData("long Widen(int value) => value;")]
+    [InlineData("decimal Money(int value) => value;")]
+    [InlineData("void Run(int value) { long total = value; }")]
+    [InlineData("void Call(int value) => Take(value); void Take(long total) { }")]
+    [InlineData("long Pick(bool flag, int value, long other) => flag ? value : other;")]
+    [InlineData("bool Same(byte first, byte second) => first == second;")]
+    [InlineData("bool Before(ushort first, ushort second) => first < second;")]
+    [InlineData("bool Empty(byte count) => count == 0;")]
+    [InlineData("bool Within(int count, long limit) => count < limit;")]
+    [InlineData("int Sum(byte first, byte second) => first + second;")]
+    [InlineData("int Negate(byte value) => -value;")]
+    [InlineData("int Shift(byte value) => value << 2;")]
+    [InlineData("void Pack(byte flags, byte bit) { flags |= bit; }")]
+    [InlineData("int Shared(byte[] expected, byte[] encoded) { int index = 0; while (index < expected.Length && expected[index] == encoded[index]) index++; return index; }")]
+    public async Task AllowsImplicitConversions(string member)
     {
-        Diagnostic diagnostic = Assert.Single(await Analyze(member));
-
-        Assert.True(diagnostic.Properties.ContainsKey(key: "Manual"));
-        Assert.Contains(expectedSubstring: "plain assignment", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        Assert.Empty(await Analyze(member));
     }
 
     /// <summary>
-    /// Verifies every numeric cast and implicit numeric conversion of a value computed at run time is
-    /// reported, including promotions in arithmetic, and that a compound assignment on a type narrower than
-    /// int is reported once, for the narrowing of its result rather than the widening of its operand.
+    /// Verifies each numeric cast of a value computed at run time is reported once, narrowing or widening, and
+    /// that nested casts are reported one by one.
     /// </summary>
-    /// <param name="member">A member converting numbers.</param>
-    /// <param name="expectedCount">The number of conversions reported.</param>
+    /// <param name="member">A member casting numbers.</param>
+    /// <param name="expectedCount">How many casts the member writes.</param>
     [Theory]
-    [InlineData("long Widen(int value) => value;", "1")]
     [InlineData("int Narrow(long value) => (int)value;", "1")]
     [InlineData("int Truncate(double value) => (int)value;", "1")]
     [InlineData("float Single(double value) => (float)value;", "1")]
-    [InlineData("decimal Money(int value) => value;", "1")]
-    [InlineData("nint Native(int value) => value;", "1")]
-    [InlineData("void Run(int value) { long total = value; }", "1")]
-    [InlineData("long Pick(bool flag, int value, long other) => flag ? value : other;", "1")]
-    [InlineData("double Ratio(int count, int total) => (double)count / total;", "2")]
-    [InlineData("int Sum(byte first, byte second) => first + second;", "2")]
-    [InlineData("long Twice(long value) => (int)value;", "2")]
-    [InlineData("void Pack(byte flags, byte bit) { flags |= bit; }", "1")]
-    [InlineData("void Count(sbyte total) { total += 1; }", "1")]
-    [InlineData("void Shift(ushort total, byte count) { total <<= count; }", "1")]
-    [InlineData("void Scale(short total, short step) { checked { total *= step; } }", "1")]
-    [InlineData("void Add(int total, byte step) { total += step; }", "1")]
-    [InlineData("void Add(long total, int step) { total += step; }", "1")]
-    public async Task ReportsNumericConversions(string member, string expectedCount)
+    [InlineData("long Widen(int value) => (long)value;", "1")]
+    [InlineData("double Ratio(int count, int total) => (double)count / total;", "1")]
+    [InlineData("long Twice(long value) => (int)value;", "1")]
+    [InlineData("int Through(double ratio) => (int)(long)ratio;", "2")]
+    [InlineData("void Pack(byte flags, int offset) { flags |= (byte)(1 << offset); }", "1")]
+    public async Task ReportsNumericCasts(string member, string expectedCount)
     {
         Diagnostic[] diagnostics = await Analyze(member);
 

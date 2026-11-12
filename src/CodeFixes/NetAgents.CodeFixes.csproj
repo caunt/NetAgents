@@ -23,6 +23,5 @@
     <Compile Include="../Formatting/ControlFlowBraces.cs" Link="Formatting/ControlFlowBraces.cs" />
     <Compile Include="../Formatting/LambdaParameterLayout.cs" Link="Formatting/LambdaParameterLayout.cs" />
     <Compile Include="../TypeSafety/NumericConversion.cs" Link="TypeSafety/NumericConversion.cs" />
-    <Compile Include="../TypeSafety/CompoundNarrowing.cs" Link="TypeSafety/CompoundNarrowing.cs" />
   </ItemGroup>
 </Project>

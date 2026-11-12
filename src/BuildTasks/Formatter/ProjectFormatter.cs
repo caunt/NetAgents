@@ -18,6 +18,8 @@ namespace NetAgents.BuildTasks;
 
 internal static class ProjectFormatter
 {
+    private const int IntroducedShown = 20;
+
     public static async Task Format(FormatProject inputs, CancellationToken cancellationToken)
     {
         FormattingLock projectLock = await FormattingLock.Acquire(sourcePaths: [.. inputs.SourceFiles.Select(GetPath)], cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -63,6 +65,22 @@ internal static class ProjectFormatter
             embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"), b: "true", StringComparison.OrdinalIgnoreCase));
 
         return MetadataReference.CreateFromFile(GetPath(item), properties);
+    }
+
+    // Formatting runs before the compiler, so a build that fails afterwards still leaves these edits
+    // behind. Naming every rewritten file keeps that visible to reviewers and dirty-tree checks.
+    // Where an error formatting would have introduced sits, with the line as formatting would have written
+    // it: the file on disk was left as it was, so the position alone could point at different text there.
+    private static string DescribeIntroduced(string projectDirectory, Diagnostic diagnostic)
+    {
+        FileLinePositionSpan span = diagnostic.Location.GetLineSpan();
+        int line = span.StartLinePosition.Line;
+        SourceText? text = diagnostic.Location.SourceTree?.GetText();
+        string written = text is not null && line < text.Lines.Count ? text.Lines[line].ToString().Trim() : string.Empty;
+        string path = span.Path.Length == 0 ? "(unknown file)" : GetDisplayPath(projectDirectory, span.Path);
+        string position = string.Create(CultureInfo.InvariantCulture, $"{path}({line + 1},{span.StartLinePosition.Character + 1})");
+
+        return $"  {position}: {diagnostic.Id}: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}{Environment.NewLine}    as formatted: {written}";
     }
 
     private static async Task<bool> FormatCore(FormatProject inputs, Dictionary<string, byte[]> sourceBytes, FormattingProgress progress, CancellationToken cancellationToken)
@@ -241,7 +259,7 @@ internal static class ProjectFormatter
             }
         }
 
-        Report(inputs, rewritten, codeFixes);
+        Report(inputs, projectDirectory, rewritten, codeFixes);
 
         // A diagnostic no fix repairs is a finished run, not a failed one: the compiler reports it
         // again and fails the build either way. Only a formatter that could not do its work keeps
@@ -269,9 +287,7 @@ internal static class ProjectFormatter
         return SourceText.From(bytes, bytes.Length, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 
-    // Formatting runs before the compiler, so a build that fails afterwards still leaves these edits
-    // behind. Naming every rewritten file keeps that visible to reviewers and dirty-tree checks.
-    private static void Report(FormatProject inputs, List<string> rewritten, CodeFixRunner.CodeFixResult codeFixes)
+    private static void Report(FormatProject inputs, string projectDirectory, List<string> rewritten, CodeFixRunner.CodeFixResult codeFixes)
     {
         ImmutableArray<Diagnostic> blocking = codeFixes.Blocking;
 
@@ -282,6 +298,23 @@ internal static class ProjectFormatter
                 codeFixes.Introduced.Select(static diagnostic => diagnostic.Id).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
 
             inputs.Log.LogMessage(MessageImportance.High, $"NetAgents made no change because formatting would have introduced {introduced}");
+
+            // Each one is named where formatting would have put it, so it can be found without rebuilding
+            // with the formatter off. A run that broke many lines at once names enough to show the pattern.
+            List<Diagnostic> located = [.. codeFixes.Introduced];
+
+            located.Sort(static (first, second) =>
+            {
+                int file = string.CompareOrdinal(first.Location.GetLineSpan().Path, second.Location.GetLineSpan().Path);
+
+                return file != 0 ? file : first.Location.SourceSpan.Start.CompareTo(second.Location.SourceSpan.Start);
+            });
+
+            foreach (Diagnostic diagnostic in located.Take(IntroducedShown))
+                inputs.Log.LogMessage(MessageImportance.High, DescribeIntroduced(projectDirectory, diagnostic));
+
+            if (located.Count > IntroducedShown)
+                inputs.Log.LogMessage(MessageImportance.High, string.Create(CultureInfo.InvariantCulture, $"  and {located.Count - IntroducedShown} more"));
 
             if (codeFixes.IntroducedBy is not null)
                 inputs.Log.LogMessage(MessageImportance.High, "Attempted code action: " + codeFixes.IntroducedBy);
