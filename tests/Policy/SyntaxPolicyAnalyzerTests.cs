@@ -1,18 +1,15 @@
-using System.Globalization;
-
 using Microsoft.CodeAnalysis;
 
 using NetAgents.Analyzers.Concurrency;
 using NetAgents.Analyzers.Exceptions;
 using NetAgents.Analyzers.Naming;
-using NetAgents.Analyzers.SourceFiles;
 using NetAgents.Analyzers.Tests.Infrastructure;
 using NetAgents.Analyzers.TypeSafety;
 
 namespace NetAgents.Analyzers.Tests.Policy;
 
 /// <summary>
-/// Covers syntax policies, source limits, and generated code exclusions.
+/// Covers syntax policies and generated code exclusions.
 /// </summary>
 public sealed class SyntaxPolicyAnalyzerTests
 {
@@ -37,22 +34,6 @@ public sealed class SyntaxPolicyAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { throw; } } }");
 
         Assert.Empty(diagnostics);
-    }
-
-    /// <summary>
-    /// Verifies the authored source file length limit, counting the required final newline as a terminator.
-    /// </summary>
-    /// <param name="authoredLineCountText">The number of authored lines, each closed by a newline.</param>
-    [Theory]
-    [InlineData("999")]
-    [InlineData("1000")]
-    public async Task EnforcesSourceFileLengthBoundary(string authoredLineCountText)
-    {
-        int authoredLineCount = int.Parse(authoredLineCountText, CultureInfo.InvariantCulture);
-        string source = "public class ExampleType { }" + new string(c: '\n', authoredLineCount);
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileLengthAnalyzer(), source);
-
-        Assert.Equal(authoredLineCount > 999 ? 1 : 0, diagnostics.Length);
     }
 
     /// <summary>

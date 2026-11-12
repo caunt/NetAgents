@@ -29,7 +29,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0007 | Reject the postfix null-forgiving operator. |
 | NETAGENTS0008 | Reject literal-true `while`/`do` conditions and conditionless or literal-true `for` loops. |
 | NETAGENTS0009 | Require parameter names for inline literal, `default`, and collection expression arguments in methods, constructors, delegates, and indexers, including signed/parenthesized literals but not a value another operator produces such as `^1` or `~0`, and omit names the rule does not require. For expanded `params`, pass a named collection. Attributes use their separate language syntax. Includes an automatic code fix and Fix all support. |
-| NETAGENTS0010 | Require authored source files to contain fewer than 1,000 lines. The required final newline terminates the last line instead of starting another one. |
+| NETAGENTS0010 | Require authored source files to contain fewer than 1,000 lines besides comments. Lines holding only comments of any kind (`//`, `/* */`, `///`, and `/** */`) are not counted, nor is any line inside a block comment, blank ones included; lines holding code next to a comment and blank lines outside comments count. The required final newline terminates the last line instead of starting another one. |
 | NETAGENTS0011 | Reject type names matching containing namespace segments or feature directories below the project root. |
 | NETAGENTS0012 | Reject framework synchronization types and blocking task/thread waits, including aliases, static imports, and explicit awaiter `GetResult` calls. |
 | NETAGENTS0013 | Reject changes to the effective shared configuration and diagnostic severities. |
