@@ -94,6 +94,49 @@ public sealed class ControlFlowBracesCodeFixTests
     }
 
     /// <summary>
+    /// Verifies a statement block that keeps its braces puts each brace and statement on a line of its
+    /// own, empty blocks included, in the line ending the document uses (#49).
+    /// </summary>
+    /// <param name="statements">The statements as written.</param>
+    /// <param name="expected">The statements after the fix.</param>
+    [Theory]
+    [InlineData(
+        "try { count++; }\n        catch (System.InvalidOperationException exception) { System.Console.WriteLine(exception); }",
+        "try\n        {\n            count++;\n        }\n        catch (System.InvalidOperationException exception)\n        {\n            System.Console.WriteLine(exception);\n        }"
+    )]
+    [InlineData("try { count++; } finally { }", "try\n        {\n            count++;\n        }\n        finally\n        {\n        }")]
+    [InlineData(
+        "try\n        { count++; }\n        finally\n        { count--; }",
+        "try\n        {\n            count++;\n        }\n        finally\n        {\n            count--;\n        }"
+    )]
+    [InlineData("while (count > 0) { }", "while (count > 0)\n        {\n        }")]
+    [InlineData("if (count > 0) { count++; count--; }", "if (count > 0)\n        {\n            count++;\n            count--;\n        }")]
+    [InlineData(
+        "if (count > 0) { count++; count--; } else return;",
+        "if (count > 0)\n        {\n            count++;\n            count--;\n        }\n        else\n        {\n            return;\n        }"
+    )]
+    [InlineData("checked { count++; }", "checked\n        {\n            count++;\n        }")]
+    [InlineData("{ int result = count; }", "{\n            int result = count;\n        }")]
+    [InlineData(
+        "switch (count)\n        {\n            case 0: { count++; break; }\n        }",
+        "switch (count)\n        {\n            case 0:\n                {\n                    count++;\n                    break;\n                }\n        }"
+    )]
+    public async Task ExpandsOneLineStatementBlocks(string statements, string expected)
+    {
+        const string member = "public static class ExampleType\n{\n    public static void Execute(int count)\n    {\n        STATEMENTS\n    }\n}";
+
+        foreach (string lineEnding in new[] { "\n", "\r\n" })
+        {
+            string source = member.Replace(oldValue: "STATEMENTS", statements, StringComparison.Ordinal).Replace(oldValue: "\n", lineEnding, StringComparison.Ordinal);
+            string target = member.Replace(oldValue: "STATEMENTS", expected, StringComparison.Ordinal).Replace(oldValue: "\n", lineEnding, StringComparison.Ordinal);
+            string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
+
+            Assert.Equal(target, result);
+            Assert.Empty(await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), result));
+        }
+    }
+
+    /// <summary>
     /// Verifies simple case bodies lose braces and multiline or multiple-statement case bodies gain them.
     /// </summary>
     [Fact]
@@ -238,6 +281,32 @@ public sealed class ControlFlowBracesCodeFixTests
         Assert.NotNull(conditionals[0].Else);
         Assert.Null(conditionals[1].Else);
         Assert.True(conditionals[0].Statement is BlockSyntax { Statements.Count: 1 });
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), result));
+    }
+
+    /// <summary>
+    /// Verifies expanding a loop block an else depends on moves the loop into braces of its own instead
+    /// of letting the else bind to the inner conditional.
+    /// </summary>
+    [Fact]
+    public async Task PreservesDanglingElseBindingWhileExpandingBlocks()
+    {
+        const string source = """
+            public static class ExampleType
+            {
+                public static void Execute(int count)
+                {
+                    if (count > 0) while (count > 1) { if (count > 2) return; } else return;
+                }
+            }
+            """;
+
+        string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
+        SyntaxNode root = await CSharpSyntaxTree.ParseText(result).GetRootAsync();
+        IfStatementSyntax[] conditionals = [.. root.DescendantNodes().OfType<IfStatementSyntax>()];
+        Assert.NotNull(conditionals[0].Else);
+        Assert.Null(conditionals[1].Else);
+        Assert.True(conditionals[0].Statement is BlockSyntax { Statements: [WhileStatementSyntax] });
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), result));
     }
 

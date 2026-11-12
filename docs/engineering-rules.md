@@ -36,7 +36,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0014 | Reject incompatible project settings. This diagnostic comes from the package's MSBuild target. |
 | NETAGENTS0015 | Require return values to be consumed. Reject ignored non-void calls, ignored awaited results, and assignments to `_`, including named underscore symbols. Reject deconstruction discards, including `foreach` and `await foreach`. This includes conditional calls, expression-bodied members, callbacks, and `for` clauses. |
 | NETAGENTS0016 | Require blank lines before and after control-flow statements and multiline local declarations when another statement is adjacent. Includes an automatic code fix and Fix all support. |
-| NETAGENTS0017 | Omit optional braces around one single-line body statement; require braces for multiline bodies and keep conditional chains consistent. Includes an automatic code fix and Fix all support. |
+| NETAGENTS0017 | Omit optional braces around one single-line body statement; require braces for multiline bodies and keep conditional chains consistent. A statement block that keeps its braces puts `{`, each statement, and `}` on lines of their own, empty blocks included. Includes an automatic code fix and Fix all support. |
 | NETAGENTS0018 | Allow at most 16 authored C# files directly in each directory per project. Organize larger directories into subdirectories with narrower responsibilities. |
 | NETAGENTS0019 | Require single-line conditions of at most 128 characters in `if`/`else if`, `while`, `do`, `for`, ternary expressions, catch filters, and switch `when` guards. Extract longer conditions into a separate variable declaration. |
 | NETAGENTS0020 | Keep argument and parameter lists on one line when their compact contents are at most 128 characters; otherwise put each item and the closing delimiter on separate lines. Includes an automatic fix and Fix All support. |
@@ -123,6 +123,30 @@ If any branch in an `if`/`else if`/`else` chain needs braces, every branch keeps
 or gains them. Required language blocks, scope-dependent blocks, directives,
 and braces protecting an `else` binding are preserved. Case wrapping preserves
 variables and local functions shared with other sections.
+
+A statement block that keeps its braces gives `{`, each statement, and `}` a
+line of their own, empty blocks included. This covers the bodies above,
+`try`/`catch`/`finally`, `checked`/`unchecked`, `unsafe`, and nested blocks.
+Method, accessor, local-function, lambda, and anonymous-method bodies are
+declarations rather than statements and keep the layout written. An unbraced
+body goes on its own indented line below its header (`IDE2001`, set through
+`csharp_style_allow_embedded_statements_on_same_line_experimental = false`), so
+`if (ready) { return; }` and
+`try { Run(); } catch (IOException exception) { Log(exception); }` become:
+
+```csharp
+if (ready)
+    return;
+
+try
+{
+    Run();
+}
+catch (IOException exception)
+{
+    Log(exception);
+}
+```
 
 Use **Fix body braces** or run the following to add missing braces and remove
 unnecessary ones:

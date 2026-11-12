@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -11,6 +12,19 @@ internal static class ControlFlowBraces
 {
     public const string RuleIdentifier = "NETAGENTS0017";
 
+    public static bool CanRemove(BlockSyntax block, SourceText source)
+    {
+        return HasSingleLineBody(block, source) && block.Parent switch
+        {
+            IfStatementSyntax conditional => CanRemoveFromChain(conditional, source),
+            ElseClauseSyntax { Parent: IfStatementSyntax conditional } => CanRemoveFromChain(conditional, source),
+            ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
+                or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax
+                or SwitchSectionSyntax or BlockSyntax or LabeledStatementSyntax => true,
+            _ => false,
+        };
+    }
+
     public static ImmutableDictionary<TextSpan, SyntaxNode> GetChanges(SyntaxNode root, SourceText source)
     {
         ImmutableDictionary<TextSpan, SyntaxNode>.Builder changes = ImmutableDictionary.CreateBuilder<TextSpan, SyntaxNode>();
@@ -19,7 +33,7 @@ internal static class ControlFlowBraces
         {
             bool needsChange = node switch
             {
-                BlockSyntax block => CanRemove(block, source),
+                BlockSyntax block => CanRemove(block, source) || GetCrowdedTokens(block, source).Length > 0,
                 StatementSyntax statement => RequiresBraces(statement, source),
                 SwitchSectionSyntax section => RequiresCaseBraces(section, source),
                 _ => false,
@@ -30,6 +44,38 @@ internal static class ControlFlowBraces
         }
 
         return changes.ToImmutable();
+    }
+
+    // A block that keeps its braces gives each brace and each statement a line of its own (#49), so no
+    // statement hides behind its header and an empty body is still seen. Bodies of methods, accessors,
+    // local functions and lambdas are declarations rather than statements, and keep the layout written.
+    public static SyntaxToken[] GetCrowdedTokens(BlockSyntax block, SourceText source)
+    {
+        if (!IsStatementBlock(block) || block.ContainsDiagnostics || block.ContainsDirectives || CanRemove(block, source))
+            return [];
+
+        List<SyntaxToken> crowded = [];
+
+        if (SharesLine(block.OpenBraceToken, source))
+            crowded.Add(block.OpenBraceToken);
+
+        foreach (StatementSyntax statement in block.Statements)
+        {
+            if (SharesLine(statement.GetFirstToken(), source))
+                crowded.Add(statement.GetFirstToken());
+        }
+
+        if (SharesLine(block.CloseBraceToken, source))
+            crowded.Add(block.CloseBraceToken);
+
+        return [.. crowded];
+    }
+
+    // The block belongs to a statement, rather than being the body of a function or member.
+    public static bool IsStatementBlock(BlockSyntax block)
+    {
+        return block.Parent is (StatementSyntax and not LocalFunctionStatementSyntax)
+            or ElseClauseSyntax or CatchClauseSyntax or FinallyClauseSyntax or SwitchSectionSyntax;
     }
 
     private static bool CanAbsorbElse(StatementSyntax statement)
@@ -52,19 +98,6 @@ internal static class ControlFlowBraces
     private static bool CanRemainUnbraced(StatementSyntax statement, SourceText source)
     {
         return statement is BlockSyntax block ? HasSingleLineBody(block, source) : IsSingleLine(statement, source);
-    }
-
-    private static bool CanRemove(BlockSyntax block, SourceText source)
-    {
-        return HasSingleLineBody(block, source) && block.Parent switch
-        {
-            IfStatementSyntax conditional => CanRemoveFromChain(conditional, source),
-            ElseClauseSyntax { Parent: IfStatementSyntax conditional } => CanRemoveFromChain(conditional, source),
-            ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
-                or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax
-                or SwitchSectionSyntax or BlockSyntax or LabeledStatementSyntax => true,
-            _ => false,
-        };
     }
 
     private static bool CanRemoveFromChain(IfStatementSyntax conditional, SourceText source)
@@ -172,5 +205,11 @@ internal static class ControlFlowBraces
         return section.Parent is not SwitchStatementSyntax selection
             || !selection.DescendantNodes().OfType<SimpleNameSyntax>()
                 .Any(identifier => !section.Span.Contains(identifier.Span) && declarations.Contains(identifier.Identifier.ValueText));
+    }
+
+    private static bool SharesLine(SyntaxToken token, SourceText source)
+    {
+        return source.Lines.GetLineFromPosition(token.SpanStart).LineNumber
+            == source.Lines.GetLineFromPosition(token.GetPreviousToken().Span.End).LineNumber;
     }
 }

@@ -64,16 +64,23 @@ internal static class ArgumentLayout
 
         foreach (AnonymousFunctionExpressionSyntax function in GetSpreadLambdas(list))
         {
-            if (OpensUnderLambda(function, source))
-                continue;
-
             // A lambda passed as an item starts the item's new line; any other keeps the line it is on.
             string lambdaIndentation = function.Parent is ArgumentSyntax argument && argument.Parent == list
                 ? indentation + "    "
                 : GetIndentation(source, function.SpanStart);
 
-            SyntaxToken brace = GetOpeningBrace(function);
-            changes.Add(SeparateItems(source, brace.GetPreviousToken().Span.End, brace.SpanStart, newline, lambdaIndentation));
+            BlockSyntax body = GetBody(function);
+            SyntaxToken opening = body.OpenBraceToken;
+            SyntaxToken end = body.CloseBraceToken;
+
+            if (!OpensUnderLambda(function, source))
+                changes.Add(SeparateItems(source, opening.GetPreviousToken().Span.End, opening.SpanStart, newline, lambdaIndentation));
+
+            if (body.Statements.Count > 0 && SharesLine(source, body.Statements[index: 0].GetFirstToken()))
+                changes.Add(SeparateItems(source, opening.Span.End, body.Statements[index: 0].SpanStart, newline, lambdaIndentation + "    "));
+
+            if (SharesLine(source, end))
+                changes.Add(SeparateItems(source, end.GetPreviousToken().Span.End, end.SpanStart, newline, lambdaIndentation));
         }
 
         return [.. changes.OrderBy(static change => change.Span.Start)];
@@ -117,7 +124,7 @@ internal static class ArgumentLayout
             }
         }
 
-        return GetSpreadLambdas(list).All(function => OpensUnderLambda(function, source));
+        return GetSpreadLambdas(list).All(function => OpensUnderLambda(function, source) && !CrowdsBody(function, source));
     }
 
     internal static bool IsList(SyntaxNode node)
@@ -131,7 +138,7 @@ internal static class ArgumentLayout
         LineFitMeasurement measurement = Measure(list);
 
         // Only trivia the compact text reproduces matters; trivia outside the delimiters stays where it is.
-        if (measurement.HasInlineComment || measurement.HasTokenLineBreak || measurement.HasStatementSequence)
+        if (measurement.HasInlineComment || measurement.HasTokenLineBreak || measurement.HasSpreadStatement)
             return true;
 
         // Normalizing keeps every token and puts at most one space between neighbours, so the token
@@ -166,6 +173,19 @@ internal static class ArgumentLayout
             blockComment = true;
     }
 
+    // The body's first statement or its closing brace shares a line with the token before it.
+    private static bool CrowdsBody(AnonymousFunctionExpressionSyntax function, SourceText source)
+    {
+        BlockSyntax body = GetBody(function);
+
+        return (body.Statements.Count > 0 && SharesLine(source, body.Statements[index: 0].GetFirstToken())) || SharesLine(source, body.CloseBraceToken);
+    }
+
+    private static BlockSyntax GetBody(AnonymousFunctionExpressionSyntax function)
+    {
+        return function.Block ?? throw new InvalidOperationException(message: "A spread lambda has no block body.");
+    }
+
     private static string GetIndentation(SourceText source, int position)
     {
         TextLine line = source.Lines.GetLineFromPosition(position);
@@ -178,20 +198,16 @@ internal static class ArgumentLayout
         return source.Lines.GetLineFromPosition(position).LineNumber;
     }
 
-    private static SyntaxToken GetOpeningBrace(AnonymousFunctionExpressionSyntax function)
-    {
-        return function.Block?.OpenBraceToken ?? throw new InvalidOperationException(message: "A spread lambda has no block body.");
-    }
-
-    // The lambdas and anonymous methods whose bodies hold a statement list this list lays out, directly
-    // or in a block nested inside them.
+    // The lambdas and anonymous methods this list encloses most closely whose bodies hold a statement
+    // that spreads over lines, directly or in a block or call nested inside them.
     private static AnonymousFunctionExpressionSyntax[] GetSpreadLambdas(SyntaxNode list)
     {
-        return [.. GetStatementLists(list)
-            .SelectMany(statements => statements[index: 0].Ancestors().TakeWhile(ancestor => ancestor != list))
+        return [.. list.DescendantNodes()
             .OfType<AnonymousFunctionExpressionSyntax>()
-            .Where(static function => function.Block is not null)
-            .Distinct()];
+            .Where(
+                function => function.Block is BlockSyntax body && function.Ancestors().First(IsList) == list
+                    && body.DescendantTokens().Any(HoldsSpreadStatement)
+            )];
     }
 
     // The statement lists this list lays out: those it encloses most closely, so a block inside a
@@ -212,28 +228,33 @@ internal static class ArgumentLayout
         }
     }
 
-    // Statements written in sequence never share one line inside an argument: NETAGENTS0016 puts
-    // blank lines between some of them, which joining the list would undo on every pass (#38).
-    private static bool HoldsStatementSequence(SyntaxToken token)
+    // Some statements never share one line inside an argument, and joining the list would undo their
+    // layout on every pass. NETAGENTS0016 puts blank lines between statements written in sequence (#38),
+    // NETAGENTS0017 gives every brace of a statement block its own line, and IDE2001 does the same for
+    // the body of a statement that holds others (#49).
+    private static bool HoldsSpreadStatement(SyntaxToken token)
     {
         return token.Parent switch
         {
-            BlockSyntax block => token.IsKind(SyntaxKind.OpenBraceToken) && block.Statements.Count > 1,
+            BlockSyntax block => token.IsKind(SyntaxKind.OpenBraceToken) && (block.Statements.Count > 1 || ControlFlowBraces.IsStatementBlock(block)),
             SwitchLabelSyntax { Parent: SwitchSectionSyntax section } => section.Statements.Count > 1,
+            IfStatementSyntax or ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
+                or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax or TryStatementSyntax
+                or SwitchStatementSyntax or CheckedStatementSyntax or UnsafeStatementSyntax => token == token.Parent.GetFirstToken(),
             _ => false,
         };
     }
 
     // One walk over the tokens answers everything the bracket needs: their combined width, how many
-    // gaps normalizing could widen, a line break written inside a literal, statements written in
-    // sequence, and the comments that either force multiple lines outright or put the compact text
+    // gaps normalizing could widen, a line break written inside a literal, statements that spread
+    // over lines, and the comments that either force multiple lines outright or put the compact text
     // beyond the bracket.
     private static LineFitMeasurement Measure(SyntaxNode list)
     {
         bool blockComment = false;
         bool inlineComment = false;
         bool lineBreak = false;
-        bool statementSequence = false;
+        bool spreadStatement = false;
         int tokens = 0;
         int width = 0;
 
@@ -241,7 +262,7 @@ internal static class ArgumentLayout
         {
             tokens++;
             width += token.Text.Length;
-            statementSequence = statementSequence || HoldsStatementSequence(token);
+            spreadStatement = spreadStatement || HoldsSpreadStatement(token);
 
             if (!lineBreak && token.Text.IndexOfAny(LineBreaks) >= 0)
                 lineBreak = true;
@@ -253,13 +274,13 @@ internal static class ArgumentLayout
                 Classify(list, trivia, ref blockComment, ref inlineComment);
         }
 
-        return new(blockComment, inlineComment, lineBreak, statementSequence, tokens, width);
+        return new(blockComment, inlineComment, lineBreak, spreadStatement, tokens, width);
     }
 
     // The body opens on a line of its own, indented as deep as the line the lambda starts on.
     private static bool OpensUnderLambda(AnonymousFunctionExpressionSyntax function, SourceText source)
     {
-        SyntaxToken brace = GetOpeningBrace(function);
+        SyntaxToken brace = GetBody(function).OpenBraceToken;
 
         return GetLine(source, brace.SpanStart) > GetLine(source, brace.GetPreviousToken().Span.End)
             && GetIndentation(source, brace.SpanStart) == GetIndentation(source, function.SpanStart);
@@ -274,13 +295,18 @@ internal static class ArgumentLayout
         return new TextChange(span, replacement);
     }
 
-    private readonly struct LineFitMeasurement(bool blockComment, bool inlineComment, bool lineBreak, bool statementSequence, int tokens, int width)
+    private static bool SharesLine(SourceText source, SyntaxToken token)
+    {
+        return GetLine(source, token.SpanStart) == GetLine(source, token.GetPreviousToken().Span.End);
+    }
+
+    private readonly struct LineFitMeasurement(bool blockComment, bool inlineComment, bool lineBreak, bool spreadStatement, int tokens, int width)
     {
         public bool HasBlockComment { get; } = blockComment;
 
         public bool HasInlineComment { get; } = inlineComment;
 
-        public bool HasStatementSequence { get; } = statementSequence;
+        public bool HasSpreadStatement { get; } = spreadStatement;
 
         public bool HasTokenLineBreak { get; } = lineBreak;
 

@@ -23,7 +23,7 @@ public sealed class ControlFlowBracesAnalyzer() : PolicyAnalyzer(Rule)
     private static readonly DiagnosticDescriptor Rule = new(
         RuleIdentifier,
         title: "Braces must match the body layout",
-        messageFormat: "Use braces for multiline bodies and omit optional braces for single-line bodies, keeping conditional chains consistent",
+        messageFormat: "Use braces for multiline bodies and omit optional braces for single-line bodies, keeping conditional chains consistent and every brace and statement of a block on its own line",
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

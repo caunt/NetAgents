@@ -48,6 +48,8 @@
       <NetAgentsGlobalConfigurationLines Include="is_global = true;global_level = 2147483647" />
       <NetAgentsGlobalConfigurationLines Include="$([MSBuild]::Escape('$(NetAgentsEditorConfiguration)'))" />
       <NetAgentsGlobalConfigurationLines Include="insert_final_newline = true" />
+      <!-- The template leaves IDE2001 unset; an embedded statement goes on its own line, as NETAGENTS0017's blocks do (#49). -->
+      <NetAgentsGlobalConfigurationLines Include="csharp_style_allow_embedded_statements_on_same_line_experimental = false" />
       <NetAgentsGlobalConfigurationLines Include="$([System.Text.RegularExpressions.Regex]::Replace('%(NetAgentsDiagnosticReleaseLines.Identity)', '^(NETAGENTS[0-9]+).*', 'dotnet_diagnostic.$1.severity = error'))" />
       <NetAgentsGlobalConfigurationLines Include="dotnet_analyzer_diagnostic.category-Style.severity = error;dotnet_diagnostic.IDE0055.severity = error;dotnet_diagnostic.IDE1006.severity = error" />
       <NetAgentsGlobalConfigurationLines Include="dotnet_diagnostic.IDE0005.severity = error;dotnet_diagnostic.IDE0059.severity = error;dotnet_diagnostic.CS1591.severity = error" />

@@ -66,10 +66,16 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
 
         foreach (SyntaxNode body in bodies)
         {
-            if (body is BlockSyntax block)
+            if (body is BlockSyntax block && ControlFlowBraces.CanRemove(block, source))
             {
                 changes.Add(RemoveBrace(block.OpenBraceToken, source));
                 changes.Add(RemoveBrace(block.CloseBraceToken, source));
+            }
+            else if (body is BlockSyntax crowded)
+            {
+                // Each brace and statement moves to a line of its own; the formatter below indents them.
+                foreach (SyntaxToken token in ControlFlowBraces.GetCrowdedTokens(crowded, source))
+                    changes.Add(new TextChange(new TextSpan(token.FullSpan.Start, length: 0), lineEnding));
             }
             else
             {

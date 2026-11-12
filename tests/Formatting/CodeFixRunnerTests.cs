@@ -41,6 +41,48 @@ public sealed class CodeFixRunnerTests
         Assert.EndsWith(expectedEndString: "}\r\n", text.ToString(), StringComparison.Ordinal);
     }
 
+    /// <summary>Settles brace layout, statement spacing and argument layout on one-line statement blocks (#49).</summary>
+    /// <param name="statements">The statements as written.</param>
+    /// <param name="expected">The statements after the run.</param>
+    [Theory]
+    [InlineData(
+        "if (ok) return;\n\n        try { System.Console.WriteLine(); }\n        catch (System.InvalidOperationException exception) { System.Console.WriteLine(exception); }",
+        "if (ok) return;\n\n        try\n        {\n            System.Console.WriteLine();\n        }\n        catch (System.InvalidOperationException exception)\n        {\n            System.Console.WriteLine(exception);\n        }"
+    )]
+    [InlineData(
+        "System.Threading.Tasks.Task.Run(() => { try { System.Console.WriteLine(); } finally { System.Console.WriteLine(ok); } });",
+        "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n                try\n                {\n                    System.Console.WriteLine();\n                }\n                finally\n                {\n                    System.Console.WriteLine(ok);\n                }\n            }\n        );"
+    )]
+    [InlineData(
+        "System.Threading.Tasks.Task.Run(() => { if (ok) System.Console.WriteLine(); });",
+        "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n                if (ok) System.Console.WriteLine();\n            }\n        );"
+    )]
+    [InlineData(
+        "System.Threading.Tasks.Task.Run(() => { { int length = System.Environment.ProcessorCount; } });",
+        "System.Threading.Tasks.Task.Run(\n            () =>\n            {\n                {\n                    int length = System.Environment.ProcessorCount;\n                }\n            }\n        );"
+    )]
+    public async Task ConvergesWithStatementBlocks(string statements, string expected)
+    {
+        const string method = "class Example\n{\n    void Execute(bool ok)\n    {\n        STATEMENTS\n    }\n}\n";
+
+        using AdhocWorkspace workspace = new();
+
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(
+            CreateFieldProject(workspace, method.Replace(oldValue: "STATEMENTS", statements, StringComparison.Ordinal)),
+            [new ControlFlowBracesAnalyzer(), new StatementSpacingAnalyzer(), new ArgumentLayoutAnalyzer()],
+            [new ControlFlowBracesCodeFixProvider(), new StatementSpacingCodeFixProvider(), new ArgumentLayoutCodeFixProvider()],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None
+        );
+
+        string formatted = (await result.Project.Documents.Single().GetTextAsync()).ToString();
+
+        Assert.Equal(method.Replace(oldValue: "STATEMENTS", expected, StringComparison.Ordinal), formatted);
+        Assert.True(result.Blocking.IsEmpty);
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), formatted));
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), formatted));
+    }
+
     /// <summary>Settles argument layout and statement spacing on a lambda holding statements (#38).</summary>
     /// <param name="statement">How the statement passing the lambda is written before the run.</param>
     [Theory]
