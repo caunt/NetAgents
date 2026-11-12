@@ -13,9 +13,15 @@ using NetAgents.Analyzers.Diagnostics;
 namespace NetAgents.Analyzers.Naming;
 
 /// <summary>
-/// Rejects method declarations whose name ends with a word their first parameter's name already says,
-/// such as <c>UpdateValue(int value)</c>, which should be <c>Update(int value)</c>.
+/// Rejects method declarations whose name ends with their first parameter's whole name, such as
+/// <c>UpdateValue(int value)</c>, which should be <c>Update(int value)</c>, or
+/// <c>GetAppStoreId(string appStoreId)</c>, which should be <c>Get(string appStoreId)</c>.
 /// </summary>
+/// <remarks>
+/// Names are compared word by word, ignoring case and an <c>Async</c> suffix. A name that shares only some of
+/// the parameter's words names something else and is accepted: <c>GetApp(string appStoreId)</c> gets an app,
+/// and <c>GetFileId(string appStoreId)</c> gets a file's id, not the store's id the parameter holds.
+/// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class RedundantMethodSuffixAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorCode: true)
 {
@@ -61,10 +67,10 @@ public sealed class RedundantMethodSuffixAnalyzer() : PolicyAnalyzer(Rule, analy
         if (parameters is null || parameters.Parameters.Count == 0)
             return;
 
-        string? suffix = GetSuffix(identifier.ValueText);
         string parameter = parameters.Parameters[index: 0].Identifier.ValueText;
+        string? repeated = GetRepeatedWords(identifier.ValueText, parameter);
 
-        if (suffix is null || !GetWords(parameter).Contains(suffix, StringComparer.OrdinalIgnoreCase))
+        if (repeated is null)
             return;
 
         // Binding waits until the names repeat, since most declarations never get this far.
@@ -73,19 +79,31 @@ public sealed class RedundantMethodSuffixAnalyzer() : PolicyAnalyzer(Rule, analy
         if (declared is not IMethodSymbol method || !IsRenamable(method))
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(Rule, identifier.GetLocation(), identifier.ValueText, suffix, parameter));
+        context.ReportDiagnostic(Diagnostic.Create(Rule, identifier.GetLocation(), identifier.ValueText, repeated, parameter));
     }
 
-    // The last word of the method's name, ignoring an Async suffix, or nothing for a one-word name,
-    // which would be left without a name once the word went.
-    private static string? GetSuffix(string name)
+    // The words that end the method's name, ignoring an Async suffix, when they spell the parameter's whole name,
+    // or nothing otherwise. A name made of nothing but the parameter's words, a one-word name among them, is
+    // accepted, since it would be left without a name once they went.
+    private static string? GetRepeatedWords(string name, string parameter)
     {
         if (name.Length > "Async".Length && name.EndsWith(value: "Async", StringComparison.Ordinal))
             name = name.Substring(startIndex: 0, name.Length - "Async".Length);
 
         List<string> words = GetWords(name);
+        List<string> repeated = GetWords(parameter);
+        int start = words.Count - repeated.Count;
 
-        return words.Count < 2 ? null : words[words.Count - 1];
+        if (repeated.Count == 0 || start < 1)
+            return null;
+
+        for (int index = 0; index < repeated.Count; index++)
+        {
+            if (!string.Equals(words[start + index], repeated[index], StringComparison.OrdinalIgnoreCase))
+                return null;
+        }
+
+        return string.Concat(words.GetRange(start, repeated.Count));
     }
 
     private static List<string> GetWords(string name)

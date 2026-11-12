@@ -67,8 +67,8 @@ internal static class DeclarationSpacing
             TextLine line = source.Lines[lineNumber];
 
             bool isBlankLine = source.ToString(line.Span).All(char.IsWhiteSpace)
-                && !IsInsideContent(previous.GetTrailingTrivia(), line.Start)
-                && !IsInsideContent(current.GetLeadingTrivia(), line.Start);
+                && !IsInsideContentTrivia(previous.GetTrailingTrivia(), line.Start)
+                && !IsInsideContentTrivia(current.GetLeadingTrivia(), line.Start);
 
             if (isBlankLine)
                 return true;
@@ -77,7 +77,7 @@ internal static class DeclarationSpacing
         return false;
     }
 
-    private static bool IsInsideContent(SyntaxTriviaList triviaList, int position)
+    private static bool IsInsideContentTrivia(SyntaxTriviaList triviaList, int position)
     {
         foreach (SyntaxTrivia trivia in triviaList)
         {
