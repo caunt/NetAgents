@@ -40,7 +40,7 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Fix body braces",
-                    cancellationToken => FixBraces(context.Document, [diagnostic], fixAll: false, cancellationToken),
+                    cancellationToken => FixBraces(context.Document, diagnostics: [diagnostic], fixAll: false, cancellationToken),
                     nameof(ControlFlowBracesCodeFixProvider)),
                 diagnostic);
         }

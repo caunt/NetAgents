@@ -30,7 +30,7 @@ public sealed class AnalyzerCatalogTests
         Assert.Empty(result.Unavailable);
 
         // The hosted copy comes from a separate load context, so only the name identifies it.
-        Assert.Contains([.. result.Analyzers], static analyzer => analyzer.GetType().FullName == typeof(ExhaustiveSwitchSuppressor).FullName);
+        Assert.Contains(collection: [.. result.Analyzers], static analyzer => analyzer.GetType().FullName == typeof(ExhaustiveSwitchSuppressor).FullName);
     }
 
     /// <summary>Constructs the same analyzers the compiler's loader does, without its version gate.</summary>
@@ -40,7 +40,7 @@ public sealed class AnalyzerCatalogTests
         using AnalyzerLoader loader = new();
 
         AnalyzerFileReference reference = new(CodeStylePath, loader);
-        string[] loaded = GetIdentifiers([.. reference.GetAnalyzers(LanguageNames.CSharp)]);
+        string[] loaded = GetIdentifiers(analyzers: [.. reference.GetAnalyzers(LanguageNames.CSharp)]);
         AnalyzerCatalog.AnalyzerHostingResult result = AnalyzerCatalog.Host(CodeStylePath, loader);
 
         Assert.True(result.Read);
@@ -50,7 +50,7 @@ public sealed class AnalyzerCatalogTests
         // An SDK built against a newer Roslyn than this package leaves the compiler's loader with nothing,
         // which is the case the hosted set exists for; wherever it does load, both sets must agree.
         if (loaded.Length > 0)
-            Assert.Equal(loaded, GetIdentifiers([.. result.Analyzers]));
+            Assert.Equal(loaded, GetIdentifiers(analyzers: [.. result.Analyzers]));
     }
 
     /// <summary>Leaves an assembly that declares no analyzer at all unreported.</summary>
@@ -60,7 +60,7 @@ public sealed class AnalyzerCatalogTests
         using AnalyzerLoader loader = new();
 
         string path = typeof(MemberOrderingCodeFixProvider).Assembly.Location;
-        AnalyzerCatalog.AnalyzerLoadingResult result = AnalyzerCatalog.Load([path], loader);
+        AnalyzerCatalog.AnalyzerLoadingResult result = AnalyzerCatalog.Load(analyzerPaths: [path], loader);
 
         Assert.Empty(result.Hosted);
         Assert.Empty(result.Unavailable);
@@ -73,8 +73,8 @@ public sealed class AnalyzerCatalogTests
     {
         using AnalyzerLoader loader = new();
 
-        AnalyzerCatalog.AnalyzerLoadingResult result = AnalyzerCatalog.Load([CodeStylePath], loader);
-        string[] identifiers = GetIdentifiers([.. result.References.SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())]);
+        AnalyzerCatalog.AnalyzerLoadingResult result = AnalyzerCatalog.Load(analyzerPaths: [CodeStylePath], loader);
+        string[] identifiers = GetIdentifiers(analyzers: [.. result.References.SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())]);
 
         Assert.Empty(result.Unavailable);
         Assert.Contains(expected: "IDE0005", identifiers, StringComparer.Ordinal);
@@ -98,7 +98,7 @@ public sealed class AnalyzerCatalogTests
 
             using AnalyzerLoader loader = new();
 
-            AnalyzerCatalog.AnalyzerLoadingResult result = AnalyzerCatalog.Load([path], loader);
+            AnalyzerCatalog.AnalyzerLoadingResult result = AnalyzerCatalog.Load(analyzerPaths: [path], loader);
 
             Assert.Empty(result.Hosted);
             Assert.Contains(expectedSubstring: "Broken.Analyzers.dll", Assert.Single(result.Unavailable), StringComparison.Ordinal);

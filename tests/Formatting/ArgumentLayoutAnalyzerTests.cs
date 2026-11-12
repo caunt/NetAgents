@@ -235,6 +235,6 @@ public sealed class ArgumentLayoutAnalyzerTests
                 hasInlineComment = true;
         }
 
-        return compact.Length - 2 > 128 || compact.IndexOfAny(['\r', '\n']) >= 0 || hasInlineComment;
+        return compact.Length - 2 > 128 || compact.IndexOfAny(anyOf: ['\r', '\n']) >= 0 || hasInlineComment;
     }
 }

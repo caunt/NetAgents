@@ -9,7 +9,7 @@ internal sealed class BuildDiagnostics(ImmutableArray<Diagnostic> diagnostics) :
 {
     public override Task<IEnumerable<Diagnostic>> GetAllDiagnosticsAsync(Project project, CancellationToken cancellationToken)
     {
-        return Task.FromResult<IEnumerable<Diagnostic>>([.. diagnostics]);
+        return Task.FromResult<IEnumerable<Diagnostic>>(result: [.. diagnostics]);
     }
 
     public override async Task<IEnumerable<Diagnostic>> GetDocumentDiagnosticsAsync(Document document, CancellationToken cancellationToken)

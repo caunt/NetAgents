@@ -134,7 +134,7 @@ public sealed class StatementLayoutTests
             await File.WriteAllTextAsync(projectPath, projectContent);
             await File.WriteAllTextAsync(Path.Combine(workspace.FullName, path2: "NuGet.Config"), sourceConfiguration);
             await File.WriteAllTextAsync(sourcePath, Crowded);
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
 
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, forbiddenOutput: ["NetAgents automatic formatting failed"]);

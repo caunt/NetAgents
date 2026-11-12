@@ -99,7 +99,7 @@ public sealed class ExhaustiveSwitchSuppressorTests
             logAnalyzerExecutionTime: false,
             reportSuppressedDiagnostics: true);
 
-        CompilationWithAnalyzers analysis = compilation.WithAnalyzers([new PopulateSwitchAnalyzer(diagnosticIdentifier), new ExhaustiveSwitchSuppressor()], options);
+        CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers: [new PopulateSwitchAnalyzer(diagnosticIdentifier), new ExhaustiveSwitchSuppressor()], options);
 
         ImmutableArray<Diagnostic> diagnostics = await analysis.GetAllDiagnosticsAsync(CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
 

@@ -34,7 +34,12 @@ public sealed class CodeFixPerformanceTests
         SuggestionFix optional = new(actions);
         FormattingProgress progress = new(project.Name, messages.Add);
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, [analyzer], [optional, required], static fault => Assert.Fail(fault), CancellationToken.None, progress);
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
+            analyzers: [analyzer],
+            providers: [optional, required],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None,
+            progress);
 
         Assert.True(result.Blocking.IsEmpty);
         Assert.Equal(expected: 4, analyzer.Runs);
@@ -63,8 +68,8 @@ public sealed class CodeFixPerformanceTests
         List<string> messages = [];
 
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
-            [analyzer],
-            [new DriftFix(), new AdvanceFix()],
+            analyzers: [analyzer],
+            providers: [new DriftFix(), new AdvanceFix()],
             static fault => Assert.Fail(fault),
             CancellationToken.None,
             new(project.Name, messages.Add));
@@ -115,8 +120,8 @@ public sealed class CodeFixPerformanceTests
         List<string> messages = [];
 
         InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => CodeFixRunner.Fix(project,
-            [analyzer],
-            [new StepFix(actions)],
+            analyzers: [analyzer],
+            providers: [new StepFix(actions)],
             static fault => Assert.Fail(fault),
             CancellationToken.None,
             new(project.Name, messages.Add)));
@@ -142,7 +147,11 @@ public sealed class CodeFixPerformanceTests
         List<string> actions = [];
         StepFix valid = new(actions);
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, [analyzer], [new ProjectSettingsFix(), valid], static fault => Assert.Fail(fault), CancellationToken.None);
+        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
+            analyzers: [analyzer],
+            providers: [new ProjectSettingsFix(), valid],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None);
 
         Assert.True(result.Blocking.IsEmpty);
         Assert.Equal(project.CompilationOptions, result.Project.CompilationOptions);

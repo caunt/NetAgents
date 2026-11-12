@@ -20,7 +20,7 @@ internal static class ProjectFormatter
 {
     public static async Task Format(FormatProject inputs, CancellationToken cancellationToken)
     {
-        FormattingLock projectLock = await FormattingLock.Acquire([.. inputs.SourceFiles.Select(GetPath)], cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        FormattingLock projectLock = await FormattingLock.Acquire(sourcePaths: [.. inputs.SourceFiles.Select(GetPath)], cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         await using (projectLock.ConfigureAwait(continueOnCapturedContext: false))
         {
@@ -78,7 +78,7 @@ internal static class ProjectFormatter
 
         CSharpParseOptions parseOptions = new(languageVersion.Version,
             DocumentationMode.Diagnose,
-            preprocessorSymbols: inputs.DefineConstants.Split([';', ','], StringSplitOptions.RemoveEmptyEntries));
+            preprocessorSymbols: inputs.DefineConstants.Split(separator: [';', ','], StringSplitOptions.RemoveEmptyEntries));
 
         // Parse before loading analyzers or composing code-fix providers. Malformed source needs
         // its own diagnostics immediately, even when initializing those providers is expensive.

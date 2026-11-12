@@ -31,8 +31,8 @@ public sealed class FormattingAnalysisTests
         List<string> messages = [];
 
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
-            [analyzer],
-            [new CandidateFix(rejected: true), new CandidateFix(rejected: false)],
+            analyzers: [analyzer],
+            providers: [new CandidateFix(rejected: true), new CandidateFix(rejected: false)],
             static fault => Assert.Fail(fault),
             CancellationToken.None,
             new(project.Name, messages.Add));
@@ -61,8 +61,8 @@ public sealed class FormattingAnalysisTests
         Diagnostic first = Diagnostic.Create(rule, Location.None);
         Diagnostic second = Diagnostic.Create(rule, Location.None);
 
-        Assert.Empty(FormattingAnalysis.IntroducedErrors([first], [second]).ToArray());
-        Diagnostic repeated = Assert.Single(FormattingAnalysis.IntroducedErrors([first, second], [first]).ToArray());
+        Assert.Empty(FormattingAnalysis.IntroducedErrors(after: [first], before: [second]).ToArray());
+        Diagnostic repeated = Assert.Single(FormattingAnalysis.IntroducedErrors(after: [first, second], before: [first]).ToArray());
 
         Assert.Equal(rule.Id, repeated.Id);
     }
@@ -76,7 +76,7 @@ public sealed class FormattingAnalysisTests
         Project before = CreateProject(workspace)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, generalDiagnosticOption: ReportDiagnostic.Error));
 
-        FormattingAnalysis analysis = new([new UnusedValueSuppressor()],
+        FormattingAnalysis analysis = new(analyzers: [new UnusedValueSuppressor()],
             static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
             new(before.Name, report: null));
 
@@ -96,7 +96,7 @@ public sealed class FormattingAnalysisTests
 
         Project before = CreateProject(workspace);
         DependencyAnalyzer analyzer = new();
-        FormattingAnalysis analysis = new([analyzer], static (exception, failed, diagnostic) => Assert.Fail(exception.Message), new(before.Name, report: null));
+        FormattingAnalysis analysis = new(analyzers: [analyzer], static (exception, failed, diagnostic) => Assert.Fail(exception.Message), new(before.Name, report: null));
         ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None);
         Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() => 2; }\n");
 
@@ -118,7 +118,7 @@ public sealed class FormattingAnalysisTests
         Project before = CreateProject(workspace);
         DependencyAnalyzer analyzer = new();
         List<string> messages = [];
-        FormattingAnalysis analysis = new([analyzer], static (exception, failed, diagnostic) => Assert.Fail(exception.Message), new(before.Name, messages.Add));
+        FormattingAnalysis analysis = new(analyzers: [analyzer], static (exception, failed, diagnostic) => Assert.Fail(exception.Message), new(before.Name, messages.Add));
         ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None);
         const string candidateSource = "internal static class Reader { internal static int Read() => 2; }\n";
         Project candidate = Change(before, name: "Reader.cs", candidateSource);
@@ -185,7 +185,7 @@ public sealed class FormattingAnalysisTests
         Project before = CreateProject(workspace);
         List<string> messages = [];
 
-        FormattingAnalysis analysis = new([new ClaimingSuppressor(suppressedDiagnosticIdentifier)],
+        FormattingAnalysis analysis = new(analyzers: [new ClaimingSuppressor(suppressedDiagnosticIdentifier)],
             static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
             new(before.Name, messages.Add));
 

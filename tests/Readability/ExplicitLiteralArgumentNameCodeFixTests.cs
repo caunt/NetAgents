@@ -70,6 +70,33 @@ public sealed class ExplicitLiteralArgumentNameCodeFixTests
     }
 
     /// <summary>
+    /// Verifies that collection expression arguments gain their parameter names, as literals do, and that
+    /// a name on any other argument is still dropped.
+    /// </summary>
+    /// <param name="invocation">The invocation to fix.</param>
+    /// <param name="expected">The expected normalized invocation.</param>
+    [Theory]
+    [InlineData("Merge([1, 2], values)", "Merge(first: [1, 2], values)")]
+    [InlineData("Merge([], [.. values])", "Merge(first: [], second: [.. values])")]
+    [InlineData("Merge(first: values, second: [1])", "Merge(values, second: [1])")]
+    [InlineData("Log([1, 2])", "Log(entries: [1, 2])")]
+    public async Task NamesCollectionArguments(string invocation, string expected)
+    {
+        string source = $$"""
+            class ExampleType
+            {
+                void Run(int[] values) => {{invocation}};
+                void Merge(int[] first, int[] second) { }
+                void Log(params int[] entries) { }
+            }
+            """;
+
+        string fixedSource = await CodeFixTestHarness.FixLiteralArgumentNames(source, fixAll: true);
+
+        Assert.Equal(source.Replace(invocation, expected, StringComparison.Ordinal), fixedSource);
+    }
+
+    /// <summary>
     /// Verifies that a parameter named after a keyword is escaped.
     /// </summary>
     [Fact]

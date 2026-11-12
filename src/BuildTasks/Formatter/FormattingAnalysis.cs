@@ -65,7 +65,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
             {
                 progress.Report(activity: "reusing validation of unchanged rejected action");
 
-                return new([], remaining);
+                return new(Diagnostics: [], remaining);
             }
         }
 
@@ -88,7 +88,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
             {
                 Remember(actionKey, fingerprint, compilerDiagnostics);
 
-                return new([], compilerErrors);
+                return new(Diagnostics: [], compilerErrors);
             }
         }
 
@@ -136,7 +136,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
     private void Remember(string actionKey, string? fingerprint, ImmutableArray<Diagnostic> diagnostics)
     {
         if (fingerprint is not null)
-            _rejected[actionKey] = new(fingerprint, [.. diagnostics.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)]);
+            _rejected[actionKey] = new(fingerprint, Errors: [.. diagnostics.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)]);
     }
 
     private readonly record struct DiagnosticIdentity(string Identifier, string Message, string Path);

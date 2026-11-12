@@ -83,7 +83,7 @@ internal static class DocumentationInformation
                 stripped.Add(character);
         }
 
-        return new([.. stripped]);
+        return new(value: [.. stripped]);
     }
 
     private static void Take(List<string> words, string text, int start, int length)

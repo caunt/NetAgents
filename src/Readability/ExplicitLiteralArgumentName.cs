@@ -41,7 +41,7 @@ internal static class ExplicitLiteralArgumentName
 
     private static bool AllowsRemovingName(ArgumentSyntax argument, SemanticModel model, CancellationToken cancellationToken)
     {
-        return argument.NameColon is not null && Unwrap(argument.Expression) is not LiteralExpressionSyntax and not DefaultExpressionSyntax && argument.Parent is BaseArgumentListSyntax list && IsPositional(list, model, cancellationToken);
+        return argument.NameColon is not null && !IsInlineValue(argument.Expression) && argument.Parent is BaseArgumentListSyntax list && IsPositional(list, model, cancellationToken);
     }
 
     private static bool AppendExpanded(BaseArgumentListSyntax list,
@@ -266,6 +266,13 @@ internal static class ExplicitLiteralArgumentName
         return !parameters.IsEmpty;
     }
 
+    // A value written out in place, which says nothing about the parameter it fills: a literal, a
+    // default, or a collection expression such as [first, second].
+    private static bool IsInlineValue(ExpressionSyntax expression)
+    {
+        return Unwrap(expression) is LiteralExpressionSyntax or DefaultExpressionSyntax or CollectionExpressionSyntax;
+    }
+
     private static bool IsInsideExpressionTree(SyntaxNode node, SemanticModel model, CancellationToken cancellationToken)
     {
         foreach (AnonymousFunctionExpressionSyntax ancestor in node.Ancestors().OfType<AnonymousFunctionExpressionSyntax>())
@@ -367,7 +374,7 @@ internal static class ExplicitLiteralArgumentName
 
     private static bool RequiresName(ArgumentSyntax argument, SemanticModel model, CancellationToken cancellationToken)
     {
-        return argument.NameColon is null && Unwrap(argument.Expression) is LiteralExpressionSyntax or DefaultExpressionSyntax && ResolveParameter(argument, model, cancellationToken) is not null;
+        return argument.NameColon is null && IsInlineValue(argument.Expression) && ResolveParameter(argument, model, cancellationToken) is not null;
     }
 
     private static IParameterSymbol? ResolveParameter(ArgumentSyntax argument, SemanticModel model, CancellationToken cancellationToken)

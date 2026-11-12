@@ -33,7 +33,11 @@ public sealed class EditableDocumentsTests
         Project project = CreateProject(workspace, name: "Editable.cs", source: "class Editable\n{\n    private static int Value;\n}\n")
             .AddDocument(name: "Generated.g.cs", SourceText.From(GeneratedSource), filePath: "/workspace/Generated.g.cs").Project;
 
-        Project result = (await CodeFixRunner.Fix(project, [new PrivateFieldAnalyzer()], [new PrivateFieldFix(reach)], static fault => Assert.Fail(fault), CancellationToken.None))
+        Project result = (await CodeFixRunner.Fix(project,
+            analyzers: [new PrivateFieldAnalyzer()],
+            providers: [new PrivateFieldFix(reach)],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None))
             .Project;
 
         Assert.Contains(expectedSubstring: "internal static int Value;", await ReadDocument(result, name: "Editable.cs"), StringComparison.Ordinal);
@@ -58,8 +62,8 @@ public sealed class EditableDocumentsTests
             .AddDocument(name: "Beta.cs", SourceText.From(quoting), filePath: "/workspace/Beta.cs").Project;
 
         Project result = (await CodeFixRunner.Fix(project,
-            [new ArgumentLayoutAnalyzer()],
-            [new ArgumentLayoutCodeFixProvider()],
+            analyzers: [new ArgumentLayoutAnalyzer()],
+            providers: [new ArgumentLayoutCodeFixProvider()],
             static fault => Assert.Fail(fault),
             CancellationToken.None)).Project;
 
@@ -88,7 +92,7 @@ public sealed class EditableDocumentsTests
                 SourceText.From($"root = true\n\n[*.cs]\ngenerated_code = {generated}\n"),
                 filePath: "/workspace/.editorconfig").Project;
 
-        Project result = (await CodeFixRunner.Fix(project, [], [], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
+        Project result = (await CodeFixRunner.Fix(project, analyzers: [], providers: [], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
         string text = await ReadDocument(result, name);
 
         Assert.Equal(outcome == "kept", text == source);
@@ -102,7 +106,11 @@ public sealed class EditableDocumentsTests
 
         using AdhocWorkspace workspace = new();
 
-        Project result = (await CodeFixRunner.Fix(CreateProject(workspace, name: "Example.cs", source), [], [], static fault => Assert.Fail(fault), CancellationToken.None))
+        Project result = (await CodeFixRunner.Fix(CreateProject(workspace, name: "Example.cs", source),
+            analyzers: [],
+            providers: [],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None))
             .Project;
 
         Assert.Contains(expectedSubstring: "void Run() { }", await ReadDocument(result, name: "Example.cs"), StringComparison.Ordinal);

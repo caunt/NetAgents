@@ -50,7 +50,7 @@ internal static class CompositionParts
                 composable.Add(type);
         }
 
-        return new([.. composable], [.. skipped]);
+        return new(Types: [.. composable], Skipped: [.. skipped]);
     }
 
     private static bool CanCompose(Type type)

@@ -34,6 +34,18 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     }
 
     /// <summary>
+    /// Verifies that a named collection expression argument is accepted.
+    /// </summary>
+    [Fact]
+    public async Task AllowsNamedCollectionArguments()
+    {
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
+            source: "public class ExampleType { public void Run(int[] values) => Execute(counts: [.. values, 42]); private void Execute(int[] counts) { } }");
+
+        Assert.Empty(diagnostics);
+    }
+
+    /// <summary>
     /// Verifies that a name whose removal would change binding or evaluation order is accepted.
     /// </summary>
     /// <param name="invocation">The invocation carrying an unremovable name.</param>
@@ -97,6 +109,24 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
 
         Assert.Equal(expected: 2, diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, diagnostic.Id));
+    }
+
+    /// <summary>
+    /// Verifies that collection expression arguments without parameter names are reported, as literals are.
+    /// </summary>
+    /// <param name="invocation">The invocation containing an unnamed collection expression.</param>
+    [Theory]
+    [InlineData("Execute([42])")]
+    [InlineData("Execute([])")]
+    [InlineData("Execute([.. values])")]
+    [InlineData("Execute(([42]))")]
+    [InlineData("Log([1, 2])")]
+    public async Task ReportsUnnamedCollectionArguments(string invocation)
+    {
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
+            $"public class ExampleType {{ public void Run(int[] values) => {invocation}; private void Execute(int[] counts) {{ }} private void Log(params int[] entries) {{ }} }}");
+
+        Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
 
     /// <summary>

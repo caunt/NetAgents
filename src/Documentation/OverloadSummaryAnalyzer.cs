@@ -89,7 +89,7 @@ public sealed class OverloadSummaryAnalyzer() : PolicyAnalyzer(Rule)
             spaced = blank;
         }
 
-        return new string([.. flattened]).Trim();
+        return new string(value: [.. flattened]).Trim();
     }
 
     // The summary's words with their layout removed, so two comments wrapped differently across

@@ -56,7 +56,7 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
             TextSpan span = diagnostic.Location.SourceSpan;
 
             context.RegisterCodeFix(CodeAction.Create(title: "Fix argument parameter names",
-                    cancellationToken => FixNames(context.Document, [span], fixAll: false, cancellationToken),
+                    cancellationToken => FixNames(context.Document, requestedSpans: [span], fixAll: false, cancellationToken),
                     nameof(ExplicitLiteralArgumentNameCodeFixProvider)),
                 diagnostic);
         }

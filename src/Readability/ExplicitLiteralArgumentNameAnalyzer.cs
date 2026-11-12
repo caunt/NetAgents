@@ -20,7 +20,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Literal arguments need explicit parameter names",
-        messageFormat: "Name inline literal and default arguments, and pass every other argument positionally",
+        messageFormat: "Name inline literal, default, and collection expression arguments, and pass every other argument positionally",
         category: "Readability",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

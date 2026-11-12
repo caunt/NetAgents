@@ -91,12 +91,12 @@ public sealed class NullForgivingOperatorAnalyzerTests
         const string source = "string variable = null!; Test(variable!); void Test(string value) { }";
 
         CSharpCompilation compilation = CSharpCompilation.Create(assemblyName: "ExampleApplication",
-            [CSharpSyntaxTree.ParseText(source)],
+            syntaxTrees: [CSharpSyntaxTree.ParseText(source)],
             AnalyzerTestHarness.References,
             new CSharpCompilationOptions(OutputKind.ConsoleApplication));
 
         Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
-        Diagnostic[] diagnostics = [.. await compilation.WithAnalyzers([new NullForgivingOperatorAnalyzer()]).GetAnalyzerDiagnosticsAsync()];
+        Diagnostic[] diagnostics = [.. await compilation.WithAnalyzers(analyzers: [new NullForgivingOperatorAnalyzer()]).GetAnalyzerDiagnosticsAsync()];
 
         Assert.Equal(expected: 2, diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, diagnostic.Id));

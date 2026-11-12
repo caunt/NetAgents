@@ -23,6 +23,6 @@ internal sealed class CodeFixDiagnosticProvider(DiagnosticAnalyzer analyzer) : F
 
     public override Task<IEnumerable<Diagnostic>> GetProjectDiagnosticsAsync(Project project, CancellationToken cancellationToken)
     {
-        return Task.FromResult<IEnumerable<Diagnostic>>([]);
+        return Task.FromResult<IEnumerable<Diagnostic>>(result: []);
     }
 }

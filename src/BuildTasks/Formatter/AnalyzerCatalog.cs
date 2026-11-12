@@ -27,7 +27,7 @@ internal static class AnalyzerCatalog
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             // The caller already reports why the compiler's own loader refused the whole assembly.
-            return new(Read: false, [], []);
+            return new(Read: false, Analyzers: [], Unavailable: []);
         }
 
         foreach (Type type in declared)
@@ -54,7 +54,7 @@ internal static class AnalyzerCatalog
             }
         }
 
-        return new(Read: true, [.. analyzers], [.. unavailable]);
+        return new(Read: true, Analyzers: [.. analyzers], Unavailable: [.. unavailable]);
     }
 
     // Roslyn refuses an analyzer assembly that references a newer compiler than the host and announces
@@ -81,7 +81,7 @@ internal static class AnalyzerCatalog
             unavailable.AddRange(result.Unavailable);
         }
 
-        return new([.. references], [.. hosted], [.. unavailable]);
+        return new(References: [.. references], Hosted: [.. hosted], Unavailable: [.. unavailable]);
     }
 
     private static DiagnosticAnalyzer Create(Type type)
@@ -144,7 +144,7 @@ internal static class AnalyzerCatalog
         AnalyzerLoadFailureEventArgs[] rejections = [.. failures.Where(static failure => failure.TypeName is null)];
 
         if (rejections.Length == 0 || !loaded.IsEmpty)
-            return new(reference, Hosted: null, [.. failures.Select(failure => Describe(path, failure))]);
+            return new(reference, Hosted: null, Unavailable: [.. failures.Select(failure => Describe(path, failure))]);
 
         AnalyzerHostingResult result = Host(path, loader);
 
@@ -154,7 +154,7 @@ internal static class AnalyzerCatalog
             // no analyzer at all, as the Razor compiler does, costs this formatter nothing to skip.
             string[] refused = result.Read ? [] : [.. rejections.Select(failure => Describe(path, failure))];
 
-            return new(reference, Hosted: null, [.. refused, .. result.Unavailable]);
+            return new(reference, Hosted: null, Unavailable: [.. refused, .. result.Unavailable]);
         }
 
         string count = result.Analyzers.Length.ToString(CultureInfo.InvariantCulture);

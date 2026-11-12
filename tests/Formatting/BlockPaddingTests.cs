@@ -48,8 +48,8 @@ public sealed class BlockPaddingTests
             .AddDocument(name: "ExampleType.cs", SourceText.From(source)).Project;
 
         Project result = (await CodeFixRunner.Fix(project,
-            [new BlockPaddingAnalyzer(), new MethodSpacingAnalyzer(), new MemberOrderingAnalyzer()],
-            [new BlockPaddingCodeFixProvider(), new MethodSpacingCodeFixProvider(), new MemberOrderingCodeFixProvider()],
+            analyzers: [new BlockPaddingAnalyzer(), new MethodSpacingAnalyzer(), new MemberOrderingAnalyzer()],
+            providers: [new BlockPaddingCodeFixProvider(), new MethodSpacingCodeFixProvider(), new MemberOrderingCodeFixProvider()],
             static fault => Assert.Fail(fault),
             CancellationToken.None)).Project;
 

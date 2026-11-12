@@ -16,7 +16,7 @@ internal static class PackageArtifact
     internal static async Task VerifyConfigurationMatchesTemplate(string workspacePath, string packagePath)
     {
         string templateDirectory = Path.Combine(paths: [workspacePath, "microsoft-defaults"]);
-        await ConsumerBuild.RunDevelopmentKit(workspacePath, ["new", "editorconfig", "--output", templateDirectory])
+        await ConsumerBuild.RunDevelopmentKit(workspacePath, arguments: ["new", "editorconfig", "--output", templateDirectory])
             .ConfigureAwait(continueOnCapturedContext: false);
         string templatePath = Path.Combine(paths: [templateDirectory, ".editorconfig"]);
         string template = await File.ReadAllTextAsync(templatePath).ConfigureAwait(continueOnCapturedContext: false);

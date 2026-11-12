@@ -18,7 +18,7 @@ internal static class EditableDocuments
             ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
         CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException: null, concurrentAnalysis: false, logAnalyzerExecutionTime: false);
-        CompilationWithAnalyzers analysis = compilation.WithAnalyzers([new AuthoredTreeAnalyzer()], options);
+        CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers: [new AuthoredTreeAnalyzer()], options);
         List<DocumentId> editable = [];
 
         foreach (Document document in project.Documents)

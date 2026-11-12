@@ -207,7 +207,7 @@ internal static class ArgumentLayout
     {
         TextLine line = source.Lines.GetLineFromPosition(position);
 
-        return new([.. source.ToString(line.Span).TakeWhile(static character => character is ' ' or '\t')]);
+        return new(value: [.. source.ToString(line.Span).TakeWhile(static character => character is ' ' or '\t')]);
     }
 
     // Later items sit one level deeper than the line the list starts on, and one more for each enclosing

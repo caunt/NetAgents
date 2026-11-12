@@ -93,8 +93,8 @@ internal static class CodeFixRunner
                 // rewrite: the caller writes a document only when its text changed. The errors reported
                 // alongside it are the baseline's, because those are the ones still in the file.
                 return introduced.IsEmpty
-                    ? new(project, [.. diagnostics.Where(IsBlockingError)], introduced, IntroducedBy: null)
-                    : new(arrived, [.. baseline.Where(IsBlockingError)], introduced, regression);
+                    ? new(project, Blocking: [.. diagnostics.Where(IsBlockingError)], introduced, IntroducedBy: null)
+                    : new(arrived, Blocking: [.. baseline.Where(IsBlockingError)], introduced, regression);
             }
 
             project = application.Project;
@@ -462,7 +462,7 @@ internal static class CodeFixRunner
                 provider,
                 FixAllScope.Project,
                 selected.EquivalenceKey,
-                [.. provider.FixableDiagnosticIds],
+                diagnosticIds: [.. provider.FixableDiagnosticIds],
                 new BuildDiagnostics(diagnostics),
                 cancellationToken);
 

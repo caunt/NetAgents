@@ -98,19 +98,19 @@ public sealed class CompositionPartsTests
             string partsPath = Path.Combine(workspace.FullName, path2: "LanguageParts.dll");
             Compile(partsPath,
                 LanguagePartsSource,
-                [typeof(ExportAttribute).Assembly.Location, typeof(CodeFixProvider).Assembly.Location, typeof(Diagnostic).Assembly.Location]);
+                references: [typeof(ExportAttribute).Assembly.Location, typeof(CodeFixProvider).Assembly.Location, typeof(Diagnostic).Assembly.Location]);
 
             using DependencyLoader loader = new(workspace.FullName);
 
             Assembly parts = loader.LoadFromAssemblyPath(partsPath);
-            CompositionParts.CompositionSelection selection = CompositionParts.Select([parts]);
+            CompositionParts.CompositionSelection selection = CompositionParts.Select(assemblies: [parts]);
             Assert.Empty(selection.Skipped);
             Assert.DoesNotContain(selection.Types, static type => type.Name == "VisualBasicFix");
 
             using CompositionHost container = new ContainerConfiguration().WithParts(selection.Types).CreateContainer();
 
             string[] providers = [.. container.GetExports<CodeFixProvider>().Select(static provider => provider.GetType().Name).Order(StringComparer.Ordinal)];
-            Assert.Equal(["CSharpFix", "SharedFix"], providers);
+            Assert.Equal(expectedSpan: ["CSharpFix", "SharedFix"], providers);
         }
         finally
         {
@@ -132,12 +132,12 @@ public sealed class CompositionPartsTests
             string dependencyPath = Path.Combine(workspace.FullName, path2: "Dependency.dll");
             string partsPath = Path.Combine(workspace.FullName, path2: "Parts.dll");
 
-            Compile(dependencyPath, DependencySource, []);
-            Compile(partsPath, PartsSource, [dependencyPath, typeof(ExportAttribute).Assembly.Location]);
+            Compile(dependencyPath, DependencySource, references: []);
+            Compile(partsPath, PartsSource, references: [dependencyPath, typeof(ExportAttribute).Assembly.Location]);
 
             // The rebuilt dependency still loads, so the attribute argument fails to resolve exactly the way
             // Microsoft.AspNetCore.App.CodeFixes fails without Microsoft.CodeAnalysis.ExternalAccess.AspNetCore.
-            Compile(dependencyPath, source: "public sealed class Remaining { }", []);
+            Compile(dependencyPath, source: "public sealed class Remaining { }", references: []);
 
             using DependencyLoader loader = new(workspace.FullName);
 
@@ -146,7 +146,7 @@ public sealed class CompositionPartsTests
             Exception failure = Assert.ThrowsAny<Exception>(() => Compose(parts.GetTypes()));
             Assert.Contains(expectedSubstring: "Absent", failure.ToString(), StringComparison.Ordinal);
 
-            CompositionParts.CompositionSelection selection = CompositionParts.Select([parts]);
+            CompositionParts.CompositionSelection selection = CompositionParts.Select(assemblies: [parts]);
 
             Assert.Equal(expected: "BrokenPart", Assert.Single(selection.Skipped));
             Assert.Contains(selection.Types, static type => type.Name == "HealthyPart");
@@ -165,7 +165,7 @@ public sealed class CompositionPartsTests
         MetadataReference[] metadata = [.. AnalyzerTestHarness.References, .. references.Select(static path => MetadataReference.CreateFromFile(path))];
 
         CSharpCompilation compilation = CSharpCompilation.Create(Path.GetFileNameWithoutExtension(assemblyPath),
-            [CSharpSyntaxTree.ParseText(source)],
+            syntaxTrees: [CSharpSyntaxTree.ParseText(source)],
             metadata,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 

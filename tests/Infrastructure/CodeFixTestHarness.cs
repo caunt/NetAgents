@@ -101,7 +101,7 @@ internal static class CodeFixTestHarness
         Assert.NotNull(compilation);
         Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
 
-        return await compilation.WithAnalyzers([analyzer]).GetAnalyzerDiagnosticsAsync()
+        return await compilation.WithAnalyzers(analyzers: [analyzer]).GetAnalyzerDiagnosticsAsync()
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 
@@ -138,7 +138,7 @@ internal static class CodeFixTestHarness
                 provider,
                 FixAllScope.Document,
                 action.EquivalenceKey,
-                [.. provider.FixableDiagnosticIds],
+                diagnosticIds: [.. provider.FixableDiagnosticIds],
                 new CodeFixDiagnosticProvider(analyzer),
                 CancellationToken.None);
 
