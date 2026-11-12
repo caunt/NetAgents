@@ -34,8 +34,25 @@ public sealed class NumericConversionAnalyzerTests
     }
 
     /// <summary>
+    /// Verifies a narrowing compound assignment whose target could change when read twice, such as an element
+    /// reached through an incremented index or a property, is reported with no fix and told how to rewrite it.
+    /// </summary>
+    /// <param name="member">A member assigning through a target the fix cannot read a second time.</param>
+    [Theory]
+    [InlineData("void Mark(byte[] buffer, int index, byte bit) { buffer[index++] |= bit; }")]
+    [InlineData("byte Level { get; set; } void Raise(byte step) { Level += step; }")]
+    public async Task LeavesUnrepeatableTargetsToTheirAuthor(string member)
+    {
+        Diagnostic diagnostic = Assert.Single(await Analyze(member));
+
+        Assert.True(diagnostic.Properties.ContainsKey(key: "Manual"));
+        Assert.Contains(expectedSubstring: "plain assignment", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Verifies every numeric cast and implicit numeric conversion of a value computed at run time is
-    /// reported, including promotions in arithmetic.
+    /// reported, including promotions in arithmetic, and that a compound assignment on a type narrower than
+    /// int is reported once, for the narrowing of its result rather than the widening of its operand.
     /// </summary>
     /// <param name="member">A member converting numbers.</param>
     /// <param name="expectedCount">The number of conversions reported.</param>
@@ -51,6 +68,12 @@ public sealed class NumericConversionAnalyzerTests
     [InlineData("double Ratio(int count, int total) => (double)count / total;", "2")]
     [InlineData("int Sum(byte first, byte second) => first + second;", "2")]
     [InlineData("long Twice(long value) => (int)value;", "2")]
+    [InlineData("void Pack(byte flags, byte bit) { flags |= bit; }", "1")]
+    [InlineData("void Count(sbyte total) { total += 1; }", "1")]
+    [InlineData("void Shift(ushort total, byte count) { total <<= count; }", "1")]
+    [InlineData("void Scale(short total, short step) { checked { total *= step; } }", "1")]
+    [InlineData("void Add(int total, byte step) { total += step; }", "1")]
+    [InlineData("void Add(long total, int step) { total += step; }", "1")]
     public async Task ReportsNumericConversions(string member, string expectedCount)
     {
         Diagnostic[] diagnostics = await Analyze(member);

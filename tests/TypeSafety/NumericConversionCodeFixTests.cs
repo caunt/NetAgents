@@ -33,6 +33,34 @@ public sealed class NumericConversionCodeFixTests
     }
 
     /// <summary>
+    /// Verifies a compound assignment narrowing its result becomes a plain assignment that widens both operands
+    /// and narrows the result with CreateTruncating, or CreateChecked inside a checked context, and that the
+    /// value's own conversions are fixed in the same pass, as in the bit packer reported in issue 51.
+    /// </summary>
+    /// <param name="member">The member as written.</param>
+    /// <param name="expected">The member after the fix.</param>
+    [Theory]
+    [InlineData("void Pack(byte flags, byte bit) { flags |= bit; }",
+        "void Pack(byte flags, byte bit) { flags = byte.CreateTruncating(int.CreateChecked(flags) | int.CreateChecked(bit)); }")]
+    [InlineData("void Count(sbyte total) { total += 1; }",
+        "void Count(sbyte total) { total = sbyte.CreateTruncating(int.CreateChecked(total) + 1); }")]
+    [InlineData("void Shift(ushort total, byte count) { total <<= count; }",
+        "void Shift(ushort total, byte count) { total = ushort.CreateTruncating(int.CreateChecked(total) << int.CreateChecked(count)); }")]
+    [InlineData("void Scale(short total, short step) { checked { total *= step; } }",
+        "void Scale(short total, short step) { checked { total = short.CreateChecked(int.CreateChecked(total) * int.CreateChecked(step)); } }")]
+    [InlineData("byte _level; void Lower(byte step) { this._level -= step; }",
+        "byte _level; void Lower(byte step) { this._level = byte.CreateTruncating(int.CreateChecked(this._level) - int.CreateChecked(step)); }")]
+    [InlineData("byte _bits; byte _offset; void Add() { _bits |= byte.CreateTruncating(1 << _offset); }",
+        "byte _bits; byte _offset; void Add() { _bits = byte.CreateTruncating(int.CreateChecked(_bits) | int.CreateChecked(byte.CreateTruncating(1 << int.CreateChecked(_offset)))); }")]
+    public async Task RewritesNarrowingCompoundAssignments(string member, string expected)
+    {
+        string source = $"public sealed class ExampleType {{ {member} }}";
+        string target = $"public sealed class ExampleType {{ {expected} }}";
+
+        Assert.Equal(target, await CodeFixTestHarness.FixNumericConversions(source, fixAll: true));
+    }
+
+    /// <summary>
     /// Verifies implicit conversions are wrapped in CreateChecked for the type they convert to, including
     /// both operands of a promotion and a cast whose result is converted again.
     /// </summary>
