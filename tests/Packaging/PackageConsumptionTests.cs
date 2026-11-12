@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security;
 
 using Microsoft.CodeAnalysis;
@@ -272,7 +273,7 @@ public sealed class PackageConsumptionTests
 
             // An unresolved symbol stays a compiler error: no generated declaration, no formatting failure.
             string unresolvedSource = ValidSource.Replace(oldValue: "return recipientName;",
-                newValue: "System.Console.WriteLine(payload);\n\n        return recipientName;",
+                newValue: "Console.WriteLine(payload);\n\n        return recipientName;",
                 StringComparison.Ordinal);
 
             // Nothing else here needs repairing, and the namespace is left to its author (#36),
@@ -787,7 +788,7 @@ public sealed class PackageConsumptionTests
 
         for (int index = 0; index < 16; index++)
         {
-            string fileName = "Component" + index.ToString(format: "D2", System.Globalization.CultureInfo.InvariantCulture) + ".cs";
+            string fileName = "Component" + index.ToString(format: "D2", CultureInfo.InvariantCulture) + ".cs";
             await File.WriteAllTextAsync(Path.Combine(directory, fileName), contents: "// Authored source.\n").ConfigureAwait(continueOnCapturedContext: false);
         }
 

@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -29,21 +31,40 @@ public sealed class QualifiedTypeImportAnalyzer() : PolicyAnalyzer(Rule)
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(AnalyzeQualifiedName, SyntaxKind.QualifiedName);
+        context.RegisterSyntaxNodeAction(static analysis => Report(analysis, (QualifiedNameSyntax)analysis.Node), SyntaxKind.QualifiedName);
+
+        context.RegisterCompilationStartAction(static start =>
+        {
+            ImmutableHashSet<string> namespaces = QualifiedTypeImport.CollectNamespaceNames(start.Compilation);
+
+            start.RegisterSyntaxNodeAction(analysis => AnalyzeMemberAccess(analysis, namespaces), SyntaxKind.SimpleMemberAccessExpression);
+        });
     }
 
-    private static void AnalyzeQualifiedName(SyntaxNodeAnalysisContext context)
+    // A type reached through its namespace in an expression, such as System.Math in System.Math.Min(…),
+    // is a member access rather than a qualified name. Only an access whose leftmost name could be a
+    // namespace is worth asking the compiler about.
+    private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, ImmutableHashSet<string> namespaces)
     {
-        QualifiedNameSyntax name = (QualifiedNameSyntax)context.Node;
+        MemberAccessExpressionSyntax access = (MemberAccessExpressionSyntax)context.Node;
+        string? leftmost = QualifiedTypeImport.GetLeftmostName(access)?.Identifier.ValueText;
 
-        QualifiedTypeImport.ImportResolution? resolution = QualifiedTypeImport.Resolve(name, context.SemanticModel, context.CancellationToken);
+        if (leftmost is null || !namespaces.Contains(leftmost))
+            return;
+
+        Report(context, access);
+    }
+
+    private static void Report(SyntaxNodeAnalysisContext context, ExpressionSyntax reference)
+    {
+        QualifiedTypeImport.ImportResolution? resolution = QualifiedTypeImport.Resolve(reference, context.SemanticModel, context.CancellationToken);
 
         if (resolution is null)
             return;
 
         // A colliding name cannot be imported plainly, and choosing the alias is the author's call.
-        string hint = resolution.Collides ? ", under a using alias because this name already refers to another type" : string.Empty;
+        string hint = resolution.Collides ? ", under a using alias because this name already refers to something else" : string.Empty;
 
-        context.ReportDiagnostic(Diagnostic.Create(Rule, name.GetLocation(), hint));
+        context.ReportDiagnostic(Diagnostic.Create(Rule, reference.GetLocation(), hint));
     }
 }

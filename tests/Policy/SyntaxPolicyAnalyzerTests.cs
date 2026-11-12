@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.CodeAnalysis;
 
 using NetAgents.Analyzers.Concurrency;
@@ -46,7 +48,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     [InlineData("1000")]
     public async Task EnforcesSourceFileLengthBoundary(string authoredLineCountText)
     {
-        int authoredLineCount = int.Parse(authoredLineCountText, System.Globalization.CultureInfo.InvariantCulture);
+        int authoredLineCount = int.Parse(authoredLineCountText, CultureInfo.InvariantCulture);
         string source = "public class ExampleType { }" + new string(c: '\n', authoredLineCount);
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileLengthAnalyzer(), source);
 

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -109,6 +111,6 @@ public sealed class ConditionLayoutAnalyzer() : PolicyAnalyzer(Rule)
             != source.Lines.GetLineFromPosition(span.End).LineNumber;
 
         if (isMultiline || span.Length > LayoutLimits.MaximumInlineLength)
-            context.ReportDiagnostic(Diagnostic.Create(Rule, condition.GetLocation(), LayoutLimits.MaximumInlineLength.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            context.ReportDiagnostic(Diagnostic.Create(Rule, condition.GetLocation(), LayoutLimits.MaximumInlineLength.ToString(CultureInfo.InvariantCulture)));
     }
 }

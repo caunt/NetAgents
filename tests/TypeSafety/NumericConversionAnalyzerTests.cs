@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.CodeAnalysis;
 
 using NetAgents.Analyzers.Tests.Infrastructure;
@@ -53,7 +55,7 @@ public sealed class NumericConversionAnalyzerTests
     {
         Diagnostic[] diagnostics = await Analyze(member);
 
-        Assert.Equal(int.Parse(expectedCount, System.Globalization.CultureInfo.InvariantCulture), diagnostics.Length);
+        Assert.Equal(int.Parse(expectedCount, CultureInfo.InvariantCulture), diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(NumericConversionAnalyzer.RuleIdentifier, diagnostic.Id));
     }
 

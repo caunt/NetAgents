@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -182,7 +183,7 @@ internal static class ControlFlowBraces
             return false;
 
         // A case block must not hide a variable or local function used by another section.
-        ImmutableHashSet<string> declarations = ImmutableHashSet.Create<string>(System.StringComparer.Ordinal);
+        ImmutableHashSet<string> declarations = ImmutableHashSet.Create<string>(StringComparer.Ordinal);
 
         foreach (StatementSyntax statement in section.Statements)
         {

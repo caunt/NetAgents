@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
@@ -153,7 +154,7 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
             if (change.Span.Start > position || (change.Span.Start == position && !includeInsertions))
                 break;
 
-            translated += (change.NewText?.Length ?? 0) - (System.Math.Min(position, change.Span.End) - change.Span.Start);
+            translated += (change.NewText?.Length ?? 0) - (Math.Min(position, change.Span.End) - change.Span.Start);
         }
 
         return translated;

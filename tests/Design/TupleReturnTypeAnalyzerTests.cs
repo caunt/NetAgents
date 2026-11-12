@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.CodeAnalysis;
 
 using NetAgents.Analyzers.Design;
@@ -109,8 +111,6 @@ public sealed class TupleReturnTypeAnalyzerTests
         Diagnostic diagnostic = Assert.Single(diagnostics);
 
         Assert.Equal(TupleReturnTypeAnalyzer.RuleIdentifier, diagnostic.Id);
-        Assert.Contains(expectedSubstring: "dedicated named",
-            diagnostic.GetMessage(System.Globalization.CultureInfo.InvariantCulture),
-            StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "dedicated named", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
     }
 }

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.CodeAnalysis;
 
 using NetAgents.Analyzers.Formatting;
@@ -46,7 +48,7 @@ public sealed class ControlFlowBracesAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(),
             $"public static class ExampleType {{ public static void Execute(int count) {{ {statements} }} }}");
 
-        Assert.Equal(int.Parse(expectedCount, System.Globalization.CultureInfo.InvariantCulture), diagnostics.Length);
+        Assert.Equal(int.Parse(expectedCount, CultureInfo.InvariantCulture), diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(ControlFlowBracesAnalyzer.RuleIdentifier, diagnostic.Id));
     }
 
@@ -111,7 +113,7 @@ public sealed class ControlFlowBracesAnalyzerTests
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
 
-        Assert.Equal(int.Parse(expectedCount, System.Globalization.CultureInfo.InvariantCulture), diagnostics.Length);
+        Assert.Equal(int.Parse(expectedCount, CultureInfo.InvariantCulture), diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(ControlFlowBracesAnalyzer.RuleIdentifier, diagnostic.Id));
     }
 

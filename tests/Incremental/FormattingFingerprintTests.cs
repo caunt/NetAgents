@@ -26,7 +26,7 @@ public sealed class FormattingFingerprintTests
         using Fixture fixture = new();
 
         FormattingFingerprint before = await fixture.Read();
-        string path = Path.Combine(fixture.Directory.FullName, relativePath);
+        string path = Path.Combine(fixture.Root.FullName, relativePath);
         DateTime timestamp = File.GetLastWriteTimeUtc(path);
         long length = new FileInfo(path).Length;
         await File.WriteAllTextAsync(path, contents: "after!");
@@ -100,13 +100,13 @@ public sealed class FormattingFingerprintTests
                 }
             case "dependency-added":
                 {
-                    await File.WriteAllTextAsync(Path.Combine(fixture.Directory.FullName, path2: "analyzers/New.dll"), contents: "before");
+                    await File.WriteAllTextAsync(Path.Combine(fixture.Root.FullName, path2: "analyzers/New.dll"), contents: "before");
 
                     break;
                 }
             case "dependency-removed":
                 {
-                    File.Delete(Path.Combine(fixture.Directory.FullName, path2: "analyzers/Dependency.dll"));
+                    File.Delete(Path.Combine(fixture.Root.FullName, path2: "analyzers/Dependency.dll"));
 
                     break;
                 }
@@ -222,7 +222,7 @@ public sealed class FormattingFingerprintTests
     {
         public Fixture()
         {
-            Inputs.ProjectPath = Path.Combine(Directory.FullName, path2: "Consumer.csproj");
+            Inputs.ProjectPath = Path.Combine(Root.FullName, path2: "Consumer.csproj");
             Inputs.AssemblyName = "Consumer";
             Inputs.SourceFiles = [Item(relativePath: "Source.cs"), Item(relativePath: "Generated.g.cs")];
             Inputs.References = [Item(relativePath: "references/Library.dll")];
@@ -237,19 +237,19 @@ public sealed class FormattingFingerprintTests
             Assert.True(File.Exists(dependency.ItemSpec));
         }
 
-        public DirectoryInfo Directory { get; } = System.IO.Directory.CreateTempSubdirectory(prefix: "netagents-fingerprint-");
+        public DirectoryInfo Root { get; } = Directory.CreateTempSubdirectory(prefix: "netagents-fingerprint-");
 
         public FormatProject Inputs { get; } = new();
 
         public void Dispose()
         {
             Inputs.Dispose();
-            Directory.Delete(recursive: true);
+            Root.Delete(recursive: true);
         }
 
         public TaskItem Item(string relativePath)
         {
-            string path = Path.Combine(Directory.FullName, relativePath);
+            string path = Path.Combine(Root.FullName, relativePath);
             FileInfo file = new(path);
             file.Directory?.Create();
             File.WriteAllText(path, contents: "before");

@@ -46,7 +46,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0024 | Reject tuple result contracts, including C# tuples, `System.ValueTuple`, `System.Tuple`, and tuples nested inside asynchronous or other wrapper types. Return a dedicated named record, class, or struct instead. |
 | NETAGENTS0025 | Require one `<summary>` element per documentation comment, so a declaration is described once. Describe parameters, results, and detail with `<param>`, `<returns>`, and `<remarks>` instead. |
 | NETAGENTS0026 | Omit the optional parentheses around a lambda's single inferred parameter. Includes an automatic fix and Fix All support. |
-| NETAGENTS0027 | Import a type's namespace and name the type directly instead of writing it fully or partly qualified. Includes an automatic fix and Fix All support, except where the name is already taken. |
+| NETAGENTS0027 | Import a type's namespace and name the type directly instead of writing it fully or partly qualified, whether as a type name or at the start of an expression such as `System.Math.Min(first, second)` or `System.StringComparison.Ordinal`. Includes an automatic fix and Fix All support, except where the name is already taken. |
 | NETAGENTS0028 | Require a `<summary>`, `<param>`, or `<typeparam>` element to say something the name it describes does not already say. A description built only from the name's own words, from documentation boilerplate, or left empty is rejected. Comments carrying `<inheritdoc>` are exempt. No automatic fix: the wording is the author's. |
 | NETAGENTS0029 | Require documentation prose to sit inside an element. Text written between or before elements never reaches the generated documentation, so it is wrapped in `<summary>`. Comments carrying `<inheritdoc>` may still add a note. Includes an automatic fix and Fix All support. |
 | NETAGENTS0030 | Require overloads sharing a name to carry different `<summary>` text, so a reader choosing between them learns which to call. Members of different types may describe themselves identically. No automatic fix: the distinction is the author's to state. |
@@ -200,13 +200,20 @@ wait handles, `CountdownEvent`, and `Barrier`. `Interlocked`, `Volatile`,
 cancellation, concurrent collections, and channels remain available.
 
 A type is named directly rather than written with its namespace, whether the reference is fully or
-only partly qualified. The rule reports a reference only after proving the short form binds to that
-same type and that importing its namespace leaves every other name in the file bound as it was, so
-an accepted fix cannot change what the code means. Namespace declarations, `using` directives,
-`nameof`, alias-qualified names, and qualification by a containing type are left alone. Where the
-short name already refers to something else, only a `using` alias can shorten the reference, and
-naming that alias renames a type for the whole file; the rule reports those references and leaves
-the choice to the author rather than inventing a name. The import is placed with the other
+only partly qualified, and whether it is a type name or the start of an expression: a static call
+such as `System.Math.Min(first, second)`, a static member such as `System.StringComparer.Ordinal`,
+an enum value, or the containing type of a nested one, as in `System.Environment.SpecialFolder`.
+The rule reports a reference only after proving the short form binds to that same type and that
+importing its namespace leaves every other name in the file bound as it was, so an accepted fix
+cannot change what the code means. In an expression the short name must also be free of locals,
+parameters, and members, since those are found before types: in a class with a `Directory`
+property, `System.IO.Directory.GetFiles(…)` cannot become `Directory.GetFiles(…)`. A value of the
+type's own name and type is no obstacle, because C# still reads `Status.Active` as the type when a
+`Status` property of type `Status` is in scope. Namespace
+declarations, `using` directives, `nameof`, alias-qualified names, and qualification by a containing
+type are left alone. Where the short name already refers to something else, only a `using` alias
+can shorten the reference, and naming that alias renames a type for the whole file; the rule
+reports those references and leaves the choice to the author rather than inventing a name. The import is placed with the other
 directives: `System` first, then ordinal order, aliases last. Use **Import the type's namespace** or
 run:
 

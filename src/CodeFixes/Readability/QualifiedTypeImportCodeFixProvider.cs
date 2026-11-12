@@ -85,6 +85,18 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
         return unit.WithUsings(usings.Insert(index, directive));
     }
 
+    // The reported reference: a qualified type name, or the member access that reaches a type through
+    // its namespace.
+    private static ExpressionSyntax? Find(SyntaxNode root, TextSpan diagnosticSpan)
+    {
+        return root.FindNode(diagnosticSpan, getInnermostNodeForTie: true) switch
+        {
+            QualifiedNameSyntax name => name,
+            MemberAccessExpressionSyntax access => access,
+            _ => null,
+        };
+    }
+
     // System imports lead, the rest follow in ordinal order, and aliases stay last, which is the
     // order the shared editor configuration asks for and keeps the insertion point deterministic.
     private static int FindIndex(SyntaxList<UsingDirectiveSyntax> usings, string namespaceName)
@@ -140,14 +152,13 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
         if (root is not CompilationUnitSyntax unit || model is null)
             return document;
 
-        QualifiedNameSyntax? name = root.FindNode(diagnosticSpan) as QualifiedNameSyntax;
-        QualifiedTypeImport.ImportResolution? resolution = name is null ? null : QualifiedTypeImport.Resolve(name, model, cancellationToken);
+        ExpressionSyntax? reference = Find(root, diagnosticSpan);
+        QualifiedTypeImport.ImportResolution? resolution = reference is null ? null : QualifiedTypeImport.Resolve(reference, model, cancellationToken);
 
-        if (name is null || resolution is null || resolution.Collides)
+        if (reference is null || resolution is null || resolution.Collides || Shorten(reference) is not SimpleNameSyntax shortName)
             return document;
 
-        // The right-hand side already spells the type, including any type arguments.
-        CompilationUnitSyntax shortened = unit.ReplaceNode(name, name.Right.WithTriviaFrom(name));
+        CompilationUnitSyntax shortened = unit.ReplaceNode(reference, shortName);
 
         return !resolution.Import
             ? document.WithSyntaxRoot(shortened)
@@ -162,29 +173,29 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
         if (root is not CompilationUnitSyntax unit || model is null)
             return document;
 
-        Dictionary<QualifiedNameSyntax, SimpleNameSyntax> replacements = [];
+        HashSet<ExpressionSyntax> references = [];
         // AddImport skips a namespace already present, so repeats here are harmless and the
         // sorted insertion keeps the result identical whatever order they arrive in.
         List<string> imports = [];
 
         foreach (Diagnostic diagnostic in diagnostics)
         {
-            QualifiedNameSyntax? name = root.FindNode(diagnostic.Location.SourceSpan) as QualifiedNameSyntax;
-            QualifiedTypeImport.ImportResolution? resolution = name is null ? null : QualifiedTypeImport.Resolve(name, model, cancellationToken);
+            ExpressionSyntax? reference = Find(root, diagnostic.Location.SourceSpan);
+            QualifiedTypeImport.ImportResolution? resolution = reference is null ? null : QualifiedTypeImport.Resolve(reference, model, cancellationToken);
 
-            if (name is null || resolution is null || resolution.Collides)
+            if (reference is null || resolution is null || resolution.Collides || !references.Add(reference))
                 continue;
-
-            replacements[name] = name.Right.WithTriviaFrom(name);
 
             if (resolution.Import)
                 imports.Add(resolution.Container.ToDisplayString());
         }
 
-        if (replacements.Count == 0)
+        if (references.Count == 0)
             return document;
 
-        CompilationUnitSyntax rewritten = unit.ReplaceNodes(replacements.Keys, (original, rewrittenNode) => replacements[original]);
+        // A reference can hold another, such as a type argument, so each shortens what is left of it
+        // after the ones inside it were shortened.
+        CompilationUnitSyntax rewritten = unit.ReplaceNodes(references, static (original, current) => Shorten(current) ?? current);
         SyntaxTrivia lineEnding = GetLineEnding(unit);
 
         foreach (string imported in imports)
@@ -195,7 +206,7 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
     private static bool IsFixable(SyntaxNode root, SemanticModel model, TextSpan diagnosticSpan, CancellationToken cancellationToken)
     {
-        QualifiedTypeImport.ImportResolution? resolution = root.FindNode(diagnosticSpan) is not QualifiedNameSyntax name ? null : QualifiedTypeImport.Resolve(name, model, cancellationToken);
+        QualifiedTypeImport.ImportResolution? resolution = Find(root, diagnosticSpan) is not ExpressionSyntax reference ? null : QualifiedTypeImport.Resolve(reference, model, cancellationToken);
 
         return resolution is not null && !resolution.Collides;
     }
@@ -203,5 +214,11 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
     private static bool IsSystem(string namespaceName)
     {
         return string.Equals(namespaceName, b: "System", StringComparison.Ordinal) || namespaceName.StartsWith(value: "System.", StringComparison.Ordinal);
+    }
+
+    // The short name already spells the type, including any type arguments.
+    private static SimpleNameSyntax? Shorten(SyntaxNode reference)
+    {
+        return QualifiedTypeImport.GetShortName(reference)?.WithTriviaFrom(reference);
     }
 }

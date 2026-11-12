@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.CodeAnalysis;
 
 using NetAgents.Analyzers.Formatting;
@@ -41,7 +43,7 @@ public sealed class ConditionLayoutAnalyzerTests
     [InlineData("129")]
     public async Task EnforcesExactLengthBoundary(string conditionLength)
     {
-        int length = int.Parse(conditionLength, System.Globalization.CultureInfo.InvariantCulture);
+        int length = int.Parse(conditionLength, CultureInfo.InvariantCulture);
         string condition = "value > 0" + new string(c: ' ', length - "value > 0".Length);
         Diagnostic[] diagnostics = await Analyze($"if ({condition}) return;");
 
@@ -94,7 +96,7 @@ public sealed class ConditionLayoutAnalyzerTests
 
         Assert.Equal(ConditionLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
         Assert.Contains(expectedSubstring: "separate variable declaration",
-            diagnostics[0].GetMessage(System.Globalization.CultureInfo.InvariantCulture),
+            diagnostics[0].GetMessage(CultureInfo.InvariantCulture),
             StringComparison.Ordinal);
     }
 

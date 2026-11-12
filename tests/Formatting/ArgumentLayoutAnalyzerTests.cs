@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -71,7 +73,7 @@ public sealed class ArgumentLayoutAnalyzerTests
     [InlineData("129")]
     public async Task EnforcesCallBoundary(string lengthText)
     {
-        int length = int.Parse(lengthText, System.Globalization.CultureInfo.InvariantCulture);
+        int length = int.Parse(lengthText, CultureInfo.InvariantCulture);
         string arguments = "\"" + new string(c: 'x', length - 7) + "\", \"y\"";
         string source = $"public class ExampleType {{ public void Execute() {{ string.Concat({arguments}); }} }}";
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source);
@@ -89,7 +91,7 @@ public sealed class ArgumentLayoutAnalyzerTests
     [InlineData("129")]
     public async Task EnforcesExactBoundary(string lengthText)
     {
-        int length = int.Parse(lengthText, System.Globalization.CultureInfo.InvariantCulture);
+        int length = int.Parse(lengthText, CultureInfo.InvariantCulture);
         string parameter = "string " + new string(c: 'p', length - 18);
         string source = $"public class ExampleType {{ public void VeryLongMethodNameThatDoesNotCountTowardsTheLimit({parameter}, int count) {{ }} }}";
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source);
