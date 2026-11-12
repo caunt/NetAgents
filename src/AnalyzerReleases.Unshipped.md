@@ -34,3 +34,4 @@ NETAGENTS0028 | Documentation | Error | Documentation elements that add to the n
 NETAGENTS0029 | Documentation | Error | Documentation prose inside an element
 NETAGENTS0030 | Documentation | Error | Distinct summaries across overloads sharing a name
 NETAGENTS0031 | Naming | Error | Method names that do not repeat their first argument
+NETAGENTS0032 | TypeSafety | Error | Numeric conversions through CreateChecked, CreateSaturating, or CreateTruncating

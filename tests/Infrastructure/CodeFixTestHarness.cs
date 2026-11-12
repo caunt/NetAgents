@@ -13,10 +13,12 @@ using NetAgents.Analyzers.CodeFixes.Documentation;
 using NetAgents.Analyzers.CodeFixes.Formatting;
 using NetAgents.Analyzers.CodeFixes.Ordering;
 using NetAgents.Analyzers.CodeFixes.Readability;
+using NetAgents.Analyzers.CodeFixes.TypeSafety;
 using NetAgents.Analyzers.Documentation;
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Ordering;
 using NetAgents.Analyzers.Readability;
+using NetAgents.Analyzers.TypeSafety;
 
 namespace NetAgents.Analyzers.Tests.Infrastructure;
 
@@ -82,6 +84,11 @@ internal static class CodeFixTestHarness
     public static async Task<string> FixMethodSpacing(string source, bool fixAll)
     {
         return await Fix(source, new MethodSpacingAnalyzer(), new MethodSpacingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixNumericConversions(string source, bool fixAll)
+    {
+        return await Fix(source, new NumericConversionAnalyzer(), new NumericConversionCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<string> FixQualifiedTypeImports(string source, bool fixAll)
