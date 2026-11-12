@@ -41,3 +41,5 @@ NETAGENTS0035 | Documentation | Error | Documentation tags of one member say dif
 NETAGENTS0036 | Documentation | Error | Documentation text ends with a full stop
 NETAGENTS0037 | Documentation | Error | Property and constructor summaries open as the .NET documentation does
 NETAGENTS0038 | Documentation | Error | Language keywords written as langword references in documentation
+NETAGENTS0039 | Formatting | Error | Statements grouped by kind, one blank line between groups and none inside them
+NETAGENTS0040 | Readability | Error | Statement groups of at most four statements, split by comments that say what each part is for

@@ -49,6 +49,7 @@ internal static class DocumentationInformation
             if (start >= 0 && (!letter || StartsWord(stripped, index)))
             {
                 Take(words, stripped, start, index - start);
+
                 start = -1;
             }
 

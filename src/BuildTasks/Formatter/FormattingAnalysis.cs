@@ -26,6 +26,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
         foreach (Document document in project.Documents)
         {
             SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             hash.AppendData(document.Id.Id.ToByteArray());
             hash.AppendData(Encoding.UTF8.GetBytes(text.ChecksumAlgorithm.ToString()));
             hash.AppendData(text.GetChecksum().AsSpan());
@@ -43,6 +44,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
 
         CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException, concurrentAnalysis: true, logAnalyzerExecutionTime: false);
         CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers, options);
+
         ImmutableArray<Diagnostic> diagnostics = await analysis.GetAllDiagnosticsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         return diagnostics;
@@ -93,6 +95,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
         }
 
         ImmutableArray<Diagnostic> diagnostics = await GetDiagnostics(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> introduced = IntroducedErrors(diagnostics, before);
 
         if (!introduced.IsEmpty)

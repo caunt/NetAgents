@@ -26,12 +26,14 @@ public sealed class FormattingFingerprintTests
         using Fixture fixture = new();
 
         FormattingFingerprint before = await fixture.Read();
+
         string path = Path.Combine(fixture.Root.FullName, relativePath);
         DateTime timestamp = File.GetLastWriteTimeUtc(path);
         long length = new FileInfo(path).Length;
-        await File.WriteAllTextAsync(path, contents: "after!");
-        File.SetLastWriteTimeUtc(path, timestamp);
 
+        await File.WriteAllTextAsync(path, contents: "after!");
+
+        File.SetLastWriteTimeUtc(path, timestamp);
         Assert.Equal(length, new FileInfo(path).Length);
         Assert.NotEqual(before, await fixture.Read());
     }
@@ -214,9 +216,10 @@ public sealed class FormattingFingerprintTests
         using Fixture fixture = new();
 
         FormattingFingerprint before = await fixture.Read();
-        string path = fixture.Inputs.SourceFiles[0].ItemSpec;
-        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddDays(value: 1));
 
+        string path = fixture.Inputs.SourceFiles[0].ItemSpec;
+
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddDays(value: 1));
         Assert.Equal(before, await fixture.Read());
     }
 
@@ -224,18 +227,27 @@ public sealed class FormattingFingerprintTests
     {
         public Fixture()
         {
+            // The project, and the sources it compiles, one of them generated.
             Inputs.ProjectPath = Path.Combine(Root.FullName, path2: "Consumer.csproj");
             Inputs.AssemblyName = "Consumer";
             Inputs.SourceFiles = [Item(relativePath: "Source.cs"), Item(relativePath: "Generated.g.cs")];
+
+            // What the compilation references, and the analyzers it runs.
             Inputs.References = [Item(relativePath: "references/Library.dll")];
             Inputs.AnalyzerFiles = [Item(relativePath: "analyzers/Rules.dll")];
+
+            // Files and properties that configure the rules and the build.
             Inputs.ConfigurationFiles = [Item(relativePath: ".editorconfig")];
             Inputs.AdditionalFiles = [Item(relativePath: "Additional.txt")];
             Inputs.BuildFiles = [Item(relativePath: "project.assets.json"), Item(relativePath: "Directory.Build.props")];
             Inputs.BuildProperties = [new TaskItem(itemSpec: "Compiler")];
+
+            // The folders the formatter loads its fixes and Roslyn from.
             Inputs.CodeFixDirectory = Path.GetDirectoryName(Item(relativePath: "fixes/StyleFixes.dll").ItemSpec) ?? string.Empty;
             Inputs.SdkAssemblyDirectory = Path.GetDirectoryName(Item(relativePath: "sdk/Microsoft.CodeAnalysis.dll").ItemSpec) ?? string.Empty;
+
             TaskItem dependency = Item(relativePath: "analyzers/Dependency.dll");
+
             Assert.True(File.Exists(dependency.ItemSpec));
         }
 
@@ -253,6 +265,7 @@ public sealed class FormattingFingerprintTests
         {
             string path = Path.Combine(Root.FullName, relativePath);
             FileInfo file = new(path);
+
             file.Directory?.Create();
             File.WriteAllText(path, contents: "before");
 

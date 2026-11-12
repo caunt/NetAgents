@@ -22,6 +22,7 @@ internal static class ConsumerBuild
             ?? throw new InvalidOperationException(message: "The test build configuration is missing.");
 
         string packageDirectory = Path.Combine(paths: [workspacePath, "artifacts"]);
+
         await RunDevelopmentKit(repositoryDirectory.FullName,
             arguments: [
             "pack", "src/NetAgents.Analyzers.csproj", "--configuration", configuration,
@@ -63,6 +64,7 @@ internal static class ConsumerBuild
         }
 
         Assert.True(process.Start());
+
         Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
         Task<string> standardError = process.StandardError.ReadToEndAsync();
 
@@ -73,12 +75,14 @@ internal static class ConsumerBuild
         catch (TimeoutException)
         {
             process.Kill(entireProcessTree: true);
+
             await process.WaitForExitAsync().ConfigureAwait(continueOnCapturedContext: false);
 
             throw;
         }
 
         string output = await standardOutput.ConfigureAwait(continueOnCapturedContext: false) + await standardError.ConfigureAwait(continueOnCapturedContext: false);
+
         Assert.DoesNotContain(expectedSubstring: "AD0001", output, StringComparison.Ordinal);
 
         // A formatting fault must reach the log as a build error instead of aborting the task.

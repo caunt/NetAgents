@@ -25,7 +25,6 @@ public sealed class NumericConversionCodeFixTests
     public async Task ConvertsCasts(string expression, string expected)
     {
         const string member = "public sealed class ExampleType { public int Convert(long value, double ratio, decimal amount, int count) => EXPRESSION; }";
-
         string source = member.Replace(oldValue: "EXPRESSION", expression, StringComparison.Ordinal);
         string target = member.Replace(oldValue: "EXPRESSION", expected, StringComparison.Ordinal);
 

@@ -35,6 +35,7 @@ public sealed class MemberOrderingTests
     public async Task FixesNestedTypes()
     {
         const string source = "class ExampleType { class Nested { void Zebra() {} void Alpha() {} } void Zebra() {} void Alpha() {} } class OtherType { void Zebra() {} void Alpha() {} }";
+
         string fixedSource = await CodeFixTestHarness.FixMemberOrdering(source, fixAll: true);
 
         Assert.Empty(await AnalyzerTestHarness.Analyze(new MemberOrderingAnalyzer(), fixedSource));
@@ -141,6 +142,7 @@ public sealed class MemberOrderingTests
             """;
 
         string fixedSource = await CodeFixTestHarness.FixMemberOrdering(source, fixAll: true);
+
         TypeDeclarationSyntax declaration = (await CSharpSyntaxTree.ParseText(fixedSource).GetRootAsync()).DescendantNodes().OfType<TypeDeclarationSyntax>().First();
         MemberDeclarationSyntax[] members = [.. declaration.Members];
         string[] initializers = [.. members.Where(static member => member is FieldDeclarationSyntax or PropertyDeclarationSyntax).Select(static member => member.ToString())];

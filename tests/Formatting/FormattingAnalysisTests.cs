@@ -39,6 +39,8 @@ public sealed class FormattingAnalysisTests
 
         Assert.True(result.Blocking.IsEmpty);
         Assert.Equal(expected: 4, analyzer.Runs);
+
+        // The rejected candidate is validated once, and the accepted one lands.
         Assert.Equal(expected: 1, messages.Count(static message => message.Contains(value: "rejected PERF0004", StringComparison.Ordinal)));
         Assert.DoesNotContain(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
         Assert.Contains(expectedSubstring: "=> 4;", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
@@ -62,6 +64,7 @@ public sealed class FormattingAnalysisTests
         Diagnostic second = Diagnostic.Create(rule, Location.None);
 
         Assert.Empty(FormattingAnalysis.IntroducedErrors(after: [first], before: [second]).ToArray());
+
         Diagnostic repeated = Assert.Single(FormattingAnalysis.IntroducedErrors(after: [first, second], before: [first]).ToArray());
 
         Assert.Equal(rule.Id, repeated.Id);
@@ -81,7 +84,9 @@ public sealed class FormattingAnalysisTests
             new(before.Name, report: null));
 
         ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None);
+
         Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() { int unused = 0; return 1; } }\n");
+
         FormattingAnalysis.ValidationResult result = await analysis.Validate(candidate, baseline, actionKey: "unused variable", optional: false, CancellationToken.None);
 
         Assert.True(result.IntroducedErrors.IsEmpty);
@@ -97,7 +102,10 @@ public sealed class FormattingAnalysisTests
         Project before = CreateProject(workspace);
         DependencyAnalyzer analyzer = new();
         FormattingAnalysis analysis = new(analyzers: [analyzer], static (exception, failed, diagnostic) => Assert.Fail(exception.Message), new(before.Name, report: null));
+
         ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None);
+
+        // One candidate, validated against the baseline and then against the errors its first validation found.
         Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() => 2; }\n");
 
         FormattingAnalysis.ValidationResult rejected = await analysis.Validate(candidate, baseline, actionKey: "optional", optional: true, CancellationToken.None);
@@ -118,13 +126,21 @@ public sealed class FormattingAnalysisTests
         Project before = CreateProject(workspace);
         DependencyAnalyzer analyzer = new();
         List<string> messages = [];
+
+        // The untouched project is measured once, as the baseline every validation compares against.
         FormattingAnalysis analysis = new(analyzers: [analyzer], static (exception, failed, diagnostic) => Assert.Fail(exception.Message), new(before.Name, messages.Add));
+
         ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None);
+
+        // A candidate is rejected the first time it is validated.
         const string candidateSource = "internal static class Reader { internal static int Read() => 2; }\n";
         Project candidate = Change(before, name: "Reader.cs", candidateSource);
 
         FormattingAnalysis.ValidationResult first = await analysis.Validate(candidate, baseline, actionKey: "optional", optional: true, CancellationToken.None);
+
+        // An identical copy built separately must reuse that rejection instead of analyzing again.
         Project identical = Change(before, name: "Reader.cs", candidateSource);
+
         FormattingAnalysis.ValidationResult repeated = await analysis.Validate(identical, baseline, actionKey: "optional", optional: true, CancellationToken.None);
 
         Assert.Equal(expected: "PERF0003", Assert.Single(first.IntroducedErrors.ToArray()).Id);
@@ -133,8 +149,11 @@ public sealed class FormattingAnalysisTests
         Assert.Contains(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
 
         Project changed = Change(before, name: "Dependency.cs", source: "internal static class Dependency { internal const int Value = 1; }\n");
+
         ImmutableArray<Diagnostic> changedBaseline = await analysis.GetDiagnostics(changed, CancellationToken.None);
+
         Project changedCandidate = Change(changed, name: "Reader.cs", candidateSource);
+
         FormattingAnalysis.ValidationResult accepted = await analysis.Validate(changedCandidate, changedBaseline, actionKey: "optional", optional: true, CancellationToken.None);
 
         Assert.True(accepted.IntroducedErrors.IsEmpty);
@@ -218,6 +237,7 @@ public sealed class FormattingAnalysisTests
                     async cancellationToken =>
                     {
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
                         string next = rejected ? "2" : text.ToString(context.Span) == "1" ? "3" : "4";
 
                         return context.Document.WithText(text.WithChanges(new TextChange(context.Span, next)));
@@ -287,11 +307,13 @@ public sealed class FormattingAnalysisTests
             context.RegisterCompilationAction(compilation =>
             {
                 Runs++;
+
                 SyntaxTree reader = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Reader.cs");
                 SyntaxTree dependency = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Dependency.cs");
                 string source = reader.GetText().ToString();
                 string dependencySource = dependency.GetText().ToString();
 
+                // Reader.cs is wrong only while it reads 2 and the dependency still holds 0.
                 bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal) && dependencySource.Contains(value: "= 0;", StringComparison.Ordinal);
 
                 if (invalid)
@@ -300,6 +322,7 @@ public sealed class FormattingAnalysisTests
                 if (offerFixes)
                 {
                     SyntaxToken token = reader.GetRoot().DescendantTokens().Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
+
                     compilation.ReportDiagnostic(Diagnostic.Create(RejectedSuggestion, token.GetLocation()));
 
                     if (token.ValueText != "4")

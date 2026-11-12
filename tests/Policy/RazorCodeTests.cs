@@ -166,7 +166,6 @@ public sealed class RazorCodeTests
     public async Task ChecksRazorViewsOnly()
     {
         const string member = "\n    private static void Swallow() { try { } catch { } }";
-
         SyntaxTree[] view = CreateComponent(member, razorPath: "/workspace/Index.cshtml");
         SyntaxTree[] window = CreateComponent(member, razorPath: "/workspace/MainWindow.xaml");
         Diagnostic reported = Assert.Single(await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), view));
@@ -257,8 +256,8 @@ public sealed class RazorCodeTests
     public async Task LeavesFormattingRulesToCSharpFiles()
     {
         const string member = "public static string Pad(string text) => text.PadLeft(4);";
-
         Diagnostic plain = Assert.Single(await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), $"public static class ExampleType {{ {member} }}"));
+
         Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, plain.Id);
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), CreateComponent("\n    " + member)));
     }

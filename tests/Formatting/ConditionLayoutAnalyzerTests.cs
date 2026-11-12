@@ -45,6 +45,7 @@ public sealed class ConditionLayoutAnalyzerTests
     {
         int length = int.Parse(conditionLength, CultureInfo.InvariantCulture);
         string condition = "value > 0" + new string(c: ' ', length - "value > 0".Length);
+
         Diagnostic[] diagnostics = await Analyze($"if ({condition}) return;");
 
         Assert.Equal(length > 128 ? 1 : 0, diagnostics.Length);
@@ -69,6 +70,7 @@ public sealed class ConditionLayoutAnalyzerTests
         ArgumentNullException.ThrowIfNull(template);
 
         string condition = string.Join(separator: " || ", Enumerable.Repeat(element: "value > 0", count: 12));
+
         Diagnostic[] diagnostics = await Analyze(template.Replace(oldValue: "CONDITION", condition, StringComparison.Ordinal));
 
         Assert.Equal(ConditionLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);

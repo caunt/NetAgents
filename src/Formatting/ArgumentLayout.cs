@@ -44,10 +44,12 @@ internal static class ArgumentLayout
         for (int index = 1; index < items.Length; index++)
         {
             SyntaxToken previous = items[index].GetFirstToken().GetPreviousToken();
+
             changes.Add(SeparateItems(source, previous.Span.End, items[index].SpanStart, newline, itemIndentation));
         }
 
         SyntaxToken closing = list.GetLastToken();
+
         changes.Add(Attach(source, closing.GetPreviousToken().Span.End, closing.SpanStart, newline, indentation));
 
         // Separating the statements that share a line lets the whitespace formatter lay out every block
@@ -302,6 +304,8 @@ internal static class ArgumentLayout
         bool inlineComment = false;
         bool lineBreak = false;
         bool spreadStatement = false;
+
+        // The compact width: the text of every token, and the gaps between them that normalizing could widen.
         int tokens = 0;
         int width = 0;
 

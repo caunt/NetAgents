@@ -46,6 +46,7 @@ public sealed class SourceFileLengthAnalyzerTests
     {
         int authoredLineCount = int.Parse(authoredLineCountText, CultureInfo.InvariantCulture);
         string source = Declaration + new string(c: '\n', authoredLineCount);
+
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SourceFileLengthAnalyzer(), source);
 
         Assert.Equal(authoredLineCount > 999 ? 1 : 0, diagnostics.Length);

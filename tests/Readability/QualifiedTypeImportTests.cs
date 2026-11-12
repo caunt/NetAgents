@@ -171,6 +171,7 @@ public sealed class QualifiedTypeImportTests
             """;
 
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new QualifiedTypeImportAnalyzer(), source);
+
         Diagnostic diagnostic = Assert.Single(diagnostics);
 
         Assert.Equal(QualifiedTypeImportAnalyzer.RuleIdentifier, diagnostic.Id);

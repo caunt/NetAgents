@@ -69,6 +69,7 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
         while (hasChanges)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
             SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             SemanticModel? model = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
@@ -81,8 +82,11 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
                 return document;
 
             SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             document = document.WithSyntaxRoot(ReplaceLists(root, selected));
+
             SourceText changed = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             hasChanges = fixAll && !source.ContentEquals(changed);
             requestedSpans = null;
         }

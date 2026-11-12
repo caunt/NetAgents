@@ -108,6 +108,7 @@ public sealed class TupleReturnTypeAnalyzerTests
     public async Task RejectsTupleResultContracts(string source)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), source);
+
         Diagnostic diagnostic = Assert.Single(diagnostics);
 
         Assert.Equal(TupleReturnTypeAnalyzer.RuleIdentifier, diagnostic.Id);

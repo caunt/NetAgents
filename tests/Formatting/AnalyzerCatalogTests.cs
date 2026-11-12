@@ -94,6 +94,7 @@ public sealed class AnalyzerCatalogTests
         try
         {
             string path = Path.Combine(workspace.FullName, path2: "Broken.Analyzers.dll");
+
             File.WriteAllText(path, contents: "This file is not a managed assembly.\n");
 
             using AnalyzerLoader loader = new();

@@ -28,10 +28,14 @@ public sealed class CodeFixPerformanceTests
         bool includeSuggestion = suggestions == "optional";
         Project project = CreateProject(workspace);
         CountingAnalyzer analyzer = new(includeSuggestion);
+
+        // Each fix records its name when it is applied, so the order of accepted actions can be checked.
         List<string> actions = [];
-        List<string> messages = [];
         StepFix required = new(actions);
         SuggestionFix optional = new(actions);
+
+        // Progress lines show which passes ran and which actions were validated or rejected.
+        List<string> messages = [];
         FormattingProgress progress = new(project.Name, messages.Add);
 
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
@@ -41,13 +45,20 @@ public sealed class CodeFixPerformanceTests
             CancellationToken.None,
             progress);
 
+        // The run settles after four passes and analyzes each accepted state once.
         Assert.True(result.Blocking.IsEmpty);
         Assert.Equal(expected: 4, analyzer.Runs);
         Assert.Equal(expected: 8, analyzer.TreeVisits);
-        Assert.Equal(includeSuggestion ? ["required", "required", "required", "optional"] : ["required", "required", "required"], actions);
         Assert.Equal(expected: 4, analyzer.States.Distinct(StringComparer.Ordinal).Count());
+
+        // The required fix lands three times, and the suggestion is tried last, only when it is offered.
+        Assert.Equal(includeSuggestion ? ["required", "required", "required", "optional"] : ["required", "required", "required"], actions);
+
+        // The fixes reached the source: the value is 3 and the doubled space is gone.
         Assert.Contains(expectedSubstring: "=> 3;", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain(expectedSubstring: "static  int", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
+
+        // Progress names each pass and the action being validated, and ends with the summary line.
         Assert.Contains(messages, static message => message.Contains(value: "pass 1, elapsed", StringComparison.Ordinal));
         Assert.Contains(messages, static message => message.Contains(value: "pass 4, elapsed", StringComparison.Ordinal));
         Assert.Contains(messages, static message => message.Contains(value: "validating PERF0002 action", StringComparison.Ordinal));
@@ -79,6 +90,8 @@ public sealed class CodeFixPerformanceTests
         Assert.True(result.Blocking.IsEmpty);
         Assert.Equal(expected: 1, messages.Count(static message => message.Contains(value: "rejected PERF0007", StringComparison.Ordinal)));
         Assert.Equal(expected: 5, analyzer.Runs);
+
+        // The accepted fixes still land, and the rejected action is never looked up again.
         Assert.Contains(expectedSubstring: "=> 3;", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
     }
@@ -126,12 +139,17 @@ public sealed class CodeFixPerformanceTests
             CancellationToken.None,
             new(project.Name, messages.Add)));
 
+        // The error names the problem, the file, and the compiler's diagnostic.
         Assert.Contains(expectedSubstring: "source contains syntax errors", exception.Message, StringComparison.Ordinal);
         Assert.Contains(fileName + "(", exception.Message, StringComparison.Ordinal);
         Assert.Contains(expectedSubstring: "CS1513", exception.Message, StringComparison.Ordinal);
+
+        // Nothing ran before the check stopped the run.
         Assert.Equal(expected: 0, analyzer.Runs);
         Assert.Equal(expected: 0, analyzer.TreeVisits);
         Assert.Empty(actions);
+
+        // Progress stopped at the syntax check, and the source is left as written.
         Assert.Contains(expectedSubstring: "checking source syntax", Assert.Single(messages), StringComparison.Ordinal);
         Assert.Equal(source, (await project.Documents.Single().GetTextAsync()).ToString());
     }
@@ -191,6 +209,7 @@ public sealed class CodeFixPerformanceTests
                     async cancellationToken =>
                     {
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
                         string next = text.ToString(context.Span) switch { "0" => "1", "1" => "2", _ => "3" };
 
                         return context.Document.WithText(text.WithChanges(new TextChange(context.Span, next)));
@@ -240,8 +259,11 @@ public sealed class CodeFixPerformanceTests
             context.RegisterCompilationAction(compilation =>
             {
                 Runs++;
+
                 SyntaxTree[] trees = [.. compilation.Compilation.SyntaxTrees];
+
                 TreeVisits += trees.Length;
+
                 States.Add(string.Join(separator: "\n", trees.Select(static tree => tree.GetText().ToString())));
 
                 SyntaxTree step = trees.Single(static tree => tree.FilePath == "Step.cs");
@@ -253,6 +275,7 @@ public sealed class CodeFixPerformanceTests
                 if (includeSuggestion)
                 {
                     SyntaxTree suggestion = trees.Single(static tree => tree.FilePath == "Suggestion.cs");
+
                     compilation.ReportDiagnostic(Diagnostic.Create(SuggestionRule, suggestion.GetRoot().GetFirstToken().GetLocation()));
                 }
             });
@@ -329,10 +352,10 @@ public sealed class CodeFixPerformanceTests
             context.RegisterCompilationAction(compilation =>
             {
                 Runs++;
+
                 SyntaxTree[] trees = [.. compilation.Compilation.SyntaxTrees];
                 SyntaxTree drift = trees.Single(static tree => tree.FilePath == "Drift.cs");
                 SyntaxTree step = trees.Single(static tree => tree.FilePath == "Step.cs");
-
                 SyntaxToken drifted = FindNumber(drift);
 
                 // The broken state still compiles, so rejecting it costs a full analyzer run.
@@ -364,6 +387,7 @@ public sealed class CodeFixPerformanceTests
                     async cancellationToken =>
                     {
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
                         Document changed = context.Document.WithText(text.WithChanges(new TextChange(context.Span, newText: "3")));
 
                         return changed.Project.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.ConsoleApplication)).Solution;
@@ -384,7 +408,9 @@ public sealed class CodeFixPerformanceTests
                     async cancellationToken =>
                     {
                         actions.Add(item: "required");
+
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
                         string next = text.ToString(context.Span) switch { "0" => "1", "1" => "2", _ => "3" };
                         string changed = text.WithChanges(new TextChange(context.Span, next)).ToString();
 
@@ -411,6 +437,7 @@ public sealed class CodeFixPerformanceTests
                     async cancellationToken =>
                     {
                         actions.Add(item: "optional");
+
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
                         return context.Document.WithText(SourceText.From(text.ToString().Replace(oldValue: "=> 1;", newValue: "=> \"text\";", StringComparison.Ordinal)));

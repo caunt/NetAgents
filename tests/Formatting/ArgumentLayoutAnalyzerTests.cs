@@ -58,6 +58,7 @@ public sealed class ArgumentLayoutAnalyzerTests
         for (int width = 100; width <= 150; width++)
         {
             string source = $"public class ExampleType {{ public void Execute(string {new string(c: 'a', width)}, {trailer}int count) {{ }} }}";
+
             Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source);
 
             Assert.Equal(ExceedsOneLine(source), diagnostics.Length > 0);
@@ -77,6 +78,7 @@ public sealed class ArgumentLayoutAnalyzerTests
         int length = int.Parse(lengthText, CultureInfo.InvariantCulture);
         string arguments = "\"" + new string(c: 'x', length - 7) + "\", \"y\"";
         string source = $"public class ExampleType {{ public void Execute() {{ string.Concat({arguments}); }} }}";
+
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source);
 
         Assert.Equal(length > 128 ? 1 : 0, diagnostics.Length);
@@ -95,11 +97,13 @@ public sealed class ArgumentLayoutAnalyzerTests
         int length = int.Parse(lengthText, CultureInfo.InvariantCulture);
         string parameter = "string " + new string(c: 'p', length - 18);
         string source = $"public class ExampleType {{ public void VeryLongMethodNameThatDoesNotCountTowardsTheLimit({parameter}, int count) {{ }} }}";
+
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source);
 
         Assert.Equal(length > 128 ? 1 : 0, diagnostics.Length);
 
         string expanded = $"public class ExampleType {{ public void Execute({parameter},\n    int count) {{ }} }}";
+
         Diagnostic[] expandedDiagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), expanded);
 
         Assert.Equal(length > 128 ? 0 : 1, expandedDiagnostics.Length);

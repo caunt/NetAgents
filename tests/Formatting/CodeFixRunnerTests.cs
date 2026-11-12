@@ -36,6 +36,7 @@ public sealed class CodeFixRunnerTests
             .AddAnalyzerConfigDocument(name: ".globalconfig", SourceText.From(text: "is_global = true\ninsert_final_newline = true\n"), filePath: "/.globalconfig").Project;
 
         Project result = (await CodeFixRunner.Fix(project, analyzers: [], providers: [], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
+
         SourceText text = await result.Documents.Single().GetTextAsync();
 
         Assert.EndsWith(expectedEndString: "}\r\n", text.ToString(), StringComparison.Ordinal);
@@ -136,6 +137,7 @@ public sealed class CodeFixRunnerTests
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, analyzers: [analyzer], providers: [new NamespaceFix()], static fault => Assert.Fail(fault), CancellationToken.None);
 
         string formatted = (await result.Project.Documents.First().GetTextAsync()).ToString();
+
         Assert.Contains(expectedSubstring: "namespace Consumer.Nested;", formatted, StringComparison.Ordinal);
     }
 
@@ -156,14 +158,18 @@ public sealed class CodeFixRunnerTests
 
         Project project = CreateProject(workspace);
         string source = $"class Example {{ {body} }}";
-        project = project.Documents.Single().WithText(SourceText.From(source)).Project;
-        CompilerErrorFix provider = new(diagnosticIdentifier);
 
+        project = project.Documents.Single().WithText(SourceText.From(source)).Project;
+
+        CompilerErrorFix provider = new(diagnosticIdentifier);
         Project result = (await CodeFixRunner.Fix(project, analyzers: [], providers: [provider], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
+
         Compilation? compilation = await result.GetCompilationAsync();
 
         Assert.NotNull(compilation);
+
         Diagnostic error = Assert.Single(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+
         Assert.Equal(diagnosticIdentifier, error.Id);
         Assert.Equal(expected: 0, provider.Attempts);
         Assert.Contains(survivor, (await result.Documents.Single().GetTextAsync()).ToString(), StringComparison.Ordinal);
@@ -191,7 +197,9 @@ public sealed class CodeFixRunnerTests
         Compilation? compilation = await result.GetCompilationAsync();
 
         Assert.NotNull(compilation);
+
         Diagnostic error = Assert.Single(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+
         Assert.Equal(expected: "CS0122", error.Id);
 
         // The skipped accessibility repair would have replaced this modifier.
@@ -217,6 +225,7 @@ public sealed class CodeFixRunnerTests
             .AddDocument(name: "Example.cs", SourceText.From(source), filePath: "Example.cs").Project;
 
         CompilerErrorFix provider = new(identifier: "CS8629");
+
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, analyzers: [], providers: [provider], static fault => Assert.Fail(fault), CancellationToken.None);
 
         Assert.Equal(expected: "CS8629", result.Blocking.Single().Id);
@@ -277,7 +286,9 @@ public sealed class CodeFixRunnerTests
         // CS8019 is a hidden suggestion rather than a build failure, so removing the import stays formatting.
         Project project = CreateProject(workspace);
         const string source = "using System;\nclass Example { int Read() => 0; }\n";
+
         project = project.Documents.Single().WithText(SourceText.From(source)).Project;
+
         SuggestionFix provider = new(source: "class Example { int Read() => 0; }\n");
 
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, analyzers: [], providers: [provider], static fault => Assert.Fail(fault), CancellationToken.None);
@@ -295,14 +306,18 @@ public sealed class CodeFixRunnerTests
         using AdhocWorkspace workspace = new();
 
         Project project = CreateProject(workspace);
-        project = project.Documents.Single().WithText(SourceText.From(text: "class Example { void Run() { int marker = 0; Missing(); } }")).Project;
-        ReplacementFix provider = new(source: "class Example { void Run() { Missing(); } }");
 
+        project = project.Documents.Single().WithText(SourceText.From(text: "class Example { void Run() { int marker = 0; Missing(); } }")).Project;
+
+        ReplacementFix provider = new(source: "class Example { void Run() { Missing(); } }");
         Project result = (await CodeFixRunner.Fix(project, analyzers: [], providers: [provider], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
+
         Compilation? compilation = await result.GetCompilationAsync();
 
         Assert.NotNull(compilation);
+
         Diagnostic error = Assert.Single(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+
         Assert.Equal(expected: "CS0103", error.Id);
         Assert.Equal(expected: 1, provider.Attempts);
     }
@@ -326,6 +341,8 @@ public sealed class CodeFixRunnerTests
         Assert.Equal(source, (await result.Project.Documents.Single().GetTextAsync()).ToString());
         Assert.Equal(CascadeAnalyzer.PublicIdentifier, result.Introduced.Single().Id);
         Assert.Equal(CascadeAnalyzer.PrivateIdentifier, result.Blocking.Single().Id);
+
+        // The action that introduced the error is named, so the report can point at the fix to blame.
         Assert.NotNull(result.IntroducedBy);
         Assert.Contains(expectedSubstring: "Replace private with public", result.IntroducedBy, StringComparison.Ordinal);
     }
@@ -349,6 +366,7 @@ public sealed class CodeFixRunnerTests
             CancellationToken.None)).Project;
 
         Compilation? compilation = await result.GetCompilationAsync();
+
         Assert.NotNull(compilation);
         Assert.DoesNotContain(compilation.GetDiagnostics().ToArray(), static diagnostic => diagnostic.Id == "CS0122");
         Assert.Equal(expected: 1, provider.Attempts);
@@ -375,6 +393,7 @@ public sealed class CodeFixRunnerTests
             new(project.Name, messages.Add));
 
         string formatted = (await result.Project.Documents.First().GetTextAsync()).ToString();
+
         Assert.Contains(expectedSubstring: "namespace Consumer;", formatted, StringComparison.Ordinal);
         Assert.DoesNotContain(expectedSubstring: "namespace Consumer.Nested;", formatted, StringComparison.Ordinal);
         Assert.Contains(expectedSubstring: "private static int Value;", formatted, StringComparison.Ordinal);
@@ -396,7 +415,9 @@ public sealed class CodeFixRunnerTests
         Project project = CreateProject(workspace);
         Document document = project.Documents.Single();
         string source = $"class Example {{ void Run() {{ int marker = 0; {before} }} }}";
+
         project = document.WithText(SourceText.From(source)).Project;
+
         ReplacementFix provider = new($"class Example {{ void Run() {{ {after} }} }}");
 
         InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => CodeFixRunner.Fix(project, analyzers: [], providers: [provider], static fault => Assert.Fail(fault), CancellationToken.None));
@@ -404,6 +425,8 @@ public sealed class CodeFixRunnerTests
         Assert.Contains(expectedSubstring: "introduced compiler errors", exception.Message, StringComparison.Ordinal);
         Assert.Contains(expectedSubstring: "Replace method body", exception.Message, StringComparison.Ordinal);
         Assert.Contains(diagnosticIdentifier, exception.Message, StringComparison.Ordinal);
+
+        // The fix was tried once and its result discarded, leaving the source as written.
         Assert.Equal(expected: 1, provider.Attempts);
         Assert.Equal(source, (await project.Documents.Single().GetTextAsync()).ToString());
     }
@@ -443,7 +466,9 @@ public sealed class CodeFixRunnerTests
         // CS8019 is a hidden suggestion, so the action offered for it never explains a stopped run.
         Project project = CreateProject(workspace);
         const string source = "using System;\nclass Hidden { private static int Value; }\nclass Consumer { int Read() => Hidden.Value; }\n";
+
         project = project.Documents.Single().WithText(SourceText.From(source)).Project;
+
         StalledSuggestionFix provider = new();
 
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, analyzers: [], providers: [provider], static fault => Assert.Fail(fault), CancellationToken.None);
@@ -494,9 +519,10 @@ public sealed class CodeFixRunnerTests
         // CS8019 is a hidden compiler suggestion, so nothing about this document has to be repaired.
         Project project = CreateProject(workspace);
         const string source = "using System;\nclass Example { int Read() => 0; }";
-        project = project.Documents.Single().WithText(SourceText.From(source)).Project;
-        SuggestionFix provider = new(source: "using System;\nclass Example { int Read() => \"text\"; }");
 
+        project = project.Documents.Single().WithText(SourceText.From(source)).Project;
+
+        SuggestionFix provider = new(source: "using System;\nclass Example { int Read() => \"text\"; }");
         Project result = (await CodeFixRunner.Fix(project, analyzers: [], providers: [provider], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
 
         Assert.Equal(source, (await result.Documents.Single().GetTextAsync()).ToString());
@@ -574,10 +600,12 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
+
             context.RegisterCodeFix(CodeAction.Create(title: "Attempt accessibility repair",
                     async cancellationToken =>
                     {
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
                         string source = text.ToString();
 
                         string changed = mode switch
@@ -656,6 +684,7 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
+
             context.RegisterCodeFix(CodeAction.Create(title: "Declare the missing code",
                     cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(text: "class Example { void Run() { } }")))),
                 context.Diagnostics);
@@ -756,6 +785,7 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
+
             context.RegisterCodeFix(CodeAction.Create(title: "Replace method body", cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
                 context.Diagnostics);
 
@@ -773,6 +803,7 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
+
             context.RegisterCodeFix(CodeAction.Create(title: "Keep the unnecessary using",
                     async cancellationToken =>
                     {
@@ -796,6 +827,7 @@ public sealed class CodeFixRunnerTests
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             Attempts++;
+
             context.RegisterCodeFix(CodeAction.Create(title: "Replace suggestion body", cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
                 context.Diagnostics);
 
@@ -835,6 +867,7 @@ public sealed class CodeFixRunnerTests
                             throw Skew();
 
                         SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
                         string changed = text.ToString().Replace(oldValue: "private", newValue: "public", StringComparison.Ordinal);
 
                         return context.Document.WithText(SourceText.From(changed));

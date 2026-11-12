@@ -38,7 +38,6 @@ public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorC
             ImmutableHashSet<SyntaxTree> aliased = GetAliasedTrees(start.Compilation, start.CancellationToken);
 
             start.RegisterSyntaxNodeAction(node => AnalyzeTypeName(node, aliased), SyntaxKind.PredefinedType, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
-
             start.RegisterOperationAction(AnalyzeValue,
                 OperationKind.Invocation,
                 OperationKind.PropertyReference,
@@ -121,6 +120,7 @@ public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorC
                     continue;
 
                 global |= !directive.GlobalKeyword.IsKind(SyntaxKind.None);
+
                 aliased.Add(tree);
             }
 

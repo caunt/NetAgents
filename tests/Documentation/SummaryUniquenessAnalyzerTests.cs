@@ -83,6 +83,7 @@ public sealed class SummaryUniquenessAnalyzerTests
             """;
 
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SummaryUniquenessAnalyzer(), source);
+
         Diagnostic diagnostic = Assert.Single(diagnostics);
 
         Assert.Equal(expected: 1, diagnostic.Location.GetLineSpan().StartLinePosition.Line);

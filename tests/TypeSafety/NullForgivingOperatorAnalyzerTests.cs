@@ -70,7 +70,9 @@ public sealed class NullForgivingOperatorAnalyzerTests
     public async Task RejectsSuppressionInEveryContext(string member)
     {
         string source = "#nullable enable\nclass ExampleType { " + member + " }";
+
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new NullForgivingOperatorAnalyzer(), source);
+
         int expectedCount = member.Count(static character => character == '!');
 
         Assert.Equal(expectedCount, diagnostics.Length);
@@ -96,6 +98,7 @@ public sealed class NullForgivingOperatorAnalyzerTests
             new CSharpCompilationOptions(OutputKind.ConsoleApplication));
 
         Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+
         Diagnostic[] diagnostics = [.. await compilation.WithAnalyzers(analyzers: [new NullForgivingOperatorAnalyzer()]).GetAnalyzerDiagnosticsAsync()];
 
         Assert.Equal(expected: 2, diagnostics.Length);
@@ -110,6 +113,7 @@ public sealed class NullForgivingOperatorAnalyzerTests
     {
         const string source = "class ExampleType { string Read(string? value) => value!.Trim()!; }";
         const int expectedCount = 2;
+
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new NullForgivingOperatorAnalyzer(), source);
 
         Assert.Equal(expectedCount, diagnostics.Length);

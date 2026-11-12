@@ -96,6 +96,7 @@ public sealed class CompositionPartsTests
         try
         {
             string partsPath = Path.Combine(workspace.FullName, path2: "LanguageParts.dll");
+
             Compile(partsPath,
                 LanguagePartsSource,
                 references: [typeof(ExportAttribute).Assembly.Location, typeof(CodeFixProvider).Assembly.Location, typeof(Diagnostic).Assembly.Location]);
@@ -104,12 +105,14 @@ public sealed class CompositionPartsTests
 
             Assembly parts = loader.LoadFromAssemblyPath(partsPath);
             CompositionParts.CompositionSelection selection = CompositionParts.Select(assemblies: [parts]);
+
             Assert.Empty(selection.Skipped);
             Assert.DoesNotContain(selection.Types, static type => type.Name == "VisualBasicFix");
 
             using CompositionHost container = new ContainerConfiguration().WithParts(selection.Types).CreateContainer();
 
             string[] providers = [.. container.GetExports<CodeFixProvider>().Select(static provider => provider.GetType().Name).Order(StringComparer.Ordinal)];
+
             Assert.Equal(expectedSpan: ["CSharpFix", "SharedFix"], providers);
         }
         finally
@@ -142,8 +145,8 @@ public sealed class CompositionPartsTests
             using DependencyLoader loader = new(workspace.FullName);
 
             Assembly parts = loader.LoadFromAssemblyPath(partsPath);
-
             Exception failure = Assert.ThrowsAny<Exception>(() => Compose(parts.GetTypes()));
+
             Assert.Contains(expectedSubstring: "Absent", failure.ToString(), StringComparison.Ordinal);
 
             CompositionParts.CompositionSelection selection = CompositionParts.Select(assemblies: [parts]);
@@ -151,7 +154,9 @@ public sealed class CompositionPartsTests
             Assert.Equal(expected: "BrokenPart", Assert.Single(selection.Skipped));
             Assert.Contains(selection.Types, static type => type.Name == "HealthyPart");
             Assert.DoesNotContain(selection.Types, static type => type.Name == "BrokenPart");
+
             ICloneable composed = Assert.Single(Compose(selection.Types));
+
             Assert.Equal(expected: "HealthyPart", composed.GetType().Name);
         }
         finally
@@ -171,6 +176,7 @@ public sealed class CompositionPartsTests
 
         EmitResult result = compilation.Emit(assemblyPath);
         Diagnostic[] diagnostics = [.. result.Diagnostics];
+
         Assert.True(result.Success, string.Join(separator: "\n", diagnostics));
     }
 

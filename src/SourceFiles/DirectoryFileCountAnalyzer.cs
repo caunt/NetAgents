@@ -41,6 +41,7 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
         {
             StringComparer pathComparer = Path.DirectorySeparatorChar == '\\' ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
             ConcurrentDictionary<string, SyntaxTree> files = new(pathComparer);
+
             compilationContext.RegisterSyntaxTreeAction(treeContext => CollectFile(treeContext, files));
             compilationContext.RegisterCompilationEndAction(endContext => AnalyzeDirectories(endContext, files, pathComparer));
         });
@@ -51,6 +52,7 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
         foreach (IGrouping<string, KeyValuePair<string, SyntaxTree>> directory in files.GroupBy(static file => Path.GetDirectoryName(file.Key) is { Length: > 0 } name ? name : ".", pathComparer))
         {
             context.CancellationToken.ThrowIfCancellationRequested();
+
             int count = directory.Count();
 
             if (count <= MaximumFileCount)

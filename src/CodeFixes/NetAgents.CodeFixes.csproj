@@ -23,5 +23,9 @@
     <Compile Include="../Formatting/ControlFlowBraces.cs" Link="Formatting/ControlFlowBraces.cs" />
     <Compile Include="../Formatting/LambdaParameterLayout.cs" Link="Formatting/LambdaParameterLayout.cs" />
     <Compile Include="../TypeSafety/NumericConversion.cs" Link="TypeSafety/NumericConversion.cs" />
+    <Compile Include="../StatementGroups/StatementClassifier.cs" Link="StatementGroups/StatementClassifier.cs" />
+    <Compile Include="../StatementGroups/StatementGroup.cs" Link="StatementGroups/StatementGroup.cs" />
+    <Compile Include="../StatementGroups/StatementGrouping.cs" Link="StatementGroups/StatementGrouping.cs" />
+    <Compile Include="../StatementGroups/StatementKind.cs" Link="StatementGroups/StatementKind.cs" />
   </ItemGroup>
 </Project>

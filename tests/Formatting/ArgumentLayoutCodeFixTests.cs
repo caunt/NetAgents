@@ -47,7 +47,6 @@ public sealed class ArgumentLayoutCodeFixTests
     public async Task ExpandsLambdaStatementsSharingALine(string statement, string expected)
     {
         const string method = "public class ExampleType\n{\n    public void Execute()\n    {\n        STATEMENT\n    }\n}";
-
         string source = method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal);
 
         Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal),
@@ -127,7 +126,6 @@ public sealed class ArgumentLayoutCodeFixTests
     public async Task IndentsLaterItems(string statement, string expected)
     {
         const string method = "public class ExampleType\n{\n    public void Execute()\n    {\n        STATEMENT\n    }\n}";
-
         string source = method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal);
 
         Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal),

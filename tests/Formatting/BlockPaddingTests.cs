@@ -116,7 +116,6 @@ public sealed class BlockPaddingTests
     public async Task ReportsEmptyBlockOnce()
     {
         const string source = "class ExampleType\n{\n\n}";
-
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new BlockPaddingAnalyzer(), source));
 
         Assert.Equal(BlockPaddingAnalyzer.RuleIdentifier, diagnostic.Id);

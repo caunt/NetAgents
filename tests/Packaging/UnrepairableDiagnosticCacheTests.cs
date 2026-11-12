@@ -79,6 +79,7 @@ public sealed class UnrepairableDiagnosticCacheTests
                 withoutShell: true);
 
             string formatted = await File.ReadAllTextAsync(sourcePath);
+
             Assert.DoesNotContain(expectedSubstring: "CreateGreeting(\n", formatted, StringComparison.Ordinal);
 
             // The formatting is finished even though the project still reports. A second build must
@@ -101,7 +102,6 @@ public sealed class UnrepairableDiagnosticCacheTests
                 formatted.Replace(oldValue: "    /// <summary>Describes the same declaration a second time.</summary>\n",
                     newValue: "    /// <remarks>Describes the same declaration a second time.</remarks>\n",
                     StringComparison.Ordinal));
-
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedOutput: ["analyzing project"], withoutShell: true);
         }
         finally

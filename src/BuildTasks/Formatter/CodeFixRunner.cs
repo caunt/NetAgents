@@ -15,6 +15,9 @@ namespace NetAgents.BuildTasks;
 
 internal static class CodeFixRunner
 {
+    // Each round fixes one kind of layout error a suggestion left behind; a few cover every layout rule involved.
+    private const int LayoutRounds = 4;
+
     public static async Task<CodeFixResult> Fix(Project project,
         ImmutableArray<DiagnosticAnalyzer> analyzers,
         CodeFixProvider[] providers,
@@ -36,7 +39,9 @@ internal static class CodeFixRunner
         }
 
         progress ??= new(project.Name, report: null);
+
         progress.Report(activity: "checking source syntax");
+
         await FormattingSyntax.Verify(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         FormattingAnalysis analysis = new(analyzers, OnAnalyzerFailure, progress);
@@ -45,27 +50,34 @@ internal static class CodeFixRunner
         // again costs a full analysis per pass, and only an optional suggestion can land here: a
         // candidate offered for an error fails the build above instead of being dropped.
         HashSet<string> rejectedFixAllActions = [];
+
         bool internalsShared = await SharesInternals(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
         ImmutableHashSet<DocumentId> editable = await EditableDocuments.Find(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
+        // What the passes remember: every project state seen, to stop fixes that cycle, and the actions to
+        // blame when a run stalls or leaves the build worse than it found it.
         HashSet<string> states = [];
         string? attempt = null;
         string? regression = null;
 
         // The project as it arrived, so a run that ends worse than it started can hand it back.
         Project arrived = project;
+
         progress.Report(activity: "formatting whitespace");
+
         project = await FormatWhitespace(project, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         // Analyzing once, after whitespace formatting, keeps this baseline free: an error whitespace
         // formatting introduces on its own is the one kind this cannot see.
         ImmutableArray<Diagnostic> diagnostics = await analysis.GetDiagnostics(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
         ImmutableArray<Diagnostic> baseline = diagnostics;
 
         while (!cancellationToken.IsCancellationRequested)
         {
             cancellationToken.ThrowIfCancellationRequested();
             progress.NextPass();
+
             string fingerprint = await FormattingAnalysis.Fingerprint(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             if (!states.Add(fingerprint))
@@ -127,6 +139,7 @@ internal static class CodeFixRunner
         if (collision.Project is not null)
         {
             progress.Report(activity: "validating naming collision repair");
+
             Project renamed = await PrepareCandidate(project, collision.Project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             FormattingAnalysis.ValidationResult validation = await analysis.Validate(renamed, diagnostics, actionKey: "naming collisions", optional: false, cancellationToken)
@@ -185,6 +198,7 @@ internal static class CodeFixRunner
                         continue;
 
                     CodeAction preferred = selected;
+
                     progress.Report($"preparing {diagnostic.Id} action '{selected.Title}' ({provider.GetType().Name})");
 
                     if (canFixProject && fixAllProvider is not null)
@@ -200,6 +214,7 @@ internal static class CodeFixRunner
                     if (updated is null && !ReferenceEquals(preferred, selected))
                     {
                         preferred = selected;
+
                         updated = await GetSupportedChange(project, selected, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
                     }
 
@@ -238,12 +253,14 @@ internal static class CodeFixRunner
                     // A hidden or info diagnostic is a suggestion the compiler never fails for, so a broken
                     // action offered for one is dropped below instead of taking an otherwise clean build down.
                     bool optional = diagnostic.Severity < DiagnosticSeverity.Warning;
+
                     updated = await PrepareCandidate(project, updated, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
                     if (!await HasTextChanges(project, updated, changedDocuments, cancellationToken).ConfigureAwait(continueOnCapturedContext: false))
                         continue;
 
                     string actionKey = fixAllKey ?? $"{provider.GetType().FullName}|{selected.EquivalenceKey ?? selected.Title}";
+
                     progress.Report($"validating {diagnostic.Id} action '{preferred.Title}'");
 
                     FormattingAnalysis.ValidationResult validation = await analysis.Validate(updated, diagnostics, actionKey, optional, cancellationToken)
@@ -258,6 +275,16 @@ internal static class CodeFixRunner
                     // An error already fails the build, so only lower severities must avoid new analyzer errors.
                     if (diagnostic.Severity != DiagnosticSeverity.Error && !introducedErrors.IsEmpty)
                     {
+                        CodeActionApplication settled = await SettleLayout(updated, validation, diagnostics, providers, editable, analysis, actionKey, cancellationToken)
+                            .ConfigureAwait(continueOnCapturedContext: false);
+
+                        if (settled.Project is not null)
+                        {
+                            progress.Report($"accepted {diagnostic.Id} action '{preferred.Title}' with the layout it disturbed settled");
+
+                            return new(settled.Project, description, settled.Diagnostics);
+                        }
+
                         if (fixAllKey is not null && !rejectedFixAllActions.Add(fixAllKey))
                             throw new InvalidOperationException(message: "The rejected formatting action was already recorded.");
 
@@ -274,6 +301,55 @@ internal static class CodeFixRunner
         }
 
         return new(Project: null, attempt);
+    }
+
+    // The first fix the run offers for an introduced error that changes nothing but whitespace and comments.
+    private static async Task<Project?> ApplyLayoutFix(Project project,
+        ImmutableArray<Diagnostic> introduced,
+        ImmutableArray<Diagnostic> diagnostics,
+        CodeFixProvider[] providers,
+        ImmutableHashSet<DocumentId> editable,
+        CancellationToken cancellationToken)
+    {
+        ImmutableArray<Diagnostic> fixable = [.. diagnostics.Where(diagnostic => IsInEditableDocument(project, editable, diagnostic))];
+
+        foreach (Diagnostic error in introduced)
+        {
+            Document? document = error.Location.SourceTree is null ? null : project.GetDocument(error.Location.SourceTree);
+
+            if (document is null || !editable.Contains(document.Id))
+                continue;
+
+            foreach (CodeFixProvider provider in providers.Where(provider => CanFixDiagnostic(provider, error)))
+            {
+                foreach (CodeAction action in await GetCodeActions(provider, document, error, cancellationToken).ConfigureAwait(continueOnCapturedContext: false))
+                {
+                    CodeAction selected = action;
+
+                    while (!selected.NestedActions.IsEmpty)
+                        selected = selected.NestedActions[index: 0];
+
+                    // Fixing every copy of the error at once settles the layout in one round where the provider can.
+                    FixAllProvider? fixAllProvider = selected.EquivalenceKey is null ? null : GetProjectFixAll(provider);
+
+                    CodeAction? fixAll = fixAllProvider is null
+                        ? null
+                        : await GetFixAllAction(provider, fixAllProvider, document, selected, fixable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                    CodeAction[] candidates = fixAll is null ? [selected] : [fixAll, selected];
+
+                    foreach (CodeAction candidate in candidates)
+                    {
+                        Project? updated = await GetSupportedChange(project, candidate, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                        if (updated is not null && await KeepsSyntax(project, updated, cancellationToken).ConfigureAwait(continueOnCapturedContext: false))
+                            return updated;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     private static async Task<Project?> AvoidNamingCollision(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
@@ -336,6 +412,7 @@ internal static class CodeFixRunner
         )
         {
             Document document = updated.GetDocument(candidate.Document) ?? throw new InvalidOperationException(message: "The naming document is missing.");
+
             Project? renamed = await AvoidNamingCollision(document, candidate.SourceSpan, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             if (renamed is null)
@@ -414,9 +491,13 @@ internal static class CodeFixRunner
         foreach (DocumentId identifier in editable)
         {
             Document document = project.GetDocument(identifier) ?? throw new InvalidOperationException(message: "A formatting document is missing.");
+
             Document formatted = await Formatter.FormatAsync(document, cancellationToken: cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            // Roslyn's formatter ignores insert_final_newline, so the setting is read from the document's configuration.
             SourceText text = await formatted.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             SyntaxTree? tree = await formatted.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             AnalyzerConfigOptions options = project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GetOptions(tree ?? throw new InvalidOperationException(message: "A syntax tree is missing."));
 
             bool needsFinalNewline = text.Length > 0 && text.Lines.GetLineFromPosition(text.Length).Span.Length > 0
@@ -438,6 +519,7 @@ internal static class CodeFixRunner
         try
         {
             CodeFixContext context = new(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), cancellationToken);
+
             await provider.RegisterCodeFixesAsync(context).ConfigureAwait(continueOnCapturedContext: false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -524,6 +606,7 @@ internal static class CodeFixRunner
     private static async Task<Project?> GetSupportedChange(Project project, CodeAction action, ImmutableHashSet<DocumentId> editable, CancellationToken cancellationToken)
     {
         ImmutableArray<CodeActionOperation> operations = await GetOperations(action, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
         Project? updated = operations.OfType<ApplyChangesOperation>().FirstOrDefault()?.ChangedSolution.GetProject(project.Id);
 
         if (updated is null)
@@ -546,6 +629,7 @@ internal static class CodeFixRunner
                 continue;
 
             BaseNamespaceDeclarationSyntax? declaration = node.FirstAncestorOrSelf<BaseNamespaceDeclarationSyntax>();
+
             namespaces.Add(declaration?.Name.ToString() ?? string.Empty);
         }
 
@@ -558,6 +642,7 @@ internal static class CodeFixRunner
         {
             Document beforeDocument = before.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The original document is missing.");
             Document afterDocument = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
+
             SourceText beforeText = await beforeDocument.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             SourceText afterText = await afterDocument.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
@@ -584,6 +669,24 @@ internal static class CodeFixRunner
         SyntaxTree? tree = diagnostic.Location.SourceTree;
 
         return tree is null || (project.GetDocument(tree) is Document document && editable.Contains(document.Id));
+    }
+
+    // Equivalent trees differ only in trivia: whitespace, line breaks, and comments.
+    private static async Task<bool> KeepsSyntax(Project before, Project after, CancellationToken cancellationToken)
+    {
+        foreach (DocumentId identifier in after.GetChanges(before).GetChangedDocuments())
+        {
+            Document beforeDocument = before.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The original document is missing.");
+            Document afterDocument = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
+
+            SyntaxNode? beforeRoot = await beforeDocument.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            SyntaxNode? afterRoot = await afterDocument.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            if (beforeRoot is null || afterRoot is null || !beforeRoot.IsEquivalentTo(afterRoot, topLevel: false))
+                return false;
+        }
+
+        return true;
     }
 
     private static async Task<bool> MovesVisibleTypes(Project before, Project after, DocumentId[] changedDocuments, bool internalsShared, CancellationToken cancellationToken)
@@ -619,6 +722,7 @@ internal static class CodeFixRunner
     private static async Task<Project> PrepareCandidate(Project before, Project after, CancellationToken cancellationToken)
     {
         ImmutableHashSet<DocumentId> changed = [.. after.GetChanges(before).GetChangedDocuments()];
+
         Project formatted = await FormatWhitespace(after, changed, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         // Validate the exact text the next pass will use. Keeping this project and its diagnostics
@@ -631,11 +735,56 @@ internal static class CodeFixRunner
         foreach (DocumentId identifier in after.GetChanges(before).GetChangedDocuments())
         {
             Document document = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
+
             SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             after = document.WithText(SourceText.From(text.ToString(), text.Encoding, text.ChecksumAlgorithm)).Project;
         }
 
         return after;
+    }
+
+    // A suggestion that rewrites statements can leave blank lines and line breaks where the layout rules no longer
+    // want them, as when two if statements kept apart become two assignments of one group. Before such a suggestion
+    // is rejected for those errors, the run's own fixes may settle them, but only fixes that change nothing except
+    // whitespace and comments, so the suggestion is still judged by what it rewrote.
+    private static async Task<CodeActionApplication> SettleLayout(Project candidate,
+        FormattingAnalysis.ValidationResult validation,
+        ImmutableArray<Diagnostic> before,
+        CodeFixProvider[] providers,
+        ImmutableHashSet<DocumentId> editable,
+        FormattingAnalysis analysis,
+        string actionKey,
+        CancellationToken cancellationToken)
+    {
+        // A validation that stopped at compiler errors leaves no diagnostics to settle, and no layout fix repairs those.
+        if (validation.Diagnostics.IsEmpty || validation.IntroducedErrors.Any(IsCompilerError))
+            return new(Project: null, Attempt: null);
+
+        Project settled = candidate;
+        ImmutableArray<Diagnostic> current = validation.Diagnostics;
+        ImmutableArray<Diagnostic> introduced = validation.IntroducedErrors;
+
+        for (int round = 0; round < LayoutRounds && !introduced.IsEmpty; round++)
+        {
+            Project? fixedLayout = await ApplyLayoutFix(settled, introduced, current, providers, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            if (fixedLayout is null)
+                return new(Project: null, Attempt: null);
+
+            settled = await PrepareCandidate(settled, fixedLayout, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+            FormattingAnalysis.ValidationResult revalidated = await analysis.Validate(settled, before, actionKey + "|layout", optional: true, cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
+
+            if (revalidated.Diagnostics.IsEmpty && !revalidated.IntroducedErrors.IsEmpty)
+                return new(Project: null, Attempt: null);
+
+            current = revalidated.Diagnostics;
+            introduced = revalidated.IntroducedErrors;
+        }
+
+        return introduced.IsEmpty ? new(settled, Attempt: null, current) : new(Project: null, Attempt: null);
     }
 
     // An assembly that hands its internals to another project exposes those types across the same

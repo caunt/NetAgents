@@ -169,6 +169,8 @@ internal static class MemberOrdering
     {
         SyntaxTriviaList trivia = member.GetLeadingTrivia();
         SyntaxTriviaList separator = slot.GetLeadingTrivia();
+
+        // The member takes over the blank lines that led its new slot and drops its own, keeping the rest of its trivia.
         int adopted = CountSeparator(separator);
         int discarded = CountSeparator(trivia);
         List<SyntaxTrivia> replacement = [];

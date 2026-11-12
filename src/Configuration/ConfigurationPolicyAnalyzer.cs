@@ -65,6 +65,7 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
                 };
 
                 SyntaxTreeOptionsProvider? provider = compilation.Options.SyntaxTreeOptionsProvider;
+
                 matches = provider is not null
                     && (provider.TryGetDiagnosticValue(context.Tree, diagnosticIdentifier, context.CancellationToken, out ReportDiagnostic severity)
                         ? severity == expectedSeverity
@@ -80,6 +81,7 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
             if (!matches)
             {
                 string[] messageArguments = [requiredOption.Key, requiredOption.Value];
+
                 context.ReportDiagnostic(Diagnostic.Create(Rule, Location.Create(context.Tree, new TextSpan(start: 0, length: 0)), messageArgs: messageArguments));
             }
         }

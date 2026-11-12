@@ -20,31 +20,43 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
     {
         using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
+        // The version tag retires every cached result when this layout changes; the rest names the project.
         Append(hash, value: "NetAgents formatting inputs v1");
         Append(hash, Path.GetFullPath(inputs.ProjectPath));
         Append(hash, inputs.AssemblyName);
         Append(hash, inputs.RootNamespace);
+
+        // Settings that change how the compiler reads the sources, and so what the analyzers report.
         Append(hash, inputs.LanguageVersion);
         Append(hash, inputs.DefineConstants);
         Append(hash, inputs.AllowUnsafe.ToString(CultureInfo.InvariantCulture));
         Append(hash, inputs.OutputType);
+
+        // Messages and fixes can differ between runtimes and cultures, so a result never crosses either.
         Append(hash, RuntimeInformation.FrameworkDescription);
         Append(hash, RuntimeInformation.RuntimeIdentifier);
         Append(hash, CultureInfo.CurrentCulture.Name);
         Append(hash, CultureInfo.CurrentUICulture.Name);
+
         // The host is retained inside an MSBuild process. If its files are replaced on disk, a
         // result produced by the loaded engine must not become a hit for a newly loaded engine.
         Append(hash, typeof(FormatProject).Assembly.ManifestModule.ModuleVersionId.ToString());
         Append(hash, typeof(FormattingFingerprint).Assembly.ManifestModule.ModuleVersionId.ToString());
+
+        // Roslyn's own assemblies count as well, since another compiler build can report different diagnostics.
         Append(hash, typeof(Compilation).Assembly.ManifestModule.ModuleVersionId.ToString());
         Append(hash, typeof(Workspace).Assembly.ManifestModule.ModuleVersionId.ToString());
         Append(hash, typeof(CSharpCompilation).Assembly.ManifestModule.ModuleVersionId.ToString());
 
+        // Each file the compilation reads is hashed by content, so an edited reference or analyzer misses the cache.
         await AppendFiles(hash, inputs.References, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
         await AppendFiles(hash, inputs.AnalyzerFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+        // Configuration, additional, and build files decide which rules run and how they read the sources.
         await AppendFiles(hash, inputs.ConfigurationFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
         await AppendFiles(hash, inputs.AdditionalFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
         await AppendFiles(hash, inputs.BuildFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
         AppendItems(hash, inputs.BuildProperties);
 
         string packagedDirectory = Path.GetDirectoryName(typeof(FormatProject).Assembly.Location)
@@ -82,6 +94,7 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
         foreach (ITaskItem item in items)
         {
             string path = item.GetMetadata(metadataName: "FullPath");
+
             Append(hash, path);
             hash.AppendData(SHA256.HashData(sources[path]));
         }
@@ -96,6 +109,7 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
         foreach (ITaskItem item in items)
         {
             string path = item.GetMetadata(metadataName: "FullPath");
+
             sources[path] = await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
         }
 
@@ -106,6 +120,7 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
     {
         byte[] bytes = Encoding.UTF8.GetBytes(value);
         Span<byte> length = stackalloc byte[sizeof(int)];
+
         BinaryPrimitives.WriteInt32LittleEndian(length, bytes.Length);
         hash.AppendData(length);
         hash.AppendData(bytes);
@@ -130,6 +145,7 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
         await using (stream.ConfigureAwait(continueOnCapturedContext: false))
         {
             byte[] checksum = await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             hash.AppendData(checksum);
         }
     }
@@ -149,7 +165,9 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
         foreach (ITaskItem item in items)
         {
             Append(hash, item.ItemSpec);
+
             string[] names = [.. item.CloneCustomMetadata().Keys.Cast<string>().Order(StringComparer.Ordinal)];
+
             Append(hash, names.Length.ToString(CultureInfo.InvariantCulture));
 
             foreach (string name in names)

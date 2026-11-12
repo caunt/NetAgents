@@ -21,9 +21,11 @@ public sealed class DirectoryFileCountAnalyzerTests
     {
         DirectoryFileCountAnalyzer analyzer = new();
         SyntaxTree[] files = CreateFiles(directory: "Features", count: 17);
+
         Assert.Empty(await AnalyzerTestHarness.Analyze(analyzer, files.Take(count: 16)));
 
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(analyzer, files));
+
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, diagnostic.Id);
         Assert.Equal(expected: "Features/Source00.cs", diagnostic.Location.SourceTree?.FilePath);
         Assert.Equal(expected: "Directory 'Features' contains 17 authored C# files (maximum 16); organize these files into subdirectories with narrower responsibilities",
@@ -71,7 +73,9 @@ public sealed class DirectoryFileCountAnalyzerTests
     public async Task CountsRootAndLinkedFileDirectories(string directory)
     {
         ArgumentNullException.ThrowIfNull(directory);
+
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new DirectoryFileCountAnalyzer(), CreateFiles(directory, count: 17)));
+
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, diagnostic.Id);
     }
 
@@ -99,6 +103,7 @@ public sealed class DirectoryFileCountAnalyzerTests
     {
         DirectoryFileCountAnalyzer analyzer = new();
         Diagnostic oversized = Assert.Single(await AnalyzerTestHarness.Analyze(analyzer, CreateFiles(directory: "Features", count: 17)));
+
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, oversized.Id);
         Assert.Empty(await AnalyzerTestHarness.Analyze(analyzer, CreateFiles(directory: "Features", count: 16)));
     }
@@ -114,6 +119,7 @@ public sealed class DirectoryFileCountAnalyzerTests
                 path: "Features/Source" + index.ToString(format: "D2", CultureInfo.InvariantCulture) + ".cs"))];
 
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new DirectoryFileCountAnalyzer(), files));
+
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, diagnostic.Id);
         Assert.False(diagnostic.IsSuppressed);
     }
@@ -125,7 +131,9 @@ public sealed class DirectoryFileCountAnalyzerTests
     public async Task ReportsEachOversizedDirectoryOnce()
     {
         SyntaxTree[] files = [.. CreateFiles(directory: "Features/Buying", count: 17), .. CreateFiles(directory: "Features/Selling", count: 20)];
+
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DirectoryFileCountAnalyzer(), files.Reverse());
+
         Assert.Equal(expected: 2, diagnostics.Length);
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Location.SourceTree?.FilePath == "Features/Buying/Source00.cs");
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Location.SourceTree?.FilePath == "Features/Selling/Source00.cs");

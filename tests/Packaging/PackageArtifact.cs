@@ -16,10 +16,14 @@ internal static class PackageArtifact
     internal static async Task VerifyConfigurationMatchesTemplate(string workspacePath, string packagePath)
     {
         string templateDirectory = Path.Combine(paths: [workspacePath, "microsoft-defaults"]);
+
         await ConsumerBuild.RunDevelopmentKit(workspacePath, arguments: ["new", "editorconfig", "--output", templateDirectory])
             .ConfigureAwait(continueOnCapturedContext: false);
+
         string templatePath = Path.Combine(paths: [templateDirectory, ".editorconfig"]);
+
         string template = await File.ReadAllTextAsync(templatePath).ConfigureAwait(continueOnCapturedContext: false);
+
         AnalyzerConfig[] templateConfigurations = [AnalyzerConfig.Parse(template, templatePath)];
 
         AnalyzerConfigOptionsResult templateOptions = AnalyzerConfigSet.Create(templateConfigurations)
@@ -65,6 +69,7 @@ internal static class PackageArtifact
         ];
 
         AnalyzerConfigSet generatedConfiguration = AnalyzerConfigSet.Create(generatedConfigurations, out ImmutableArray<Diagnostic> diagnostics);
+
         Assert.True(diagnostics.IsEmpty);
 
         // A source outside the configuration's directory must still receive every C# default.
@@ -120,6 +125,7 @@ internal static class PackageArtifact
         using Stream manifestStream = manifestEntry.Open();
 
         XDocument manifest = XDocument.Load(manifestStream);
+
         Assert.DoesNotContain(manifest.Descendants(), static element => element.Name.LocalName == "dependency");
 
         return manifest.Descendants().Single(static element => element.Name.LocalName == "version").Value;

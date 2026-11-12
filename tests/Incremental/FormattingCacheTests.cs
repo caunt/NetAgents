@@ -20,7 +20,9 @@ public sealed class FormattingCacheTests
             using CancellationTokenSource cancellation = new();
 
             await cancellation.CancelAsync();
+
             OperationCanceledException failure = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cache.Store(fingerprint, cancellation.Token));
+
             Assert.Equal(cancellation.Token, failure.CancellationToken);
             Assert.False(cache.Matches(fingerprint));
             Assert.Empty(directory.EnumerateFiles());
@@ -44,14 +46,19 @@ public sealed class FormattingCacheTests
             FormattingFingerprint fingerprint = new(Context: "context", Sources: "sources");
 
             Assert.False(cache.Matches(fingerprint));
+
             await cache.Store(fingerprint, CancellationToken.None);
+
             Assert.True(new FormattingCache(path).Matches(fingerprint));
             Assert.False(cache.Matches(fingerprint with { Context = "changed" }));
             Assert.False(cache.Matches(fingerprint with { Sources = "changed" }));
 
             await File.WriteAllTextAsync(path, contents: "partial record");
+
             Assert.False(cache.Matches(fingerprint));
+
             await cache.Store(fingerprint, CancellationToken.None);
+
             cache.Invalidate();
             Assert.False(cache.Matches(fingerprint));
         }

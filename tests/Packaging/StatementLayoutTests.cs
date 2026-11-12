@@ -133,12 +133,15 @@ public sealed class StatementLayoutTests
             await File.WriteAllTextAsync(Path.Combine(workspace.FullName, path2: "NuGet.Config"), sourceConfiguration);
             await File.WriteAllTextAsync(sourcePath, Crowded);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
 
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, forbiddenOutput: ["NetAgents automatic formatting failed"]);
+
             Assert.Equal(Expected, await File.ReadAllTextAsync(sourcePath));
 
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, forbiddenOutput: ["NetAgents automatic formatting failed"]);
+
             Assert.Equal(Expected, await File.ReadAllTextAsync(sourcePath));
         }
         finally

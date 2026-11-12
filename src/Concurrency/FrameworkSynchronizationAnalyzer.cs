@@ -76,7 +76,6 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
             return;
 
         INamespaceSymbol containingNamespace = containingType.ContainingNamespace;
-
         bool isThreadSleep = containingType.Name == "Thread" && member.Name == "Sleep" && IsNamespace(containingNamespace, Threading);
 
         bool isBlockingTask = containingType.Name is "Task" or "ValueTask"

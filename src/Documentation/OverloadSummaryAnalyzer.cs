@@ -86,6 +86,7 @@ public sealed class OverloadSummaryAnalyzer() : PolicyAnalyzer(Rule)
                 continue;
 
             flattened.Add(blank ? ' ' : character);
+
             spaced = blank;
         }
 

@@ -60,6 +60,7 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
         do
         {
             cancellationToken.ThrowIfCancellationRequested();
+
             SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             if (root is null)
@@ -77,9 +78,12 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
 
             SourceText changedSource = source.WithChanges(ArgumentLayout.GetChanges(list, source));
             TextSpan changedSpan = new(list.SpanStart, list.Span.Length + changedSource.Length - source.Length);
+
             document = await Formatter.FormatAsync(document.WithText(changedSource), changedSpan, cancellationToken: cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
+
             SourceText formattedSource = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             hasChanges = !source.ContentEquals(formattedSource);
         }
         while (requestedSpan is null && hasChanges);

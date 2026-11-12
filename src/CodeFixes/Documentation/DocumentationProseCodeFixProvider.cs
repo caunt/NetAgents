@@ -49,6 +49,7 @@ public sealed class DocumentationProseCodeFixProvider : CodeFixProvider
     private static async Task<Document> Wrap(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
     {
         SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
         SourceText? source = root is null ? null : await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         if (root is null || source is null)

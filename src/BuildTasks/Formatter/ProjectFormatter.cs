@@ -27,9 +27,12 @@ internal static class ProjectFormatter
         await using (projectLock.ConfigureAwait(continueOnCapturedContext: false))
         {
             FormattingProgress progress = new(inputs.AssemblyName, message => inputs.Log.LogMessage(MessageImportance.High, message));
+
             progress.Report(activity: "checking formatting inputs");
+
             Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(inputs.SourceFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             FormattingFingerprint before = await FormattingFingerprint.Create(inputs, sources, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             FormattingCache cache = new(inputs.CacheFile);
 
             if (cache.Matches(before))
@@ -40,6 +43,7 @@ internal static class ProjectFormatter
             }
 
             cache.Invalidate();
+
             bool completed = await FormatCore(inputs, sources, progress, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             if (!completed)
@@ -48,6 +52,7 @@ internal static class ProjectFormatter
             // Remember the bytes actually analyzed and written, not an unrelated edit made while
             // formatting was in flight. Non-source inputs must also remain unchanged throughout.
             FormattingFingerprint expected = before with { Sources = FormattingFingerprint.HashSources(inputs.SourceFiles, sources) };
+
             Dictionary<string, byte[]> currentSources = await FormattingFingerprint.ReadSources(inputs.SourceFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             FormattingFingerprint after = await FormattingFingerprint.Create(inputs, currentSources, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
@@ -77,6 +82,8 @@ internal static class ProjectFormatter
         int line = span.StartLinePosition.Line;
         SourceText? text = diagnostic.Location.SourceTree?.GetText();
         string written = text is not null && line < text.Lines.Count ? text.Lines[line].ToString().Trim() : string.Empty;
+
+        // Paths read relative to the project, as MSBuild prints its own errors.
         string path = span.Path.Length == 0 ? "(unknown file)" : GetDisplayPath(projectDirectory, span.Path);
         string position = string.Create(CultureInfo.InvariantCulture, $"{path}({line + 1},{span.StartLinePosition.Character + 1})");
 
@@ -86,6 +93,7 @@ internal static class ProjectFormatter
     private static async Task<bool> FormatCore(FormatProject inputs, Dictionary<string, byte[]> sourceBytes, FormattingProgress progress, CancellationToken cancellationToken)
     {
         progress.Report(activity: "checking source syntax");
+
         LanguageVersionResolver.LanguageVersionResolution languageVersion = LanguageVersionResolver.Resolve(inputs.LanguageVersion, inputs.ProjectPath);
 
         if (languageVersion.Substituted)
@@ -108,8 +116,11 @@ internal static class ProjectFormatter
             string path = GetPath(source);
             byte[] bytes = sourceBytes[path];
             SourceText text = SourceText.From(bytes, bytes.Length, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+
             sources[path] = text;
+
             SyntaxTree tree = CSharpSyntaxTree.ParseText(text, parseOptions, path, cancellationToken);
+
             syntaxDiagnostics.AddRange(tree.GetDiagnostics(cancellationToken));
         }
 
@@ -204,20 +215,25 @@ internal static class ProjectFormatter
 
             string[] segments = logicalPath.Replace(oldChar: '\\', newChar: '/').Split(separator: '/');
             string[] folders = segments[0] == ".." ? [] : [.. segments.Take(segments.Length - 1)];
+
             solution = solution.AddDocument(DocumentId.CreateNewId(projectIdentifier), Path.GetFileName(path), text, folders, path);
         }
 
         foreach (ITaskItem configuration in inputs.ConfigurationFiles)
         {
             string path = GetPath(configuration);
+
             SourceText text = await ReadText(path, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             solution = solution.AddAnalyzerConfigDocument(DocumentId.CreateNewId(projectIdentifier), Path.GetFileName(path), text, filePath: path);
         }
 
         foreach (ITaskItem additional in inputs.AdditionalFiles)
         {
             string path = GetPath(additional);
+
             SourceText text = await ReadText(path, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             solution = solution.AddAdditionalDocument(DocumentId.CreateNewId(projectIdentifier), Path.GetFileName(path), text, filePath: path);
         }
 
@@ -234,6 +250,7 @@ internal static class ProjectFormatter
         void ReportBrokenAnalyzer(string fault)
         {
             analyzerFault = true;
+
             inputs.Log.LogWarning(fault);
         }
 
@@ -246,6 +263,7 @@ internal static class ProjectFormatter
         foreach (Document document in codeFixes.Project.Documents)
         {
             Document previous = original.GetDocument(document.Id) ?? throw new InvalidOperationException(message: "A code fix unexpectedly added a document.");
+
             SourceText before = await previous.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             SourceText after = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
@@ -253,8 +271,11 @@ internal static class ProjectFormatter
             {
                 Encoding encoding = after.Encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
                 byte[] bytes = [.. encoding.GetPreamble(), .. encoding.GetBytes(after.ToString())];
+
                 await File.WriteAllBytesAsync(document.FilePath, bytes, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
                 sourceBytes[document.FilePath] = bytes;
+
                 rewritten.Add(GetDisplayPath(projectDirectory, document.FilePath));
             }
         }

@@ -73,6 +73,7 @@ internal static class AnalyzerCatalog
         foreach (string path in analyzerPaths)
         {
             AnalyzerReferenceLoadingResult result = Load(path, loader);
+
             references.Add(result.Reference);
 
             if (result.Hosted is not null)

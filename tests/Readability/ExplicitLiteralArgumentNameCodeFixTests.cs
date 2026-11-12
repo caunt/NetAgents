@@ -182,9 +182,12 @@ public sealed class ExplicitLiteralArgumentNameCodeFixTests
 
         string fixedSource = await CodeFixTestHarness.FixLiteralArgumentNames(source, fixAll: true);
 
+        // Constructors, whether called through base, by type, or target-typed.
         Assert.Contains(expectedSubstring: "base(number: 3)", fixedSource, StringComparison.Ordinal);
         Assert.Contains(expectedSubstring: "new Holder(number: 3)", fixedSource, StringComparison.Ordinal);
         Assert.Contains(expectedSubstring: "new(number: 3)", fixedSource, StringComparison.Ordinal);
+
+        // Indexers and delegate invocations get names too.
         Assert.Contains(expectedSubstring: "holder[index: 1]", fixedSource, StringComparison.Ordinal);
         Assert.Contains(expectedSubstring: "handler(number: 1)", fixedSource, StringComparison.Ordinal);
     }

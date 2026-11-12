@@ -32,6 +32,18 @@ internal static class StatementSpacing
         return changes.ToImmutable();
     }
 
+    public static bool RequiresSeparation(StatementSyntax statement, SourceText source)
+    {
+        return statement is IfStatementSyntax or ForStatementSyntax or CommonForEachStatementSyntax
+            or WhileStatementSyntax or DoStatementSyntax or SwitchStatementSyntax or TryStatementSyntax
+            or UsingStatementSyntax or ReturnStatementSyntax or ThrowStatementSyntax or BreakStatementSyntax
+            or ContinueStatementSyntax or YieldStatementSyntax
+            || (statement is LocalDeclarationStatementSyntax declaration
+                && (declaration.UsingKeyword.IsKind(SyntaxKind.UsingKeyword)
+                    || source.Lines.GetLineFromPosition(declaration.SpanStart).LineNumber
+                        != source.Lines.GetLineFromPosition(declaration.Span.End).LineNumber));
+    }
+
     private static StatementSyntax? GetPrevious(StatementSyntax statement)
     {
         switch (statement.Parent)
@@ -56,17 +68,5 @@ internal static class StatementSpacing
         int position = statements.IndexOf(statement);
 
         return position > 0 ? statements[position - 1] : null;
-    }
-
-    private static bool RequiresSeparation(StatementSyntax statement, SourceText source)
-    {
-        return statement is IfStatementSyntax or ForStatementSyntax or CommonForEachStatementSyntax
-            or WhileStatementSyntax or DoStatementSyntax or SwitchStatementSyntax or TryStatementSyntax
-            or UsingStatementSyntax or ReturnStatementSyntax or ThrowStatementSyntax or BreakStatementSyntax
-            or ContinueStatementSyntax or YieldStatementSyntax
-            || (statement is LocalDeclarationStatementSyntax declaration
-                && (declaration.UsingKeyword.IsKind(SyntaxKind.UsingKeyword)
-                    || source.Lines.GetLineFromPosition(declaration.SpanStart).LineNumber
-                        != source.Lines.GetLineFromPosition(declaration.Span.End).LineNumber));
     }
 }

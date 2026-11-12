@@ -93,6 +93,7 @@ public sealed class EditableDocumentsTests
                 filePath: "/workspace/.editorconfig").Project;
 
         Project result = (await CodeFixRunner.Fix(project, analyzers: [], providers: [], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
+
         string text = await ReadDocument(result, name);
 
         Assert.Equal(outcome == "kept", text == source);
@@ -212,6 +213,7 @@ public sealed class EditableDocumentsTests
                         foreach (DocumentId identifier in fixAllContext.Project.DocumentIds)
                         {
                             Document document = solution.GetDocument(identifier) ?? throw new InvalidOperationException(message: "A project document is missing.");
+
                             solution = (await MakeInternal(document, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Project.Solution;
                         }
 

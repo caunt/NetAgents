@@ -51,6 +51,7 @@ public sealed class ExhaustiveSwitchSuppressorTests
     {
         // The statement has no default and the expression inside it does, so exactly one survives.
         const string body = "int Read(Width width) { switch (width) { case Width.Int32: return width switch { Width.Int32 => 4, _ => 0 }; } return 0; }";
+
         Diagnostic statement = await Analyze(body, diagnosticIdentifier: "IDE0010");
         Diagnostic expression = await Analyze(body, diagnosticIdentifier: "IDE0072");
 
@@ -66,6 +67,7 @@ public sealed class ExhaustiveSwitchSuppressorTests
     public async Task SuppressesWhenConfigurationEscalates(string severity)
     {
         const string body = "int Read(Width width) => width switch { Width.Int32 => 4, _ => 0 };";
+
         Diagnostic diagnostic = await Analyze(body, diagnosticIdentifier: "IDE0072", severity);
 
         Assert.True(diagnostic.IsSuppressed);

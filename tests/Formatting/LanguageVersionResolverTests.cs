@@ -26,10 +26,13 @@ public sealed class LanguageVersionResolverTests
     [Fact]
     public void KeepsSupportedVersion()
     {
+        // Version numbers, and the aliases MSBuild accepts.
         Assert.Equal(LanguageVersion.CSharp14, LanguageVersionResolver.Resolve(configured: "14.0", ProjectPath).Version);
         Assert.Equal(LanguageVersion.CSharp12, LanguageVersionResolver.Resolve(configured: "12", ProjectPath).Version);
         Assert.Equal(LanguageVersion.CSharp1, LanguageVersionResolver.Resolve(configured: "ISO-1", ProjectPath).Version);
         Assert.Equal(LanguageVersion.LatestMajor, LanguageVersionResolver.Resolve(configured: "latestMajor", ProjectPath).Version);
+
+        // Whitespace around the value is ignored, and a supported value is never substituted.
         Assert.Equal(LanguageVersion.CSharp14, LanguageVersionResolver.Resolve(configured: " 14.0 ", ProjectPath).Version);
         Assert.False(LanguageVersionResolver.Resolve(configured: "14.0", ProjectPath).Substituted);
     }

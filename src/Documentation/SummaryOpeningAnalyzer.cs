@@ -101,6 +101,7 @@ public sealed class SummaryOpeningAnalyzer() : PolicyAnalyzer(Rule)
         bool sets = property.SetMethod is IMethodSymbol setter && DocumentationTags.IsExternallyVisible(setter);
         bool initializes = sets && property.SetMethod?.IsInitOnly == true;
 
+        // The opening those accessors call for, beside the one the summary was written with.
         string expected = gets && sets ? "Gets or sets" : gets ? "Gets" : "Sets";
         string written = GetPropertyOpening(text);
 

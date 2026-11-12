@@ -22,6 +22,7 @@ internal static class ExplicitLiteralArgumentName
         foreach (BaseArgumentListSyntax list in root.DescendantNodes().OfType<BaseArgumentListSyntax>())
         {
             cancellationToken.ThrowIfCancellationRequested();
+
             ArgumentNaming? naming = CreateNaming(list, model, cancellationToken);
 
             if (naming is null)
@@ -106,9 +107,7 @@ internal static class ExplicitLiteralArgumentName
         }
 
         SyntaxToken comma = CreateToken(SyntaxKind.CommaToken).WithTrailingTrivia(SyntaxFactory.Space);
-
         SeparatedSyntaxList<CollectionElementSyntax> items = SyntaxFactory.SeparatedList(elements, Enumerable.Repeat(comma, elements.Count - 1));
-
         CollectionExpressionSyntax collection = SyntaxFactory.CollectionExpression(CreateToken(SyntaxKind.OpenBracketToken), items, CreateToken(SyntaxKind.CloseBracketToken));
 
         return SyntaxFactory.Argument(collection)
@@ -139,6 +138,8 @@ internal static class ExplicitLiteralArgumentName
         SeparatedSyntaxList<ArgumentSyntax> arguments = list.Arguments;
         int expanded = GetExpandedStart(list, model, parameters, cancellationToken);
         int simple = expanded < 0 ? arguments.Count : expanded;
+
+        // The list as the fix writes it, and the arguments it changes, which the analyzer reports.
         List<ArgumentSyntax> rewritten = [];
         ImmutableArray<TextSpan>.Builder spans = ImmutableArray.CreateBuilder<TextSpan>();
 

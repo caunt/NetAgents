@@ -58,6 +58,8 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0036 | Require the text of a public or protected member's `<summary>`, `<param>`, `<typeparam>`, `<returns>`, `<value>`, `<exception>`, and `<remarks>` to end with a full stop, question mark, or exclamation mark. Text closing on a list, a code block, or a table is left alone, and a closing `<para>` is judged by its own last sentence. Includes an automatic fix and Fix All support. |
 | NETAGENTS0037 | Require public and protected summaries to open as the .NET API documentation does: a property with "Gets", "Sets", or "Gets or sets" to match the accessors a caller outside the assembly can use ("Gets or initializes" is accepted for `init`), and a constructor with "Initializes a new instance of the `<see cref="T"/>` class", "struct", or "record". Includes an automatic fix and Fix All support for constructors, which replaces an opening written another way or places the standard sentence before the author's text; property summaries are reported only. |
 | NETAGENTS0038 | Require `null`, `true`, and `false` in public and protected documentation text to be written as `<see langword="…"/>`, including a `<c>` element holding only the keyword, and a Boolean `<returns>` or `<value>` to read "`<see langword="true"/>` if …; otherwise, `<see langword="false"/>`." Keywords inside code and hyphenated prose such as "non-null" are left alone. Includes an automatic fix and Fix All support for keywords; Boolean wording is reported only. |
+| NETAGENTS0039 | Require the statements of every block to sit in groups of one kind, with one blank line between groups and none inside a group. Declarations, declarations of awaited results (`string text = await reader.ReadToEndAsync();`), assignments (including compound assignments, increments, and decrements), assignments of awaited results (`text = await reader.ReadToEndAsync();`), event subscriptions (`+=` and `-=` on an event), calls, await statements, and argument checks (static `ThrowIf…` calls on `ArgumentException` and the types deriving from it) each form groups of their own. A comment line starts a new group, with the blank line above the comment; a comment sharing a statement's line does not. Every other statement stands alone, as `NETAGENTS0016` keeps control flow and multiline declarations. Method, constructor, operator, accessor, lambda, anonymous method, local function, nested block, switch section, and top-level statement lists are all covered. Includes an automatic fix and Fix all support that only moves blank lines. |
+| NETAGENTS0040 | Allow at most four statements in a group of `NETAGENTS0039`, so a longer run is split by comment lines that say what each part is for. A blank line does not end a group, since the formatter removes it. Runs of argument checks, and constructor runs where every statement stores a parameter as it is (`Price = price;`), are exempt. There is no automatic fix: the message asks for one short sentence above each part that says what the part achieves or why it is needed, not what the code already says. |
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
@@ -130,6 +132,40 @@ editor's **Insert blank line between statements** quick fix or run:
 
 ```bash
 dotnet format analyzers --diagnostics NETAGENTS0016
+```
+
+Statement groups (`NETAGENTS0039`) decide every other blank line between
+statements. All blank lines inside a block are removed first, then one goes
+wherever the group changes:
+
+```csharp
+ArgumentNullException.ThrowIfNull(cart);
+
+Order order = new(cart.CustomerId);
+decimal total = 0;
+
+HttpResponseMessage response = await client.GetAsync(url);
+
+order.Status = OrderStatus.Pending;
+order.PlacedAt = clock.UtcNow;
+
+await repository.SaveAsync(order, cancellationToken);
+
+logger.LogInformation(message: "Placed order {OrderId}", order.Id);
+```
+
+The fix never reorders statements, so a block whose kinds alternate gets a blank
+line between every statement until its author regroups it. When a group grows
+past four statements, `NETAGENTS0040` asks for a comment line above each part
+that says what the part is for; the comment starts a new group. When the
+formatter applies a suggestion that leaves blank lines where these rules no
+longer want them, such as two separated `if` statements that become
+`builder?.Length = length;` and `builder?.Capacity = length;`, it first settles
+them with the layout fixes that change only whitespace, and judges the
+suggestion afterwards. Run:
+
+```bash
+dotnet format analyzers --diagnostics NETAGENTS0039
 ```
 
 `NETAGENTS0023` enforces unpadded block edges everywhere rather than merely

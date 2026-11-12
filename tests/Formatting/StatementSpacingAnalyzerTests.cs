@@ -72,6 +72,7 @@ public sealed class StatementSpacingAnalyzerTests
     public async Task RequiresBlankLineAfterUnbracedConditional()
     {
         const string source = "public static class ExampleType { public static void Execute(int[] numbers) { for (int index = 0; index < numbers.Length; index++) { if (index > 10)\nbreak;\nnumbers[index] += index; } } }";
+
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), source);
 
         Assert.Equal(StatementSpacingAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);

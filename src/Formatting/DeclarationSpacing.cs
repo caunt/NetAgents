@@ -38,6 +38,7 @@ internal static class DeclarationSpacing
                 indentationEnd++;
 
             string indentation = source.ToString(TextSpan.FromBounds(line.Start, indentationEnd));
+
             change = new TextChange(TextSpan.FromBounds(whitespaceStart, current.SpanStart), lineEnding + lineEnding + indentation);
         }
 

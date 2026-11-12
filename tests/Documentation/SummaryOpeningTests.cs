@@ -74,7 +74,6 @@ public sealed class SummaryOpeningTests
     public async Task OpensConstructorSummaries(string type, string summary, string expected)
     {
         const string constructor = "/// <summary>SUMMARY</summary>\npublic ExampleType() { }";
-
         string source = Wrap(constructor.Replace(oldValue: "SUMMARY", summary, StringComparison.Ordinal), type);
         string target = Wrap(constructor.Replace(oldValue: "SUMMARY", expected, StringComparison.Ordinal), type);
 

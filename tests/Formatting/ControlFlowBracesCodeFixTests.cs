@@ -121,6 +121,7 @@ public sealed class ControlFlowBracesCodeFixTests
         {
             string source = member.Replace(oldValue: "STATEMENTS", statements, StringComparison.Ordinal).Replace(oldValue: "\n", lineEnding, StringComparison.Ordinal);
             string target = member.Replace(oldValue: "STATEMENTS", expected, StringComparison.Ordinal).Replace(oldValue: "\n", lineEnding, StringComparison.Ordinal);
+
             string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
 
             Assert.Equal(target, result);
@@ -267,7 +268,9 @@ public sealed class ControlFlowBracesCodeFixTests
 
         string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
         SyntaxNode root = await CSharpSyntaxTree.ParseText(result).GetRootAsync();
+
         IfStatementSyntax[] conditionals = [.. root.DescendantNodes().OfType<IfStatementSyntax>()];
+
         Assert.NotNull(conditionals[0].Else);
         Assert.Null(conditionals[1].Else);
         Assert.True(conditionals[0].Statement is BlockSyntax { Statements.Count: 1 });
@@ -293,7 +296,9 @@ public sealed class ControlFlowBracesCodeFixTests
 
         string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
         SyntaxNode root = await CSharpSyntaxTree.ParseText(result).GetRootAsync();
+
         IfStatementSyntax[] conditionals = [.. root.DescendantNodes().OfType<IfStatementSyntax>()];
+
         Assert.NotNull(conditionals[0].Else);
         Assert.Null(conditionals[1].Else);
         Assert.True(conditionals[0].Statement is BlockSyntax { Statements: [WhileStatementSyntax] });

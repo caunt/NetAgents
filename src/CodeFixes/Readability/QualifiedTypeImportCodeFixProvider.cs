@@ -78,6 +78,7 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
         if (index == 0 && usings.Count > 0)
         {
             UsingDirectiveSyntax first = usings[index: 0];
+
             directive = directive.WithLeadingTrivia(first.GetLeadingTrivia());
             usings = usings.Replace(first, first.WithoutLeadingTrivia());
         }
@@ -174,6 +175,7 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
             return document;
 
         HashSet<ExpressionSyntax> references = [];
+
         // AddImport skips a namespace already present, so repeats here are harmless and the
         // sorted insertion keeps the result identical whatever order they arrive in.
         List<string> imports = [];

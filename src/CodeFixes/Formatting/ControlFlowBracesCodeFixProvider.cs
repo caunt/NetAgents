@@ -87,10 +87,10 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
 
         TextChange[] orderedChanges = [.. changes.OrderBy(static change => change.Span.Start).ThenBy(static change => change.Span.Length)];
         Document changedDocument = document.WithText(source.WithChanges(orderedChanges));
-
         IEnumerable<TextSpan> formattingSpans = affectedSpans.Select(span => TextSpan.FromBounds(Translate(span.Start, orderedChanges, includeInsertions: false), Translate(span.End, orderedChanges, includeInsertions: true)));
 
         OptionSet options = await document.GetOptionsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
         options = options.WithChangedOption(FormattingOptions.NewLine, LanguageNames.CSharp, lineEnding);
 
         return await Formatter.FormatAsync(changedDocument, formattingSpans, options, cancellationToken)
@@ -105,6 +105,7 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
         while (hasChanges)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
             SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             if (root is null)
@@ -120,7 +121,9 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
                 return document;
 
             document = await ApplyBraceChanges(document, source, bodies, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             SourceText changedSource = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
             hasChanges = fixAll && !source.ContentEquals(changedSource);
             requestedSpans = null;
         }

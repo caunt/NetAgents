@@ -108,6 +108,7 @@ public sealed class FormatProject : UtilitiesTask, ICancelableTask, IDisposable
         try
         {
             Action<FormatProject, CancellationToken> format = FormattingHost.Resolve(SdkAssemblyDirectory);
+
             format(this, _cancellation.Token);
 
             return true;

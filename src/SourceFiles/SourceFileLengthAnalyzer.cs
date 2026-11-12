@@ -63,6 +63,7 @@ public sealed class SourceFileLengthAnalyzer() : PolicyAnalyzer(Rule)
             return;
 
         Location location = Location.Create(context.Tree, new TextSpan(start: 0, length: 0));
+
         context.ReportDiagnostic(Diagnostic.Create(Rule, location, countedLines.ToString(CultureInfo.InvariantCulture)));
     }
 

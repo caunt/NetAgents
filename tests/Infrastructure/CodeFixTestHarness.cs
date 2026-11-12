@@ -13,11 +13,13 @@ using NetAgents.Analyzers.CodeFixes.Documentation;
 using NetAgents.Analyzers.CodeFixes.Formatting;
 using NetAgents.Analyzers.CodeFixes.Ordering;
 using NetAgents.Analyzers.CodeFixes.Readability;
+using NetAgents.Analyzers.CodeFixes.StatementGroups;
 using NetAgents.Analyzers.CodeFixes.TypeSafety;
 using NetAgents.Analyzers.Documentation;
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Ordering;
 using NetAgents.Analyzers.Readability;
+using NetAgents.Analyzers.StatementGroups;
 using NetAgents.Analyzers.TypeSafety;
 
 namespace NetAgents.Analyzers.Tests.Infrastructure;
@@ -34,6 +36,7 @@ internal static class CodeFixTestHarness
             .ConfigureAwait(continueOnCapturedContext: false);
 
         Assert.False(diagnostics.IsEmpty);
+
         ExplicitLiteralArgumentNameCodeFixProvider provider = new();
         List<CodeAction> actions = [];
 
@@ -117,6 +120,11 @@ internal static class CodeFixTestHarness
         return await Fix(source, new StatementSpacingAnalyzer(), new StatementSpacingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
+    public static async Task<string> FixStatementGroups(string source, bool fixAll)
+    {
+        return await Fix(source, new StatementGroupingAnalyzer(), new StatementGroupingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     public static async Task<string> FixSummaryOpenings(string source, bool fixAll)
     {
         return await Fix(source, new SummaryOpeningAnalyzer(), new SummaryOpeningCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
@@ -125,6 +133,7 @@ internal static class CodeFixTestHarness
     public static async Task<ImmutableArray<Diagnostic>> GetDiagnostics(Document document, DiagnosticAnalyzer analyzer)
     {
         Compilation? compilation = await document.Project.GetCompilationAsync().ConfigureAwait(continueOnCapturedContext: false);
+
         Assert.NotNull(compilation);
         Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
 
@@ -152,11 +161,15 @@ internal static class CodeFixTestHarness
         using AdhocWorkspace workspace = new();
 
         Document document = CreateDocument(workspace, source);
+
         ImmutableArray<Diagnostic> diagnostics = await GetDiagnostics(document, analyzer).ConfigureAwait(continueOnCapturedContext: false);
 
         Assert.False(diagnostics.IsEmpty);
+
         List<CodeAction> actions = [];
+
         await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostics[index: 0], (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)).ConfigureAwait(continueOnCapturedContext: false);
+
         CodeAction action = Assert.Single(actions);
 
         if (fixAll)
@@ -170,15 +183,21 @@ internal static class CodeFixTestHarness
                 CancellationToken.None);
 
             FixAllProvider? fixAllProvider = provider.GetFixAllProvider();
+
             Assert.NotNull(fixAllProvider);
+
             CodeAction? fixAllAction = await fixAllProvider.GetFixAsync(context).ConfigureAwait(continueOnCapturedContext: false);
+
             Assert.NotNull(fixAllAction);
+
             action = fixAllAction;
         }
 
         ImmutableArray<CodeActionOperation> operations = await action.GetOperationsAsync(CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
+
         ApplyChangesOperation changes = Assert.Single(operations.OfType<ApplyChangesOperation>());
         Document? changedDocument = changes.ChangedSolution.GetDocument(document.Id);
+
         Assert.NotNull(changedDocument);
 
         // Only Fix all promises a clean document, so a single fix skips the extra analysis pass.
