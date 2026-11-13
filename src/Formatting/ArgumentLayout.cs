@@ -7,6 +7,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
+using NetAgents.Analyzers.Formatting.Collections;
+
 namespace NetAgents.Analyzers.Formatting;
 
 internal static class ArgumentLayout
@@ -284,8 +286,9 @@ internal static class ArgumentLayout
 
     // Some statements never share one line inside an argument, and joining the list would undo their
     // layout on every pass. NETAGENTS0016 puts blank lines between statements written in sequence (#38),
-    // NETAGENTS0017 gives every brace of a statement block its own line, and IDE2001 does the same for
-    // the body of a statement that holds others (#49).
+    // NETAGENTS0017 gives every brace of a statement block its own line, IDE2001 does the same for the
+    // body of a statement that holds others (#49), and an object initializer puts every element on a
+    // line of its own (#55).
     private static bool HoldsSpreadStatement(SyntaxToken token)
     {
         return token.Parent switch
@@ -296,6 +299,8 @@ internal static class ArgumentLayout
                 or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax or TryStatementSyntax
                 or SwitchStatementSyntax or CheckedStatementSyntax or UnsafeStatementSyntax => token == token.Parent
                     .GetFirstToken(),
+            SyntaxNode braced when braced is InitializerExpressionSyntax or AnonymousObjectCreationExpressionSyntax
+                => token.IsKind(SyntaxKind.OpenBraceToken) && CollectionLayout.AlwaysExpands(braced),
             _ => false,
         };
     }

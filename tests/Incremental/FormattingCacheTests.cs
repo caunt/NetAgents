@@ -50,8 +50,16 @@ public sealed class FormattingCacheTests
             await cache.Store(fingerprint, CancellationToken.None);
 
             Assert.True(new FormattingCache(path).Matches(fingerprint));
-            Assert.False(cache.Matches(fingerprint with { Context = "changed" }));
-            Assert.False(cache.Matches(fingerprint with { Sources = "changed" }));
+
+            Assert.False(cache.Matches(fingerprint with
+            {
+                Context = "changed"
+            }));
+
+            Assert.False(cache.Matches(fingerprint with
+            {
+                Sources = "changed"
+            }));
 
             await File.WriteAllTextAsync(path, contents: "partial record");
 

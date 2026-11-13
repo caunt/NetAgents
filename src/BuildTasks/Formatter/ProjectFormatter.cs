@@ -55,7 +55,10 @@ internal static class ProjectFormatter
 
             // Remember the bytes actually analyzed and written, not an unrelated edit made while
             // formatting was in flight. Non-source inputs must also remain unchanged throughout.
-            FormattingFingerprint expected = before with { Sources = FormattingFingerprint.HashSources(inputs.SourceItems, sources) };
+            FormattingFingerprint expected = before with
+            {
+                Sources = FormattingFingerprint.HashSources(inputs.SourceItems, sources)
+            };
 
             Dictionary<string, byte[]> currentSources = await FormattingFingerprint.ReadSources(inputs.SourceItems, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);

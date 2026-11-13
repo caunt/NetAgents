@@ -32,8 +32,8 @@ public sealed class OneLineStatementTests
 
     /// <summary>
     /// Verifies statements stay as written when they are on one line, would pass 128 characters joined, hold a lambda
-    /// with statements, a switch expression, a comment, or a chain of more than four links that NETAGENTS0047 splits,
-    /// or contain a string spanning lines.
+    /// with statements, a switch expression, an object initializer or anonymous object, a comment, or a chain of more
+    /// than four links that NETAGENTS0047 splits, or contain a string spanning lines.
     /// </summary>
     /// <param name="statements">A method body that must stay exactly as written.</param>
     [Theory]
@@ -44,6 +44,7 @@ public sealed class OneLineStatementTests
     [InlineData("int count = values // Every value counts.\n    .Length;\n\nreturn count;")]
     [InlineData("string text = @\"first\nsecond\";\n\nreturn text.Length;")]
     [InlineData("return values\n    .Where(value => value > 0)\n    .Select(value => value * 2)\n    .Distinct()\n    .Order()\n    .Sum();")]
+    [InlineData("var item = new\n{\n    Count = values.Length,\n};\n\nreturn item.Count;")]
     public async Task KeepsStatementsThatStayWrapped(string statements)
     {
         Assert.Empty(await AnalyzerTestHarness.Analyze(new OneLineStatementAnalyzer(), Wrap(statements)));

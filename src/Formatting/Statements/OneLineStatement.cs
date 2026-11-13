@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 using NetAgents.Analyzers.Formatting.Chains;
+using NetAgents.Analyzers.Formatting.Collections;
 
 namespace NetAgents.Analyzers.Formatting.Statements;
 
@@ -75,7 +76,7 @@ internal static class OneLineStatement
     {
         foreach (SyntaxNode node in statement.DescendantNodes())
         {
-            if (node is BlockSyntax or SwitchExpressionSyntax)
+            if (node is BlockSyntax or SwitchExpressionSyntax || CollectionLayout.AlwaysExpands(node))
                 return true;
         }
 

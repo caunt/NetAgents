@@ -216,7 +216,7 @@ internal static class ChainLayout
     {
         foreach (SyntaxNode node in top.DescendantNodes())
         {
-            if (node is BlockSyntax or SwitchExpressionSyntax)
+            if (node is BlockSyntax or SwitchExpressionSyntax || CollectionLayout.AlwaysExpands(node))
                 return false;
         }
 
