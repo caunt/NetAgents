@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -143,8 +144,9 @@ public sealed class MemberOrderingTests
             """;
 
         string fixedSource = await CodeFixTestHarness.FixMemberOrdering(source, fixAll: true);
+        SyntaxNode root = await CSharpSyntaxTree.ParseText(fixedSource).GetRootAsync();
 
-        TypeDeclarationSyntax declaration = (await CSharpSyntaxTree.ParseText(fixedSource).GetRootAsync()).DescendantNodes().OfType<TypeDeclarationSyntax>().First();
+        TypeDeclarationSyntax declaration = root.DescendantNodes().OfType<TypeDeclarationSyntax>().First();
         MemberDeclarationSyntax[] members = [.. declaration.Members];
         string[] initializers = [.. members.Where(static member => member is FieldDeclarationSyntax or PropertyDeclarationSyntax).Select(static member => member.ToString())];
 

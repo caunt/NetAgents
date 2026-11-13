@@ -174,10 +174,10 @@ public sealed class CompositionPartsTests
             metadata,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-        EmitResult result = compilation.Emit(assemblyPath);
-        Diagnostic[] diagnostics = [.. result.Diagnostics];
+        EmitResult emission = compilation.Emit(assemblyPath);
+        Diagnostic[] diagnostics = [.. emission.Diagnostics];
 
-        Assert.True(result.Success, string.Join(separator: "\n", diagnostics));
+        Assert.True(emission.Success, string.Join(separator: "\n", diagnostics));
     }
 
     private static ICloneable[] Compose(IEnumerable<Type> parts)

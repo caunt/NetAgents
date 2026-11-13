@@ -38,7 +38,7 @@ public sealed class CodeFixPerformanceTests
         List<string> messages = [];
         FormattingProgress progress = new(project.Name, messages.Add);
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
             analyzers: [analyzer],
             providers: [optional, required],
             static fault => Assert.Fail(fault),
@@ -46,7 +46,7 @@ public sealed class CodeFixPerformanceTests
             progress);
 
         // The run settles after four passes and analyzes each accepted state once.
-        Assert.True(result.Blocking.IsEmpty);
+        Assert.True(run.Blocking.IsEmpty);
         Assert.Equal(expected: 4, analyzer.Runs);
         Assert.Equal(expected: 8, analyzer.TreeVisits);
         Assert.Equal(expected: 4, analyzer.States.Distinct(StringComparer.Ordinal).Count());
@@ -55,8 +55,8 @@ public sealed class CodeFixPerformanceTests
         Assert.Equal(includeSuggestion ? ["required", "required", "required", "optional"] : ["required", "required", "required"], actions);
 
         // The fixes reached the source: the value is 3 and the doubled space is gone.
-        Assert.Contains(expectedSubstring: "=> 3;", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain(expectedSubstring: "static  int", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "=> 3;", await DocumentText.Read(run.Project.Documents.First()), StringComparison.Ordinal);
+        Assert.DoesNotContain(expectedSubstring: "static  int", await DocumentText.Read(run.Project.Documents.First()), StringComparison.Ordinal);
 
         // Progress names each pass and the action being validated, and ends with the summary line.
         Assert.Contains(messages, static message => message.Contains(value: "pass 1, elapsed", StringComparison.Ordinal));
@@ -78,7 +78,7 @@ public sealed class CodeFixPerformanceTests
         DriftingAnalyzer analyzer = new();
         List<string> messages = [];
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
             analyzers: [analyzer],
             providers: [new DriftFix(), new AdvanceFix()],
             static fault => Assert.Fail(fault),
@@ -87,12 +87,12 @@ public sealed class CodeFixPerformanceTests
 
         // Every pass changes Step.cs, so the rejected candidate is never the one the validation cache
         // remembers. Only skipping the action outright keeps the later passes from revalidating it.
-        Assert.True(result.Blocking.IsEmpty);
+        Assert.True(run.Blocking.IsEmpty);
         Assert.Equal(expected: 1, messages.Count(static message => message.Contains(value: "rejected PERF0007", StringComparison.Ordinal)));
         Assert.Equal(expected: 5, analyzer.Runs);
 
         // The accepted fixes still land, and the rejected action is never looked up again.
-        Assert.Contains(expectedSubstring: "=> 3;", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "=> 3;", await DocumentText.Read(run.Project.Documents.First()), StringComparison.Ordinal);
         Assert.DoesNotContain(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
     }
 
@@ -151,7 +151,7 @@ public sealed class CodeFixPerformanceTests
 
         // Progress stopped at the syntax check, and the source is left as written.
         Assert.Contains(expectedSubstring: "checking source syntax", Assert.Single(messages), StringComparison.Ordinal);
-        Assert.Equal(source, (await project.Documents.Single().GetTextAsync()).ToString());
+        Assert.Equal(source, await DocumentText.Read(project.Documents.Single()));
     }
 
     /// <summary>Cannot accept a fix that changes the project settings used to validate the source.</summary>
@@ -165,14 +165,14 @@ public sealed class CodeFixPerformanceTests
         List<string> actions = [];
         StepFix valid = new(actions);
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
             analyzers: [analyzer],
             providers: [new ProjectSettingsFix(), valid],
             static fault => Assert.Fail(fault),
             CancellationToken.None);
 
-        Assert.True(result.Blocking.IsEmpty);
-        Assert.Equal(project.CompilationOptions, result.Project.CompilationOptions);
+        Assert.True(run.Blocking.IsEmpty);
+        Assert.Equal(project.CompilationOptions, run.Project.CompilationOptions);
         Assert.Equal(expected: 3, actions.Count);
         Assert.Equal(expected: 4, analyzer.Runs);
     }

@@ -122,10 +122,10 @@ public sealed class ControlFlowBracesCodeFixTests
             string source = member.Replace(oldValue: "STATEMENTS", statements, StringComparison.Ordinal).Replace(oldValue: "\n", lineEnding, StringComparison.Ordinal);
             string target = member.Replace(oldValue: "STATEMENTS", expected, StringComparison.Ordinal).Replace(oldValue: "\n", lineEnding, StringComparison.Ordinal);
 
-            string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
+            string fixedSource = await CodeFixTestHarness.FixBraces(source, fixAll: true);
 
-            Assert.Equal(target, result);
-            Assert.Empty(await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), result));
+            Assert.Equal(target, fixedSource);
+            Assert.Empty(await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), fixedSource));
         }
     }
 
@@ -231,13 +231,13 @@ public sealed class ControlFlowBracesCodeFixTests
             "            count = System.Math.Abs(", "                count); // result", "    }", "}",
         ]);
 
-        string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
+        string fixedSource = await CodeFixTestHarness.FixBraces(source, fixAll: true);
 
         foreach (string comment in new[] { "loop", "opening", "body", "decrement", "closing", "condition", "explanation", "result" })
-            Assert.Contains("// " + comment + lineEnding, result, StringComparison.Ordinal);
+            Assert.Contains("// " + comment + lineEnding, fixedSource, StringComparison.Ordinal);
 
-        Assert.DoesNotContain(expectedSubstring: "\n", result.Replace(lineEnding, string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
-        Assert.Empty(await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), result));
+        Assert.DoesNotContain(expectedSubstring: "\n", fixedSource.Replace(lineEnding, string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), fixedSource));
     }
 
     /// <summary>
@@ -266,15 +266,15 @@ public sealed class ControlFlowBracesCodeFixTests
             }
             """;
 
-        string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
-        SyntaxNode root = await CSharpSyntaxTree.ParseText(result).GetRootAsync();
+        string fixedSource = await CodeFixTestHarness.FixBraces(source, fixAll: true);
+        SyntaxNode root = await CSharpSyntaxTree.ParseText(fixedSource).GetRootAsync();
 
         IfStatementSyntax[] conditionals = [.. root.DescendantNodes().OfType<IfStatementSyntax>()];
 
         Assert.NotNull(conditionals[0].Else);
         Assert.Null(conditionals[1].Else);
         Assert.True(conditionals[0].Statement is BlockSyntax { Statements.Count: 1 });
-        Assert.Empty(await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), result));
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), fixedSource));
     }
 
     /// <summary>
@@ -294,15 +294,15 @@ public sealed class ControlFlowBracesCodeFixTests
             }
             """;
 
-        string result = await CodeFixTestHarness.FixBraces(source, fixAll: true);
-        SyntaxNode root = await CSharpSyntaxTree.ParseText(result).GetRootAsync();
+        string fixedSource = await CodeFixTestHarness.FixBraces(source, fixAll: true);
+        SyntaxNode root = await CSharpSyntaxTree.ParseText(fixedSource).GetRootAsync();
 
         IfStatementSyntax[] conditionals = [.. root.DescendantNodes().OfType<IfStatementSyntax>()];
 
         Assert.NotNull(conditionals[0].Else);
         Assert.Null(conditionals[1].Else);
         Assert.True(conditionals[0].Statement is BlockSyntax { Statements: [WhileStatementSyntax] });
-        Assert.Empty(await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), result));
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), fixedSource));
     }
 
     /// <summary>

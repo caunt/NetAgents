@@ -48,13 +48,15 @@ public sealed class BlockPaddingTests
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "ExampleType.cs", SourceText.From(source)).Project;
 
-        Project result = (await CodeFixRunner.Fix(project,
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
             analyzers: [new BlockPaddingAnalyzer(), new MethodSpacingAnalyzer(), new MemberOrderingAnalyzer()],
             providers: [new BlockPaddingCodeFixProvider(), new MethodSpacingCodeFixProvider(), new MemberOrderingCodeFixProvider()],
             static fault => Assert.Fail(fault),
-            CancellationToken.None)).Project;
+            CancellationToken.None);
 
-        string formatted = (await result.Documents.Single().GetTextAsync()).ToString();
+        Project fixedProject = run.Project;
+
+        string formatted = await DocumentText.Read(fixedProject.Documents.Single());
 
         Assert.Equal(expected: "class ExampleType\n{\n    void Alpha() { }\n\n    void Zebra() { }\n}\n", formatted);
         Assert.Empty(await AnalyzerTestHarness.Analyze(new BlockPaddingAnalyzer(), formatted));

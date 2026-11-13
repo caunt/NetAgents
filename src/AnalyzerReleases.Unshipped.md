@@ -46,3 +46,6 @@ NETAGENTS0040 | Readability | Error | Groups of at most four statements or membe
 NETAGENTS0041 | Formatting | Error | The when keyword on the line of the catch clause, case pattern, or switch arm it guards
 NETAGENTS0042 | Formatting | Error | Members that fit within 128 characters written on one line instead of wrapped at = or =>
 NETAGENTS0043 | Configuration | Error | No suppression attributes or pragmas for NetAgents, code analysis, style, or documentation rules
+NETAGENTS0044 | Readability | Error | Awaited values named in a local before their members are read
+NETAGENTS0045 | Formatting | Error | Simple statements that fit within 128 characters written on one line
+NETAGENTS0046 | Naming | Error | No local names built only from placeholder words such as result, flag, or temp

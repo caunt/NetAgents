@@ -49,14 +49,14 @@ public sealed class StatementGroupingConvergenceTests
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Example.cs", SourceText.From(source), filePath: "Example.cs").Project;
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
             analyzers: [new StatementGroupingAnalyzer(), new StatementSpacingAnalyzer(), new UnwrapAnalyzer()],
             providers: [new StatementGroupingCodeFixProvider(), new StatementSpacingCodeFixProvider(), new UnwrapFix()],
             static fault => Assert.Fail(fault),
             CancellationToken.None);
 
-        Assert.Equal(expected, (await result.Project.Documents.Single().GetTextAsync()).ToString());
-        Assert.True(result.Blocking.IsEmpty);
+        Assert.Equal(expected, await DocumentText.Read(run.Project.Documents.Single()));
+        Assert.True(run.Blocking.IsEmpty);
     }
 
     /// <summary>
@@ -90,12 +90,11 @@ public sealed class StatementGroupingConvergenceTests
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Example.cs", SourceText.From(Wrap(written)), filePath: "Example.cs").Project;
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, analyzers: [.. analyzers], providers: [.. providers], static fault => Assert.Fail(fault), CancellationToken.None);
-
-        string formatted = (await result.Project.Documents.Single().GetTextAsync()).ToString();
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [.. analyzers], providers: [.. providers], static fault => Assert.Fail(fault), CancellationToken.None);
+        string formatted = await DocumentText.Read(run.Project.Documents.Single());
 
         Assert.Equal(Wrap(expected), formatted);
-        Assert.True(result.Blocking.IsEmpty);
+        Assert.True(run.Blocking.IsEmpty);
 
         foreach (DiagnosticAnalyzer analyzer in analyzers)
             Assert.Empty(await AnalyzerTestHarness.Analyze(analyzer, formatted));

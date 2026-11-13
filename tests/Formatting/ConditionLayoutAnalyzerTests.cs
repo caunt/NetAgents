@@ -44,9 +44,9 @@ public sealed class ConditionLayoutAnalyzerTests
     public async Task EnforcesExactLengthBoundary(string conditionLength)
     {
         int length = int.Parse(conditionLength, CultureInfo.InvariantCulture);
-        string condition = "value > 0" + new string(c: ' ', length - "value > 0".Length);
+        string paddedTest = "value > 0" + new string(c: ' ', length - "value > 0".Length);
 
-        Diagnostic[] diagnostics = await Analyze($"if ({condition}) return;");
+        Diagnostic[] diagnostics = await Analyze($"if ({paddedTest}) return;");
 
         Assert.Equal(length > 128 ? 1 : 0, diagnostics.Length);
     }
@@ -69,9 +69,9 @@ public sealed class ConditionLayoutAnalyzerTests
     {
         ArgumentNullException.ThrowIfNull(template);
 
-        string condition = string.Join(separator: " || ", Enumerable.Repeat(element: "value > 0", count: 12));
+        string longTest = string.Join(separator: " || ", Enumerable.Repeat(element: "value > 0", count: 12));
 
-        Diagnostic[] diagnostics = await Analyze(template.Replace(oldValue: "CONDITION", condition, StringComparison.Ordinal));
+        Diagnostic[] diagnostics = await Analyze(template.Replace(oldValue: "CONDITION", longTest, StringComparison.Ordinal));
 
         Assert.Equal(ConditionLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

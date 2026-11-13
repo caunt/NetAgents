@@ -72,14 +72,14 @@ internal static class AnalyzerCatalog
 
         foreach (string path in analyzerPaths)
         {
-            AnalyzerReferenceLoadingResult result = Load(path, loader);
+            AnalyzerReferenceLoadingResult assemblyLoad = Load(path, loader);
 
-            references.Add(result.Reference);
+            references.Add(assemblyLoad.Reference);
 
-            if (result.Hosted is not null)
-                hosted.Add(result.Hosted);
+            if (assemblyLoad.Hosted is not null)
+                hosted.Add(assemblyLoad.Hosted);
 
-            unavailable.AddRange(result.Unavailable);
+            unavailable.AddRange(assemblyLoad.Unavailable);
         }
 
         return new(References: [.. references], Hosted: [.. hosted], Unavailable: [.. unavailable]);
@@ -147,24 +147,24 @@ internal static class AnalyzerCatalog
         if (rejections.Length == 0 || !loaded.IsEmpty)
             return new(reference, Hosted: null, Unavailable: [.. failures.Select(failure => Describe(path, failure))]);
 
-        AnalyzerHostingResult result = Host(path, loader);
+        AnalyzerHostingResult hosting = Host(path, loader);
 
-        if (result.Analyzers.IsEmpty)
+        if (hosting.Analyzers.IsEmpty)
         {
             // An assembly no runtime can read is enforcement lost; one that carries source generators and
             // no analyzer at all, as the Razor compiler does, costs this formatter nothing to skip.
-            string[] refused = result.Read ? [] : [.. rejections.Select(failure => Describe(path, failure))];
+            string[] refused = hosting.Read ? [] : [.. rejections.Select(failure => Describe(path, failure))];
 
-            return new(reference, Hosted: null, Unavailable: [.. refused, .. result.Unavailable]);
+            return new(reference, Hosted: null, Unavailable: [.. refused, .. hosting.Unavailable]);
         }
 
-        string count = result.Analyzers.Length.ToString(CultureInfo.InvariantCulture);
-        string rules = result.Analyzers.Length == 1 ? "analyzer" : "analyzers";
+        string count = hosting.Analyzers.Length.ToString(CultureInfo.InvariantCulture);
+        string rules = hosting.Analyzers.Length == 1 ? "analyzer" : "analyzers";
         string reasons = string.Join(separator: ", ", rejections.Select(Explain));
 
-        return new(new HostedAnalyzerReference(path, result.Analyzers),
+        return new(new HostedAnalyzerReference(path, hosting.Analyzers),
             $"NetAgents hosts {count} {rules} from {Path.GetFileName(path)} that this formatter's Roslyn refused: {reasons}",
-            result.Unavailable);
+            hosting.Unavailable);
     }
 
     internal sealed record AnalyzerHostingResult(bool Read, ImmutableArray<DiagnosticAnalyzer> Analyzers, string[] Unavailable);

@@ -30,20 +30,20 @@ public sealed class FormattingAnalysisTests
         DependencyAnalyzer analyzer = new(offerFixes: true);
         List<string> messages = [];
 
-        CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project,
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
             analyzers: [analyzer],
             providers: [new CandidateFix(rejected: true), new CandidateFix(rejected: false)],
             static fault => Assert.Fail(fault),
             CancellationToken.None,
             new(project.Name, messages.Add));
 
-        Assert.True(result.Blocking.IsEmpty);
+        Assert.True(run.Blocking.IsEmpty);
         Assert.Equal(expected: 4, analyzer.Runs);
 
         // The rejected candidate is validated once, and the accepted one lands.
         Assert.Equal(expected: 1, messages.Count(static message => message.Contains(value: "rejected PERF0004", StringComparison.Ordinal)));
         Assert.DoesNotContain(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
-        Assert.Contains(expectedSubstring: "=> 4;", (await result.Project.Documents.First().GetTextAsync()).ToString(), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "=> 4;", await DocumentText.Read(run.Project.Documents.First()), StringComparison.Ordinal);
     }
 
     /// <summary>Counts errors by identity, so a moved one is not new and a repeated one is.</summary>
@@ -87,10 +87,10 @@ public sealed class FormattingAnalysisTests
 
         Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() { int unused = 0; return 1; } }\n");
 
-        FormattingAnalysis.ValidationResult result = await analysis.Validate(candidate, baseline, actionKey: "unused variable", optional: false, CancellationToken.None);
+        FormattingAnalysis.ValidationResult validation = await analysis.Validate(candidate, baseline, actionKey: "unused variable", optional: false, CancellationToken.None);
 
-        Assert.True(result.IntroducedErrors.IsEmpty);
-        Assert.DoesNotContain(result.Diagnostics.ToArray(), static diagnostic => diagnostic.Id == "CS0219" && !diagnostic.IsSuppressed);
+        Assert.True(validation.IntroducedErrors.IsEmpty);
+        Assert.DoesNotContain(validation.Diagnostics.ToArray(), static diagnostic => diagnostic.Id == "CS0219" && !diagnostic.IsSuppressed);
     }
 
     /// <summary>An error already present in today's baseline no longer justifies rejecting the action.</summary>
@@ -213,11 +213,11 @@ public sealed class FormattingAnalysisTests
         // A candidate that no longer compiles is what the shortcut exists to reject without analyzers.
         Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() => \"text\"; }\n");
 
-        FormattingAnalysis.ValidationResult result = await analysis
+        FormattingAnalysis.ValidationResult validation = await analysis
             .Validate(candidate, baseline, actionKey: "broken candidate", optional: false, CancellationToken.None)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        Assert.False(result.IntroducedErrors.IsEmpty);
+        Assert.False(validation.IntroducedErrors.IsEmpty);
 
         return messages;
     }

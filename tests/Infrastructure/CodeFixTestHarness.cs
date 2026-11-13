@@ -19,6 +19,7 @@ using NetAgents.Analyzers.Documentation;
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Formatting.Clauses;
 using NetAgents.Analyzers.Formatting.Members;
+using NetAgents.Analyzers.Formatting.Statements;
 using NetAgents.Analyzers.Ordering;
 using NetAgents.Analyzers.Readability;
 using NetAgents.Analyzers.StatementGroups;
@@ -127,6 +128,11 @@ internal static class CodeFixTestHarness
     public static async Task<string> FixNumericConversions(string source, bool fixAll)
     {
         return await Fix(source, new NumericConversionAnalyzer(), new NumericConversionCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixOneLineStatements(string source, bool fixAll)
+    {
+        return await Fix(source, new OneLineStatementAnalyzer(), new OneLineStatementCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<string> FixQualifiedTypeImports(string source, bool fixAll)
@@ -238,6 +244,6 @@ internal static class CodeFixTestHarness
             Assert.True(remaining.IsEmpty);
         }
 
-        return (await changedDocument.GetTextAsync().ConfigureAwait(continueOnCapturedContext: false)).ToString();
+        return await DocumentText.Read(changedDocument).ConfigureAwait(continueOnCapturedContext: false);
     }
 }

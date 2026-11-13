@@ -33,15 +33,16 @@ public sealed class EditableDocumentsTests
         Project project = CreateProject(workspace, name: "Editable.cs", source: "class Editable\n{\n    private static int Value;\n}\n")
             .AddDocument(name: "Generated.g.cs", SourceText.From(GeneratedSource), filePath: "/workspace/Generated.g.cs").Project;
 
-        Project result = (await CodeFixRunner.Fix(project,
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
             analyzers: [new PrivateFieldAnalyzer()],
             providers: [new PrivateFieldFix(reach)],
             static fault => Assert.Fail(fault),
-            CancellationToken.None))
-            .Project;
+            CancellationToken.None);
 
-        Assert.Contains(expectedSubstring: "internal static int Value;", await ReadDocument(result, name: "Editable.cs"), StringComparison.Ordinal);
-        Assert.Equal(GeneratedSource, await ReadDocument(result, name: "Generated.g.cs"));
+        Project fixedProject = run.Project;
+
+        Assert.Contains(expectedSubstring: "internal static int Value;", await ReadDocument(fixedProject, name: "Editable.cs"), StringComparison.Ordinal);
+        Assert.Equal(GeneratedSource, await ReadDocument(fixedProject, name: "Generated.g.cs"));
     }
 
     /// <summary>
@@ -61,14 +62,16 @@ public sealed class EditableDocumentsTests
         Project project = CreateProject(workspace, name: "Alpha.cs", plain)
             .AddDocument(name: "Beta.cs", SourceText.From(quoting), filePath: "/workspace/Beta.cs").Project;
 
-        Project result = (await CodeFixRunner.Fix(project,
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
             analyzers: [new ArgumentLayoutAnalyzer()],
             providers: [new ArgumentLayoutCodeFixProvider()],
             static fault => Assert.Fail(fault),
-            CancellationToken.None)).Project;
+            CancellationToken.None);
 
-        string alpha = await ReadDocument(result, name: "Alpha.cs");
-        string beta = await ReadDocument(result, name: "Beta.cs");
+        Project fixedProject = run.Project;
+
+        string alpha = await ReadDocument(fixedProject, name: "Alpha.cs");
+        string beta = await ReadDocument(fixedProject, name: "Beta.cs");
 
         Assert.Contains(expectedSubstring: "System.Console.WriteLine(string.Empty);", alpha, StringComparison.Ordinal);
         Assert.Contains(expectedSubstring: "System.Console.WriteLine(Sample);", beta, StringComparison.Ordinal);
@@ -92,9 +95,11 @@ public sealed class EditableDocumentsTests
                 SourceText.From($"root = true\n\n[*.cs]\ngenerated_code = {generated}\n"),
                 filePath: "/workspace/.editorconfig").Project;
 
-        Project result = (await CodeFixRunner.Fix(project, analyzers: [], providers: [], static fault => Assert.Fail(fault), CancellationToken.None)).Project;
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [], providers: [], static fault => Assert.Fail(fault), CancellationToken.None);
 
-        string text = await ReadDocument(result, name);
+        Project fixedProject = run.Project;
+
+        string text = await ReadDocument(fixedProject, name);
 
         Assert.Equal(outcome == "kept", text == source);
     }
@@ -107,14 +112,15 @@ public sealed class EditableDocumentsTests
 
         using AdhocWorkspace workspace = new();
 
-        Project result = (await CodeFixRunner.Fix(CreateProject(workspace, name: "Example.cs", source),
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(CreateProject(workspace, name: "Example.cs", source),
             analyzers: [],
             providers: [],
             static fault => Assert.Fail(fault),
-            CancellationToken.None))
-            .Project;
+            CancellationToken.None);
 
-        Assert.Contains(expectedSubstring: "void Run() { }", await ReadDocument(result, name: "Example.cs"), StringComparison.Ordinal);
+        Project fixedProject = run.Project;
+
+        Assert.Contains(expectedSubstring: "void Run() { }", await ReadDocument(fixedProject, name: "Example.cs"), StringComparison.Ordinal);
     }
 
     private static Project CreateProject(AdhocWorkspace workspace, string name, string source)
@@ -129,7 +135,7 @@ public sealed class EditableDocumentsTests
     {
         Document document = project.Documents.Single(candidate => candidate.Name == name);
 
-        return (await document.GetTextAsync().ConfigureAwait(continueOnCapturedContext: false)).ToString();
+        return await DocumentText.Read(document).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     // Reports private fields in generated code too, as an analyzer that opts into it does.
@@ -213,7 +219,9 @@ public sealed class EditableDocumentsTests
                         {
                             Document document = solution.GetDocument(identifier) ?? throw new InvalidOperationException(message: "A project document is missing.");
 
-                            solution = (await MakeInternal(document, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)).Project.Solution;
+                            Document internalized = await MakeInternal(document, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+
+                            solution = internalized.Project.Solution;
                         }
 
                         return solution;

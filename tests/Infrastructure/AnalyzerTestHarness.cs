@@ -41,10 +41,10 @@ internal static class AnalyzerTestHarness
 
         ImmutableArray<Diagnostic> diagnostics = await compilation.WithAnalyzers(analyzers: [analyzer]).GetAnalyzerDiagnosticsAsync().ConfigureAwait(continueOnCapturedContext: false);
 
-        Diagnostic[] result = [.. diagnostics];
+        Diagnostic[] reported = [.. diagnostics];
 
-        Assert.DoesNotContain(result, static diagnostic => diagnostic.Id == "AD0001");
+        Assert.DoesNotContain(reported, static diagnostic => diagnostic.Id == "AD0001");
 
-        return result;
+        return reported;
     }
 }

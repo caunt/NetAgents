@@ -189,10 +189,7 @@ internal static class CodeFixRunner
 
                     FixAllProvider? fixAllProvider = GetProjectFixAll(provider);
                     bool canFixProject = fixAllProvider is not null && selected.EquivalenceKey is not null;
-
-                    string? fixAllKey = canFixProject
-                        ? $"{provider.GetType().FullName}|{selected.EquivalenceKey}"
-                        : null;
+                    string? fixAllKey = canFixProject ? $"{provider.GetType().FullName}|{selected.EquivalenceKey}" : null;
 
                     if (fixAllKey is not null && rejectedFixAllActions.Contains(fixAllKey))
                         continue;

@@ -47,57 +47,57 @@ public sealed class ConditionLayoutAnalyzer() : PolicyAnalyzer(Rule)
         if (context.Node.ContainsDiagnostics)
             return;
 
-        ExpressionSyntax condition;
+        ExpressionSyntax testedExpression;
         TextSpan span;
 
         switch (context.Node)
         {
             case IfStatementSyntax statement:
                 {
-                    condition = statement.Condition;
+                    testedExpression = statement.Condition;
                     span = TextSpan.FromBounds(statement.OpenParenToken.Span.End, statement.CloseParenToken.SpanStart);
 
                     break;
                 }
             case WhileStatementSyntax statement:
                 {
-                    condition = statement.Condition;
+                    testedExpression = statement.Condition;
                     span = TextSpan.FromBounds(statement.OpenParenToken.Span.End, statement.CloseParenToken.SpanStart);
 
                     break;
                 }
             case DoStatementSyntax statement:
                 {
-                    condition = statement.Condition;
+                    testedExpression = statement.Condition;
                     span = TextSpan.FromBounds(statement.OpenParenToken.Span.End, statement.CloseParenToken.SpanStart);
 
                     break;
                 }
             case ForStatementSyntax statement when statement.Condition is not null:
                 {
-                    condition = statement.Condition;
+                    testedExpression = statement.Condition;
                     span = TextSpan.FromBounds(statement.FirstSemicolonToken.Span.End, statement.SecondSemicolonToken.SpanStart);
 
                     break;
                 }
             case CatchFilterClauseSyntax filter:
                 {
-                    condition = filter.FilterExpression;
+                    testedExpression = filter.FilterExpression;
                     span = TextSpan.FromBounds(filter.OpenParenToken.Span.End, filter.CloseParenToken.SpanStart);
 
                     break;
                 }
             case ConditionalExpressionSyntax expression:
                 {
-                    condition = expression.Condition;
-                    span = condition.Span;
+                    testedExpression = expression.Condition;
+                    span = testedExpression.Span;
 
                     break;
                 }
             case WhenClauseSyntax clause:
                 {
-                    condition = clause.Condition;
-                    span = TextSpan.FromBounds(clause.WhenKeyword.Span.End, condition.Span.End);
+                    testedExpression = clause.Condition;
+                    span = TextSpan.FromBounds(clause.WhenKeyword.Span.End, testedExpression.Span.End);
 
                     break;
                 }
@@ -111,6 +111,6 @@ public sealed class ConditionLayoutAnalyzer() : PolicyAnalyzer(Rule)
             != source.Lines.GetLineFromPosition(span.End).LineNumber;
 
         if (isMultiline || span.Length > LayoutLimits.MaximumInlineLength)
-            context.ReportDiagnostic(Diagnostic.Create(Rule, condition.GetLocation(), LayoutLimits.MaximumInlineLength.ToString(CultureInfo.InvariantCulture)));
+            context.ReportDiagnostic(Diagnostic.Create(Rule, testedExpression.GetLocation(), LayoutLimits.MaximumInlineLength.ToString(CultureInfo.InvariantCulture)));
     }
 }

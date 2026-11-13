@@ -34,7 +34,7 @@ public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule, analyzesR
 
     private static void AnalyzeSyntax(SyntaxNodeAnalysisContext context)
     {
-        ExpressionSyntax? condition = context.Node switch
+        ExpressionSyntax? loopCondition = context.Node switch
         {
             WhileStatementSyntax whileStatement => whileStatement.Condition,
             DoStatementSyntax doStatement => doStatement.Condition,
@@ -42,10 +42,10 @@ public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule, analyzesR
             _ => null,
         };
 
-        while (condition is ParenthesizedExpressionSyntax parenthesizedExpression)
-            condition = parenthesizedExpression.Expression;
+        while (loopCondition is ParenthesizedExpressionSyntax parenthesizedExpression)
+            loopCondition = parenthesizedExpression.Expression;
 
-        if (condition is not null && !condition.IsKind(SyntaxKind.TrueLiteralExpression))
+        if (loopCondition is not null && !loopCondition.IsKind(SyntaxKind.TrueLiteralExpression))
             return;
 
         context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation()));
