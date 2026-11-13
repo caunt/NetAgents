@@ -28,6 +28,7 @@ public sealed class DirectoryFileCountAnalyzerTests
 
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, diagnostic.Id);
         Assert.Equal(expected: "Features/Source00.cs", diagnostic.Location.SourceTree?.FilePath);
+
         Assert.Equal(expected: "Directory 'Features' contains 17 authored C# files (maximum 16); organize these files into subdirectories with narrower responsibilities",
             diagnostic.GetMessage(CultureInfo.InvariantCulture));
     }

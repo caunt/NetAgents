@@ -22,6 +22,7 @@
     <Compile Include="../Formatting/StatementSpacing.cs" Link="Formatting/StatementSpacing.cs" />
     <Compile Include="../Formatting/ControlFlowBraces.cs" Link="Formatting/ControlFlowBraces.cs" />
     <Compile Include="../Formatting/LambdaParameterLayout.cs" Link="Formatting/LambdaParameterLayout.cs" />
+    <Compile Include="../Formatting/Clauses/WhenClausePlacement.cs" Link="Formatting/Clauses/WhenClausePlacement.cs" />
     <Compile Include="../TypeSafety/NumericConversion.cs" Link="TypeSafety/NumericConversion.cs" />
     <Compile Include="../StatementGroups/StatementClassifier.cs" Link="StatementGroups/StatementClassifier.cs" />
     <Compile Include="../StatementGroups/StatementGroup.cs" Link="StatementGroups/StatementGroup.cs" />

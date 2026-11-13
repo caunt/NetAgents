@@ -83,8 +83,10 @@ public sealed class RedundantMethodSuffixAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new RedundantMethodSuffixAnalyzer(), members);
 
         Assert.Equal(expected: 2, diagnostics.Length);
+
         Assert.Contains(diagnostics,
             static diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains(value: "'UpdateValue'", StringComparison.Ordinal));
+
         Assert.Contains(diagnostics,
             static diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains(value: "'SetName'", StringComparison.Ordinal));
     }

@@ -16,8 +16,8 @@ namespace NetAgents.Analyzers.StatementGroups;
 /// <para>
 /// Declarations, assignments, event subscriptions, calls, awaits, and argument checks each form groups of their
 /// own, and declarations and assignments that store an awaited result form two more. A comment line opens a new
-/// group, and every other statement stands alone, as NETAGENTS0016 already keeps control flow and multiline
-/// declarations. Blank lines the author placed elsewhere are removed:
+/// group. A statement written over several lines stands alone whatever its kind, and so does every other statement,
+/// as NETAGENTS0016 already keeps control flow and multiline declarations. Blank lines the author placed elsewhere are removed:
 /// </para>
 /// <code>
 /// ArgumentNullException.ThrowIfNull(cart);
@@ -42,7 +42,7 @@ public sealed class StatementGroupingAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Statements must be grouped by kind",
-        messageFormat: "Separate groups of statements with one blank line and keep none inside a group: declarations, declarations of awaited results, assignments, assignments of awaited results, event subscriptions, calls, await statements, and argument checks each form groups of their own, a comment line opens a new group, and every other statement stands alone",
+        messageFormat: "Separate groups of statements with one blank line and keep none inside a group: declarations, declarations of awaited results, assignments, assignments of awaited results, event subscriptions, calls, await statements, and argument checks each form groups of their own, a comment line opens a new group, and a statement written over several lines or of any other kind stands alone",
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

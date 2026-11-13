@@ -91,7 +91,8 @@ public sealed class StatementGroupingTests
     /// that differ, event subscriptions apart from arithmetic, argument checks and awaits apart from other calls,
     /// declarations and assignments of awaited results apart from other declarations, assignments, and awaits,
     /// increments with assignments, comment lines that open a group, trailing comments that do not, statements
-    /// that stand alone, and statements sharing a line.
+    /// that stand alone, statements sharing a line, and statements written over several lines, which stand alone
+    /// even beside another of their kind.
     /// </summary>
     /// <param name="written">The statements as written, one per line.</param>
     /// <param name="expected">The statements after the fix.</param>
@@ -120,6 +121,10 @@ public sealed class StatementGroupingTests
     [InlineData("int first = 1;\nvoid Log() => Console.WriteLine(first);\nLog();",
         "int first = 1;\n\nvoid Log() => Console.WriteLine(first);\n\nLog();")]
     [InlineData("int first = 1; Console.WriteLine(first);", "int first = 1;\n\nConsole.WriteLine(first);")]
+    [InlineData("int first = 1;\nConsole.WriteLine(name,\n    first);\nConsole.WriteLine(name);",
+        "int first = 1;\n\nConsole.WriteLine(name,\n    first);\n\nConsole.WriteLine(name);")]
+    [InlineData("_count = _count\n    + 1;\n_count = _count\n    + 2;\n_count = 0;",
+        "_count = _count\n    + 1;\n\n_count = _count\n    + 2;\n\n_count = 0;")]
     public async Task RegroupsStatements(string written, string expected)
     {
         Assert.Equal(Wrap(expected), await CodeFixTestHarness.FixStatementGroups(Wrap(written), fixAll: true));

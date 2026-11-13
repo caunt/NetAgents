@@ -76,6 +76,7 @@ public sealed class NullForgivingOperatorAnalyzerTests
         int expectedCount = member.Count(static character => character == '!');
 
         Assert.Equal(expectedCount, diagnostics.Length);
+
         Assert.All(diagnostics,
             static diagnostic =>
             {

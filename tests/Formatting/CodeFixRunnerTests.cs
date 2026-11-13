@@ -120,6 +120,7 @@ public sealed class CodeFixRunnerTests
         // The first pass introduces the second rule and the second pass settles it, so the run keeps its work.
         Assert.True(result.Introduced.IsEmpty);
         Assert.True(result.Blocking.IsEmpty);
+
         Assert.Contains(expectedSubstring: "internal static int Value",
             (await result.Project.Documents.Single().GetTextAsync()).ToString(),
             StringComparison.Ordinal);
@@ -294,6 +295,7 @@ public sealed class CodeFixRunnerTests
         CodeFixRunner.CodeFixResult result = await CodeFixRunner.Fix(project, analyzers: [], providers: [provider], static fault => Assert.Fail(fault), CancellationToken.None);
 
         Assert.True(result.Blocking.IsEmpty);
+
         Assert.DoesNotContain(expectedSubstring: "using System;",
             (await result.Project.Documents.Single().GetTextAsync()).ToString(),
             StringComparison.Ordinal);
@@ -475,6 +477,7 @@ public sealed class CodeFixRunnerTests
 
         Assert.Equal(expected: "CS0122", result.Blocking.Single().Id);
         Assert.InRange(provider.Attempts, low: 1, high: 3);
+
         Assert.Contains(expectedSubstring: "using System;",
             (await result.Project.Documents.Single().GetTextAsync()).ToString(),
             StringComparison.Ordinal);
@@ -659,6 +662,7 @@ public sealed class CodeFixRunnerTests
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
+
             context.RegisterSyntaxNodeAction(static node =>
             {
                 FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;
@@ -717,6 +721,7 @@ public sealed class CodeFixRunnerTests
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
+
             context.RegisterSyntaxNodeAction(static node =>
             {
                 FieldDeclarationSyntax field = (FieldDeclarationSyntax)node.Node;

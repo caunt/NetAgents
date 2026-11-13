@@ -304,6 +304,7 @@ public sealed class FormattingAnalysisTests
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
+
             context.RegisterCompilationAction(compilation =>
             {
                 Runs++;

@@ -6,8 +6,8 @@ namespace NetAgents.Analyzers.StatementGroups;
 internal enum StatementKind
 {
     /// <summary>
-    /// A statement that stands alone: control flow, a jump, a <c>using</c> declaration, a declaration spanning
-    /// lines, or any statement no group below covers.
+    /// A statement that stands alone: control flow, a jump, a <c>using</c> declaration, any statement written over
+    /// several lines, or any statement no group below covers.
     /// </summary>
     Alone,
 

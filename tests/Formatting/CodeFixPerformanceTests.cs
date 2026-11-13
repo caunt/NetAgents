@@ -256,6 +256,7 @@ public sealed class CodeFixPerformanceTests
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
+
             context.RegisterCompilationAction(compilation =>
             {
                 Runs++;
@@ -349,6 +350,7 @@ public sealed class CodeFixPerformanceTests
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
+
             context.RegisterCompilationAction(compilation =>
             {
                 Runs++;

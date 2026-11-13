@@ -31,11 +31,13 @@ public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule, analyzes
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
         context.RegisterOperationAction(AnalyzeExpressionStatement, OperationKind.ExpressionStatement);
+
         context.RegisterOperationAction(AnalyzeAssignment,
             OperationKind.SimpleAssignment,
             OperationKind.DeconstructionAssignment,
             OperationKind.CompoundAssignment,
             OperationKind.CoalesceAssignment);
+
         context.RegisterOperationAction(AnalyzeVariable, OperationKind.VariableDeclarator);
         context.RegisterOperationAction(AnalyzeLoop, OperationKind.Loop);
     }

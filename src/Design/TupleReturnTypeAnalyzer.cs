@@ -41,6 +41,7 @@ public sealed class TupleReturnTypeAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
             SyntaxKind.DelegateDeclaration,
             SyntaxKind.OperatorDeclaration,
             SyntaxKind.ConversionOperatorDeclaration);
+
         context.RegisterSyntaxNodeAction(AnalyzeFunctionPointer, SyntaxKind.FunctionPointerType);
         context.RegisterOperationAction(AnalyzeAnonymousFunction, OperationKind.AnonymousFunction);
     }

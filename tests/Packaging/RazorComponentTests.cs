@@ -132,6 +132,7 @@ public sealed class RazorComponentTests
             Assert.Equal(Counter, await File.ReadAllTextAsync(counterPath));
 
             await File.WriteAllTextAsync(samplePath, Sample);
+
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 buildArguments,
                 expectedDiagnosticIdentifier: "NETAGENTS0015",

@@ -18,7 +18,8 @@ public sealed class StatementGroupSizeTests
 
     /// <summary>
     /// Verifies groups of four or fewer are accepted, a comment line splits a longer run, and the exempt runs pass:
-    /// argument checks, and a constructor storing one parameter per line.
+    /// argument checks, and a constructor storing one parameter per line. Statements written over several lines
+    /// stand alone, so five of them in a row form no group.
     /// </summary>
     /// <param name="members">The members declared in the type.</param>
     [Theory]
@@ -29,6 +30,8 @@ public sealed class StatementGroupSizeTests
         + "        ArgumentNullException.ThrowIfNull(e);\n    }")]
     [InlineData("    public ExampleType(int count, string name, int total, int spare, EventHandler changed)\n    {\n        Count = count;\n"
         + "        Name = name;\n        _count = total;\n        _count = spare;\n        Changed = changed;\n    }")]
+    [InlineData("    public void Run()\n    {\n        _count = 1\n            + 1;\n        _count = 2\n            + 2;\n        _count = 3\n            + 3;\n"
+        + "        _count = 4\n            + 4;\n        _count = 5\n            + 5;\n    }")]
     public async Task AllowsShortAndExemptGroups(string members)
     {
         Assert.Empty(await Analyze(members));
@@ -45,6 +48,7 @@ public sealed class StatementGroupSizeTests
         Assert.StartsWith(expectedStartString: "These 5 declarations run together as one group, and a group may hold at most 4 statements. Split it where its purpose changes",
             diagnostic.GetMessage(CultureInfo.InvariantCulture),
             StringComparison.Ordinal);
+
         Assert.Contains(expectedSubstring: "A comment line starts a new group; a blank line does not",
             diagnostic.GetMessage(CultureInfo.InvariantCulture),
             StringComparison.Ordinal);

@@ -22,8 +22,9 @@ internal sealed class StatementClassifier(SemanticModel model, SourceText source
 
     public StatementKind Classify(StatementSyntax statement)
     {
-        // What NETAGENTS0016 already separates stands alone here too, so the two rules never disagree.
-        return StatementSpacing.RequiresSeparation(statement, source)
+        // What NETAGENTS0016 already separates stands alone here too, so the two rules never disagree, and so does
+        // every statement written over several lines, so two of them never share a group.
+        return StatementSpacing.RequiresSeparation(statement, source) || SpansLines(statement)
             ? StatementKind.Alone
             : statement switch
             {
@@ -86,5 +87,10 @@ internal sealed class StatementClassifier(SemanticModel model, SourceText source
     private bool IsEventSubscription(AssignmentExpressionSyntax assignment)
     {
         return (assignment.IsKind(SyntaxKind.AddAssignmentExpression) || assignment.IsKind(SyntaxKind.SubtractAssignmentExpression)) && model.GetSymbolInfo(assignment.Left, cancellationToken).Symbol is IEventSymbol;
+    }
+
+    private bool SpansLines(StatementSyntax statement)
+    {
+        return source.Lines.GetLineFromPosition(statement.SpanStart).LineNumber != source.Lines.GetLineFromPosition(statement.Span.End).LineNumber;
     }
 }

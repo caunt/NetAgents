@@ -98,6 +98,7 @@ public sealed class ConditionLayoutAnalyzerTests
         Diagnostic[] diagnostics = await Analyze(statement);
 
         Assert.Equal(ConditionLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+
         Assert.Contains(expectedSubstring: "separate variable declaration",
             diagnostics[0].GetMessage(CultureInfo.InvariantCulture),
             StringComparison.Ordinal);

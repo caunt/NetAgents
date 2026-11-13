@@ -31,6 +31,7 @@ public sealed class SourceFileLengthAnalyzerTests
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new SourceFileLengthAnalyzer(), source));
 
         Assert.Equal(SourceFileLengthAnalyzer.RuleIdentifier, diagnostic.Id);
+
         Assert.Equal(expected: "Split this file by responsibility; it has 1000 lines besides comments, and authored files may have at most 999",
             diagnostic.GetMessage(CultureInfo.InvariantCulture));
     }

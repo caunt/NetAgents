@@ -23,6 +23,7 @@ internal sealed class FormattingHost : AssemblyLoadContext
     {
         _taskContext = GetLoadContext(typeof(FormattingHost).Assembly)
             ?? throw new InvalidOperationException(message: "The formatting task's assembly context is unavailable.");
+
         _directories = Directory.Exists(sdkAssemblyDirectory) ? [sdkAssemblyDirectory, packagedDirectory] : [packagedDirectory];
     }
 

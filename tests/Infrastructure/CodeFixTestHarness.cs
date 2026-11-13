@@ -17,6 +17,7 @@ using NetAgents.Analyzers.CodeFixes.StatementGroups;
 using NetAgents.Analyzers.CodeFixes.TypeSafety;
 using NetAgents.Analyzers.Documentation;
 using NetAgents.Analyzers.Formatting;
+using NetAgents.Analyzers.Formatting.Clauses;
 using NetAgents.Analyzers.Ordering;
 using NetAgents.Analyzers.Readability;
 using NetAgents.Analyzers.StatementGroups;
@@ -44,6 +45,24 @@ internal static class CodeFixTestHarness
             await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)).ConfigureAwait(continueOnCapturedContext: false);
 
         Assert.Empty(actions);
+    }
+
+    public static async Task<int> CountFixes(string source, DiagnosticAnalyzer analyzer, CodeFixProvider provider)
+    {
+        using AdhocWorkspace workspace = new();
+
+        Document document = CreateDocument(workspace, source);
+
+        ImmutableArray<Diagnostic> diagnostics = await GetDiagnostics(document, analyzer).ConfigureAwait(continueOnCapturedContext: false);
+
+        List<CodeAction> actions = [];
+
+        Assert.False(diagnostics.IsEmpty);
+
+        foreach (Diagnostic diagnostic in diagnostics)
+            await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)).ConfigureAwait(continueOnCapturedContext: false);
+
+        return actions.Count;
     }
 
     public static async Task<string> FixArguments(string source, bool fixAll)
@@ -128,6 +147,11 @@ internal static class CodeFixTestHarness
     public static async Task<string> FixSummaryOpenings(string source, bool fixAll)
     {
         return await Fix(source, new SummaryOpeningAnalyzer(), new SummaryOpeningCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixWhenClauses(string source, bool fixAll)
+    {
+        return await Fix(source, new WhenClausePlacementAnalyzer(), new WhenClausePlacementCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<ImmutableArray<Diagnostic>> GetDiagnostics(Document document, DiagnosticAnalyzer analyzer)

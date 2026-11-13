@@ -101,6 +101,7 @@ public sealed class DocumentationProseAnalyzerTests
         Assert.Contains(expectedSubstring: "/// <summary>Gets the country code used by age restrictions.</summary>",
             fixedSource,
             StringComparison.Ordinal);
+
         Assert.Empty(await AnalyzerTestHarness.Analyze(new DocumentationProseAnalyzer(), fixedSource));
     }
 }

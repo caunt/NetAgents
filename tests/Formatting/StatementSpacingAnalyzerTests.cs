@@ -76,6 +76,7 @@ public sealed class StatementSpacingAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), source);
 
         Assert.Equal(StatementSpacingAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+
         Assert.Equal(expected: "numbers",
             source.Substring(Assert.Single(diagnostics).Location.SourceSpan.Start, Assert.Single(diagnostics).Location.SourceSpan.Length));
     }

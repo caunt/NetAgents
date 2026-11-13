@@ -259,6 +259,7 @@ public sealed class PackageConsumptionTests
             Assert.Contains(expectedSubstring: "(string Habitat, int Width, int Height) bounds = (Habitat: recipientName, Width: recipientName.Length, Height: recipientName.Length);",
                 renamedTuple,
                 StringComparison.Ordinal);
+
             Assert.Contains(expectedSubstring: "string habitat = bounds.Habitat;", renamedTuple, StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "int width = bounds.Width;", renamedTuple, StringComparison.Ordinal);
             Assert.Contains(expectedSubstring: "int height = bounds.Height;", renamedTuple, StringComparison.Ordinal);
@@ -463,6 +464,7 @@ public sealed class PackageConsumptionTests
             File.SetLastWriteTimeUtc(sourcePath, formattedTime);
 
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, expectedOutput: ["analyzing project", "NetAgents rewrote"], withoutShell: true);
+
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 arguments: [.. reportingArguments, "-p:Nullable=disable"],
                 expectedDiagnosticIdentifier: "NETAGENTS0014",
@@ -473,6 +475,7 @@ public sealed class PackageConsumptionTests
                 StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, blockedSource);
+
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 reportingArguments,
                 expectedDiagnosticIdentifier: "NETAGENTS0015",
@@ -489,6 +492,7 @@ public sealed class PackageConsumptionTests
                 StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, source);
+
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 arguments: ["msbuild", projectPath, "-t:FormatNetAgentsConsumerSource", "-p:DesignTimeBuild=true"],
                 withoutShell: true);
@@ -516,6 +520,7 @@ public sealed class PackageConsumptionTests
 
             // The first target must observe the shared-source rewrite made by the second target.
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, withoutShell: true);
+
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 reportingArguments,
                 expectedOutput: ["formatting Consumer: pass 0", "inputs unchanged; reusing completed formatting"],
@@ -529,6 +534,7 @@ public sealed class PackageConsumptionTests
                 ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
                     newValue: "System.IComparable CreateGreeting(int recipientName)",
                     StringComparison.Ordinal));
+
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001", withoutShell: true);
         }
         finally
@@ -665,6 +671,7 @@ public sealed class PackageConsumptionTests
             // Without any summary, the compiler's own CS1591 fails the build instead.
             await File.WriteAllTextAsync(sourcePath,
                 ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n", string.Empty, StringComparison.Ordinal));
+
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "CS1591");
             await File.WriteAllTextAsync(sourcePath, ValidSource);
 
@@ -760,6 +767,7 @@ public sealed class PackageConsumptionTests
                     projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
                         $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}",
                         StringComparison.Ordinal));
+
                 await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0014");
             }
 
@@ -792,6 +800,7 @@ public sealed class PackageConsumptionTests
                 arguments: [.. buildArguments, "-p:LangVersion=15.0"],
                 expectedDiagnosticIdentifier: "CS1617",
                 forbiddenOutput: ["NetAgents automatic formatting failed"]);
+
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments);
         }
         finally
@@ -843,6 +852,7 @@ public sealed class PackageConsumptionTests
 
             // A packages folder of its own keeps the restore from reusing a cached copy of the analyzer package.
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 arguments: ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"],
                 forbiddenOutput: ["NetAgents automatic formatting failed"]);
@@ -951,6 +961,7 @@ public sealed class PackageConsumptionTests
         string original = await File.ReadAllTextAsync(sourcePath).ConfigureAwait(continueOnCapturedContext: false);
 
         await File.WriteAllTextAsync(brokenPath, malformed).ConfigureAwait(continueOnCapturedContext: false);
+
         await ConsumerBuild.RunDevelopmentKit(workspacePath,
             arguments: ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "normal"],
             expectedDiagnosticIdentifier: "CS1513",

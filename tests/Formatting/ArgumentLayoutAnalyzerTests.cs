@@ -121,6 +121,7 @@ public sealed class ArgumentLayoutAnalyzerTests
 
         Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier,
             Assert.Single(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), compact)).Id);
+
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), expanded));
     }
 

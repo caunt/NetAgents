@@ -47,6 +47,7 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
         context.RegisterSyntaxNodeAction(AnalyzeTypeName, SyntaxKind.IdentifierName, SyntaxKind.GenericName);
+
         context.RegisterOperationAction(AnalyzeMember,
             OperationKind.Invocation,
             OperationKind.PropertyReference,

@@ -43,3 +43,4 @@ NETAGENTS0037 | Documentation | Error | Property and constructor summaries open 
 NETAGENTS0038 | Documentation | Error | Language keywords written as langword references in documentation
 NETAGENTS0039 | Formatting | Error | Statements grouped by kind, one blank line between groups and none inside them
 NETAGENTS0040 | Readability | Error | Statement groups of at most four statements, split by comments that say what each part is for
+NETAGENTS0041 | Formatting | Error | The when keyword on the line of the catch clause, case pattern, or switch arm it guards

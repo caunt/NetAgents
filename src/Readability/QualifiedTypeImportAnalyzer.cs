@@ -32,6 +32,7 @@ public sealed class QualifiedTypeImportAnalyzer() : PolicyAnalyzer(Rule)
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
         context.RegisterSyntaxNodeAction(static analysis => Report(analysis, (QualifiedNameSyntax)analysis.Node), SyntaxKind.QualifiedName);
+
         context.RegisterCompilationStartAction(static start =>
         {
             ImmutableHashSet<string> namespaces = QualifiedTypeImport.CollectNamespaceNames(start.Compilation);
