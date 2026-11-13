@@ -94,7 +94,8 @@ public sealed class MemberGroupingTests
     /// <summary>
     /// Verifies blank lines follow groups: none between single-line members of one bucket, one between buckets, one
     /// above a comment line, and one around a member with documentation, attributes, or more than one line, while the
-    /// space after the opening brace is left to NETAGENTS0023.
+    /// space after the opening brace is left to NETAGENTS0023. Constants group by type, so a number never sits between
+    /// two messages, while other fields keep name order whatever their types.
     /// </summary>
     /// <param name="members">The members as written, already in order.</param>
     /// <param name="expected">The members after the fix.</param>
@@ -109,6 +110,12 @@ public sealed class MemberGroupingTests
         "    private int _first;\n\n    private int _second =\n        1 +\n        2;\n\n    private int _third;")]
     [InlineData("    private int _first;\n    private int _second;\n    private void Run() { }\n    private void Stop() { }",
         "    private int _first;\n    private int _second;\n\n    private void Run() { }\n\n    private void Stop() { }")]
+    [InlineData("    private const string EncryptionNotSetMessage = \"a\";\n    private const int PromonPadSize = 508;\n    private const string ReceiveNonceNotSetMessage = \"b\";",
+        "    private const int PromonPadSize = 508;\n\n    private const string EncryptionNotSetMessage = \"a\";\n    private const string ReceiveNonceNotSetMessage = \"b\";")]
+    [InlineData("    private const uint Mask = 1;\n    private const int Limit = 2;\n    private const uint Call = 3;",
+        "    private const int Limit = 2;\n\n    private const uint Call = 3;\n    private const uint Mask = 1;")]
+    [InlineData("    private readonly string _beta = \"b\";\n    private readonly int _alpha = 1;",
+        "    private readonly int _alpha = 1;\n    private readonly string _beta = \"b\";")]
     public async Task SeparatesGroupsWithOneBlankLine(string members, string expected)
     {
         string source = $"public sealed class ExampleType\n{{\n{members}\n}}\n";

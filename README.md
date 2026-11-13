@@ -41,7 +41,7 @@ Unchanged builds reuse completed formatting after checking a content fingerprint
 
 ## 🗂️ Member order
 
-Members are sorted by kind, visibility, const/static/instance, members fixed at construction before settable ones, then name. Nested classes follow methods. Overloads with matching sorting keys retain their relative order.
+Members are sorted by kind, visibility, const/static/instance, members fixed at construction before settable ones, constants by type, then name. Nested classes follow methods. Overloads with matching sorting keys retain their relative order.
 
 Blank lines follow the same groups: single-line fields, properties, and events of one kind and visibility sit together, one blank line separates groups, and methods and documented or multiline members stand alone. A comment line starts a new group and keeps the members written under it together, and a group of more than four members needs comments saying what each part is for.
 

@@ -42,7 +42,7 @@ internal static class MemberSpacing
 
     public static bool IsSeparated(MemberDeclarationSyntax previous, MemberDeclarationSyntax current)
     {
-        return StandsAlone(previous) || StandsAlone(current) || MemberKeys.GetBucket(previous) != MemberKeys.GetBucket(current) || StartsGroup(current);
+        return StandsAlone(previous) || StandsAlone(current) || MemberKeys.CompareBuckets(previous, current) != 0 || StartsGroup(current);
     }
 
     public static bool StartsGroup(MemberDeclarationSyntax member)

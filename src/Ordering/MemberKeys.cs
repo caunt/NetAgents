@@ -1,3 +1,6 @@
+using System;
+using System.Globalization;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -11,11 +14,39 @@ namespace NetAgents.Analyzers.Ordering;
 /// </summary>
 internal static class MemberKeys
 {
+    // Buckets sort by kind, visibility, storage, and mutability, and constants then by type, so a size never sits
+    // between two messages: int before string, and string before uint.
+    public static int CompareBuckets(MemberDeclarationSyntax left, MemberDeclarationSyntax right)
+    {
+        int bucket = GetBucket(left).CompareTo(GetBucket(right));
+
+        if (bucket != 0)
+            return bucket;
+
+        string leftType = GetConstantType(left);
+        string rightType = GetConstantType(right);
+        int ignoringCase = string.Compare(leftType, rightType, StringComparison.OrdinalIgnoreCase);
+
+        return ignoringCase != 0 ? ignoringCase : string.CompareOrdinal(leftType, rightType);
+    }
+
     // The kind, visibility, storage, and mutability of a member as one number that sorts the way the four do in turn;
     // each part stays below ten except the kind, which leads.
     public static int GetBucket(MemberDeclarationSyntax member)
     {
         return (GetKind(member) * 1000) + (GetVisibility(member) * 100) + (GetStorage(member) * 10) + GetMutability(member);
+    }
+
+    // One bucket as text, for telling buckets apart: the number from GetBucket and, for a constant, its type.
+    public static string GetBucketKey(MemberDeclarationSyntax member)
+    {
+        return GetBucket(member).ToString(CultureInfo.InvariantCulture) + "|" + GetConstantType(member);
+    }
+
+    // The type a constant is declared with, as written; every other member has none.
+    public static string GetConstantType(MemberDeclarationSyntax member)
+    {
+        return member is FieldDeclarationSyntax field && field.Modifiers.Any(SyntaxKind.ConstKeyword) ? field.Declaration.Type.ToString() : string.Empty;
     }
 
     public static int GetKind(MemberDeclarationSyntax member)

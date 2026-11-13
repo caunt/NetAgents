@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 using Microsoft.CodeAnalysis;
@@ -108,14 +109,14 @@ internal static class MemberOrdering
 
         public Sections(TypeDeclarationSyntax declaration)
         {
-            Dictionary<int, int> current = [];
+            Dictionary<string, int> current = new(StringComparer.Ordinal);
 
             foreach (MemberDeclarationSyntax member in declaration.Members)
             {
                 if (member is not BaseFieldDeclarationSyntax and not PropertyDeclarationSyntax)
                     continue;
 
-                int bucket = MemberKeys.GetBucket(member);
+                string bucket = MemberKeys.GetBucketKey(member);
                 int number = current.TryGetValue(bucket, out int last) ? last : 0;
 
                 if (MemberSpacing.StartsGroup(member))
@@ -132,7 +133,7 @@ internal static class MemberOrdering
 
         public int Compare(MemberDeclarationSyntax left, MemberDeclarationSyntax right)
         {
-            int bucket = MemberKeys.GetBucket(left).CompareTo(MemberKeys.GetBucket(right));
+            int bucket = MemberKeys.CompareBuckets(left, right);
             int section = GetNumber(left).CompareTo(GetNumber(right));
 
             if (bucket != 0 || section != 0)

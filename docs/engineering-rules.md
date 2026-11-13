@@ -41,7 +41,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0019 | Require single-line conditions of at most 128 characters in `if`/`else if`, `while`, `do`, `for`, ternary expressions, catch filters, and switch `when` guards. Extract longer conditions into a separate variable declaration. |
 | NETAGENTS0020 | Keep argument and parameter lists on one line when their compact contents are at most 128 characters; otherwise keep the first item beside the opening delimiter, put each later item on a line of its own one level deeper, and close the list right after the last item. Includes an automatic fix and Fix All support. |
 | NETAGENTS0021 | Require a blank line between adjacent method declarations, including constructors, destructors, and operators. Includes an automatic fix and Fix All support. |
-| NETAGENTS0022 | Organize the members of every type: order them by kind, visibility, const/static/instance, members fixed once construction ends (readonly fields; get-only, `init`, `required`, and computed properties) before settable ones, then ordinal name, and separate their groups with one blank line and none inside a group. Single-line fields, properties, and events of one bucket group together; methods, constructors, nested types, and members spanning lines or carrying documentation or attributes stand alone; a comment line opens a new group and heads a section whose members stay below it. Includes an automatic fix and Fix All support. |
+| NETAGENTS0022 | Organize the members of every type: order them by kind, visibility, const/static/instance, members fixed once construction ends (readonly fields; get-only, `init`, `required`, and computed properties) before settable ones, then, for constants only, their type, then ordinal name, and separate their groups with one blank line and none inside a group. Single-line fields, properties, and events of one bucket group together; methods, constructors, nested types, and members spanning lines or carrying documentation or attributes stand alone; a comment line opens a new group and heads a section whose members stay below it. Includes an automatic fix and Fix All support. |
 | NETAGENTS0023 | Forbid blank lines directly after an opening brace or before a closing brace, in every block: type bodies, method and statement blocks, accessor lists, namespaces, enums, switch bodies, initializers, lambdas, and local functions. Includes an automatic fix and Fix All support. |
 | NETAGENTS0024 | Reject tuple result contracts, including C# tuples, `System.ValueTuple`, `System.Tuple`, and tuples nested inside asynchronous or other wrapper types. Return a dedicated named record, class, or struct instead. |
 | NETAGENTS0025 | Require one `<summary>` element per documentation comment, so a declaration is described once. Describe parameters, results, and detail with `<param>`, `<returns>`, and `<remarks>` instead. |
@@ -432,8 +432,9 @@ interfaces, properties, indexers, operators, methods, structs, classes, and dele
 their class or struct kind. Within each kind, order by public, internal, protected internal,
 protected, private protected, then private; next by const, static, then instance; next members fixed
 once construction ends before settable ones, so a readonly field or a get-only, `init`, `required`, or
-computed property comes before a writable field or a property with a `set` accessor; finally by
-case-sensitive ordinal name. Overloads with equal keys retain their relative order. Each partial
+computed property comes before a writable field or a property with a `set` accessor; for constants
+only, next by type, compared as written and ignoring case, so a size never sits between two messages;
+finally by case-sensitive ordinal name. Overloads with equal keys retain their relative order. Each partial
 declaration is ordered independently.
 
 Members that share every key but the name form a bucket, and the blank lines between members follow
@@ -453,7 +454,8 @@ public RemotePeerRole With { get; }
 public void Reset() { }
 ```
 
-Single-line fields, properties, and events of one bucket sit together with no blank line between them.
+Single-line fields, properties, and events of one bucket sit together with no blank line between them;
+constants of each type form a bucket of their own.
 One blank line separates buckets, and every method, constructor, nested type, and member that spans
 lines or carries XML documentation or attributes stands alone. A comment line opens a new group with
 the blank line above it, and within its bucket it heads a section: the members written below it stay
