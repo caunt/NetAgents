@@ -34,8 +34,7 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        SyntaxNode? root = await context
-            .Document
+        SyntaxNode? root = await context.Document
             .GetSyntaxRootAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -64,8 +63,7 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            SyntaxNode? root = await document
-                .GetSyntaxRootAsync(cancellationToken)
+            SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             if (root is null)
@@ -73,8 +71,7 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
 
             SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            SyntaxNode? list = root
-                .DescendantNodes()
+            SyntaxNode? list = root.DescendantNodes()
                 .FirstOrDefault(node => ArgumentLayout.IsList(node)
                 && !node.ContainsDiagnostics && ArgumentLayout.CanFix(node)
                 && (requestedSpan is null || node.Span == requestedSpan)
@@ -86,12 +83,10 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
             SourceText changedSource = source.WithChanges(ArgumentLayout.GetChanges(list, source));
             TextSpan changedSpan = new(list.SpanStart, list.Span.Length + changedSource.Length - source.Length);
 
-            document = await Formatter
-                .FormatAsync(document.WithText(changedSource), changedSpan, cancellationToken: cancellationToken)
+            document = await Formatter.FormatAsync(document.WithText(changedSource), changedSpan, cancellationToken: cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            SourceText formattedSource = await document
-                .GetTextAsync(cancellationToken)
+            SourceText formattedSource = await document.GetTextAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             hasChanges = !source.ContentEquals(formattedSource);

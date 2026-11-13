@@ -89,8 +89,7 @@ public sealed class LanguageKeywordAnalyzer() : PolicyAnalyzer(Rule)
         string text = DocumentationTags.Flatten(element.Content.ToString());
 
         text = LanguageWordPattern.Replace(text,
-            static match => "<see langword=\"" + (match.Groups[groupnum: 1].Success ? match.Groups[groupnum: 1].Value : match
-                .Groups[groupnum: 2]
+            static match => "<see langword=\"" + (match.Groups[groupnum: 1].Success ? match.Groups[groupnum: 1].Value : match.Groups[groupnum: 2]
                 .Value) + "\"/>");
 
         text = PlainBooleanPattern.Replace(text, static match => "<see langword=\"" + match.Value + "\"/>");
@@ -100,8 +99,7 @@ public sealed class LanguageKeywordAnalyzer() : PolicyAnalyzer(Rule)
 
     private static void Report(SyntaxNodeAnalysisContext context, TextSpan span, string keyword)
     {
-        ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>
-            .Empty
+        ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>.Empty
             .Add(DocumentationTags.KeywordProperty, keyword);
 
         string message = $"Write '{keyword}' as <see langword=\"{keyword}\"/>";

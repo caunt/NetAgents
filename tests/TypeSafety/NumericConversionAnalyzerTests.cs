@@ -80,8 +80,7 @@ public sealed class NumericConversionAnalyzerTests
 
     private static async Task<Diagnostic[]> Analyze(string member)
     {
-        return await AnalyzerTestHarness
-            .Analyze(new NumericConversionAnalyzer(), $"public sealed class ExampleType {{ {member} }}")
+        return await AnalyzerTestHarness.Analyze(new NumericConversionAnalyzer(), $"public sealed class ExampleType {{ {member} }}")
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 }

@@ -12,8 +12,7 @@ namespace NetAgents.Analyzers.Tests.Formatting;
 /// <summary>Checks the analyzers the formatter hosts when the compiler's own loader refuses them.</summary>
 public sealed class AnalyzerCatalogTests
 {
-    private static readonly string CodeStylePath = Path.Combine(typeof(AnalyzerCatalogTests)
-        .Assembly
+    private static readonly string CodeStylePath = Path.Combine(typeof(AnalyzerCatalogTests).Assembly
         .GetCustomAttributes<AssemblyMetadataAttribute>()
         .Single(static attribute => string.Equals(attribute.Key, b: "CodeStyleDirectory", StringComparison.Ordinal))
         .Value
@@ -116,8 +115,7 @@ public sealed class AnalyzerCatalogTests
 
     private static string[] GetIdentifiers(DiagnosticAnalyzer[] analyzers)
     {
-        return [.. analyzers
-            .SelectMany(static analyzer => analyzer.SupportedDiagnostics.Select(static descriptor => descriptor.Id))
+        return [.. analyzers.SelectMany(static analyzer => analyzer.SupportedDiagnostics.Select(static descriptor => descriptor.Id))
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];
     }

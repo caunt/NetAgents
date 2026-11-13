@@ -39,13 +39,11 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        SyntaxNode? root = await context
-            .Document
+        SyntaxNode? root = await context.Document
             .GetSyntaxRootAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        SemanticModel? model = await context
-            .Document
+        SemanticModel? model = await context.Document
             .GetSemanticModelAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -78,8 +76,7 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
                 return unit;
         }
 
-        UsingDirectiveSyntax directive = SyntaxFactory
-            .UsingDirective(SyntaxFactory.ParseName(namespaceName))
+        UsingDirectiveSyntax directive = SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(namespaceName))
             .WithTrailingTrivia(lineEnding);
 
         int index = FindIndex(usings, namespaceName);
@@ -159,8 +156,7 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
     {
         SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-        SemanticModel? model = await document
-            .GetSemanticModelAsync(cancellationToken)
+        SemanticModel? model = await document.GetSemanticModelAsync(cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         if (root is not CompilationUnitSyntax unit || model is null)
@@ -183,8 +179,7 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
     {
         SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-        SemanticModel? model = await document
-            .GetSemanticModelAsync(cancellationToken)
+        SemanticModel? model = await document.GetSemanticModelAsync(cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         if (root is not CompilationUnitSyntax unit || model is null)

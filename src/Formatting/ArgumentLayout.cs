@@ -244,8 +244,7 @@ internal static class ArgumentLayout
     // that spreads over lines, directly or in a block or call nested inside them.
     private static AnonymousFunctionExpressionSyntax[] GetSpreadLambdas(SyntaxNode list)
     {
-        return [.. list
-            .DescendantNodes()
+        return [.. list.DescendantNodes()
             .OfType<AnonymousFunctionExpressionSyntax>()
             .Where(function => function.Block is BlockSyntax body && function.Ancestors().First(IsList) == list
                     && body.DescendantTokens().Any(HoldsSpreadStatement))];
@@ -286,8 +285,7 @@ internal static class ArgumentLayout
             SwitchLabelSyntax { Parent: SwitchSectionSyntax section } => section.Statements.Count > 1,
             IfStatementSyntax or ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
                 or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax or TryStatementSyntax
-                or SwitchStatementSyntax or CheckedStatementSyntax or UnsafeStatementSyntax => token == token
-                    .Parent
+                or SwitchStatementSyntax or CheckedStatementSyntax or UnsafeStatementSyntax => token == token.Parent
                     .GetFirstToken(),
             _ => false,
         };

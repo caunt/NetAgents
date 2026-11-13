@@ -44,8 +44,7 @@ public sealed class StatementGroupingConvergenceTests
 
         using AdhocWorkspace workspace = new();
 
-        Project project = workspace
-            .AddProject(name: "Suggestions", LanguageNames.CSharp)
+        Project project = workspace.AddProject(name: "Suggestions", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Example.cs", SourceText.From(source), filePath: "Example.cs")
@@ -87,8 +86,7 @@ public sealed class StatementGroupingConvergenceTests
 
         using AdhocWorkspace workspace = new();
 
-        Project project = workspace
-            .AddProject(name: "Groups", LanguageNames.CSharp)
+        Project project = workspace.AddProject(name: "Groups", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Example.cs", SourceText.From(Wrap(written)), filePath: "Example.cs")
@@ -145,8 +143,7 @@ public sealed class StatementGroupingConvergenceTests
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            SyntaxNode? root = await context
-                .Document
+            SyntaxNode? root = await context.Document
                 .GetSyntaxRootAsync(context.CancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 

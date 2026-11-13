@@ -29,8 +29,7 @@ public sealed class CodeFixRunnerTests
     {
         using AdhocWorkspace workspace = new();
 
-        Project project = workspace
-            .AddProject(name: "Endings", LanguageNames.CSharp)
+        Project project = workspace.AddProject(name: "Endings", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Example.cs", SourceText.From(text: "class Example\r\n{\r\n}"), filePath: "/Example.cs")
@@ -226,8 +225,7 @@ public sealed class CodeFixRunnerTests
         // Consumer builds escalate every warning, so a nullable remark fails the build exactly like an error.
         const string source = "class Example { static int Read(int? value) { return (int)value; } }\n";
 
-        Project project = workspace
-            .AddProject(name: "Escalated", LanguageNames.CSharp)
+        Project project = workspace.AddProject(name: "Escalated", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable,
                 generalDiagnosticOption: ReportDiagnostic.Error))
@@ -281,8 +279,7 @@ public sealed class CodeFixRunnerTests
 
         string generated = header + "\nclass Generated{   void Run( ) { } }\n";
 
-        Project project = CreateProject(workspace)
-            .AddDocument(name: "Generated.cs", SourceText.From(generated), filePath: "Generated.cs")
+        Project project = CreateProject(workspace).AddDocument(name: "Generated.cs", SourceText.From(generated), filePath: "Generated.cs")
             .Project;
 
         CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [], providers: [], static fault => Assert.Fail(fault), CancellationToken.None);
@@ -321,8 +318,7 @@ public sealed class CodeFixRunnerTests
 
         Project project = CreateProject(workspace);
 
-        project = project
-            .Documents
+        project = project.Documents
             .Single()
             .WithText(SourceText.From(text: "class Example { void Run() { int marker = 0; Missing(); } }"))
             .Project;
@@ -469,8 +465,7 @@ public sealed class CodeFixRunnerTests
             await DocumentText.Read(blockedResult.Project.Documents.Single()),
             StringComparison.Ordinal);
 
-        Project clean = workspace
-            .AddProject(name: "Clean", LanguageNames.CSharp)
+        Project clean = workspace.AddProject(name: "Clean", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Clean.cs", SourceText.From(text: "class Clean\n{\n}\n"), filePath: "Clean.cs")
@@ -587,8 +582,7 @@ public sealed class CodeFixRunnerTests
 
     private static Project CreateFieldProject(AdhocWorkspace workspace, string source)
     {
-        return workspace
-            .AddProject(name: "Cascade", LanguageNames.CSharp)
+        return workspace.AddProject(name: "Cascade", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Example.cs", SourceText.From(source), filePath: "Example.cs")
@@ -599,8 +593,7 @@ public sealed class CodeFixRunnerTests
     {
         string source = "namespace Consumer;\n\n" + accessibility + " sealed class Moved\n{\n    private static int Value;\n}\n";
 
-        Project project = workspace
-            .AddProject(name: "Namespaces", LanguageNames.CSharp)
+        Project project = workspace.AddProject(name: "Namespaces", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Moved.cs", SourceText.From(source), filePath: "Moved.cs")
@@ -608,17 +601,15 @@ public sealed class CodeFixRunnerTests
 
         return !internalsShared
             ? project
-            : project
-                .AddDocument(name: "Visibility.cs",
-                    SourceText.From(text: "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"Friend\")]\n"),
-                    filePath: "Visibility.cs")
+            : project.AddDocument(name: "Visibility.cs",
+                SourceText.From(text: "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"Friend\")]\n"),
+                filePath: "Visibility.cs")
                 .Project;
     }
 
     private static Project CreateProject(AdhocWorkspace workspace)
     {
-        return workspace
-            .AddProject(name: "Progress", LanguageNames.CSharp)
+        return workspace.AddProject(name: "Progress", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Example.cs",
@@ -640,8 +631,7 @@ public sealed class CodeFixRunnerTests
             context.RegisterCodeFix(CodeAction.Create(title: "Attempt accessibility repair",
                     async cancellationToken =>
                     {
-                        SourceText text = await context
-                            .Document
+                        SourceText text = await context.Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -781,13 +771,11 @@ public sealed class CodeFixRunnerTests
             context.RegisterCodeFix(CodeAction.Create($"Replace {replaced} with {replacement}",
                     async cancellationToken =>
                     {
-                        SourceText text = await context
-                            .Document
+                        SourceText text = await context.Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
-                        return context
-                            .Document
+                        return context.Document
                             .WithText(SourceText.From(text.ToString().Replace(replaced, replacement, StringComparison.Ordinal)));
                     }),
                 context.Diagnostics);
@@ -805,15 +793,13 @@ public sealed class CodeFixRunnerTests
             context.RegisterCodeFix(CodeAction.Create(title: "Move the type to a nested namespace",
                     async cancellationToken =>
                     {
-                        SourceText text = await context
-                            .Document
+                        SourceText text = await context.Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
                         // Repairing the marker too lets an accepted move settle, so the run ends on
                         // the moved namespace rather than on a fix that keeps being offered.
-                        string moved = text
-                            .ToString()
+                        string moved = text.ToString()
                             .Replace(oldValue: "namespace Consumer;", newValue: "namespace Consumer.Nested;", StringComparison.Ordinal)
                             .Replace(oldValue: "private static int Value;", newValue: "public static int Value;", StringComparison.Ordinal);
 
@@ -856,8 +842,7 @@ public sealed class CodeFixRunnerTests
             context.RegisterCodeFix(CodeAction.Create(title: "Keep the unnecessary using",
                     async cancellationToken =>
                     {
-                        SourceText text = await context
-                            .Document
+                        SourceText text = await context.Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -918,13 +903,11 @@ public sealed class CodeFixRunnerTests
                         if (stage == "operations")
                             throw Skew();
 
-                        SourceText text = await context
-                            .Document
+                        SourceText text = await context.Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
-                        string changed = text
-                            .ToString()
+                        string changed = text.ToString()
                             .Replace(oldValue: "private", newValue: "public", StringComparison.Ordinal);
 
                         return context.Document.WithText(SourceText.From(changed));

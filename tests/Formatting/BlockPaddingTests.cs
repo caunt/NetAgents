@@ -43,8 +43,7 @@ public sealed class BlockPaddingTests
 
         using AdhocWorkspace workspace = new();
 
-        Project project = workspace
-            .AddProject(name: "Convergence", LanguageNames.CSharp)
+        Project project = workspace.AddProject(name: "Convergence", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "ExampleType.cs", SourceText.From(source))

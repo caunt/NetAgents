@@ -53,8 +53,7 @@ internal static class CodeFixRunner
 
         bool internalsShared = await SharesInternals(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-        ImmutableHashSet<DocumentId> editable = await EditableDocuments
-            .Find(project, cancellationToken)
+        ImmutableHashSet<DocumentId> editable = await EditableDocuments.Find(project, cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         // What the passes remember: every project state seen, to stop fixes that cycle, and the actions to
@@ -72,8 +71,7 @@ internal static class CodeFixRunner
 
         // Analyzing once, after whitespace formatting, keeps this baseline free: an error whitespace
         // formatting introduces on its own is the one kind this cannot see.
-        ImmutableArray<Diagnostic> diagnostics = await analysis
-            .GetDiagnostics(project, cancellationToken)
+        ImmutableArray<Diagnostic> diagnostics = await analysis.GetDiagnostics(project, cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         ImmutableArray<Diagnostic> baseline = diagnostics;
@@ -83,8 +81,7 @@ internal static class CodeFixRunner
             cancellationToken.ThrowIfCancellationRequested();
             progress.NextPass();
 
-            string fingerprint = await FormattingAnalysis
-                .Fingerprint(project, cancellationToken)
+            string fingerprint = await FormattingAnalysis.Fingerprint(project, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             if (!states.Add(fingerprint))
@@ -105,8 +102,7 @@ internal static class CodeFixRunner
                 // including reference remarks the consumer build never fails for.
                 progress.Report(activity: "finished applying available fixes");
 
-                ImmutableArray<Diagnostic> introduced = [.. FormattingAnalysis
-                    .IntroducedErrors(diagnostics, baseline)
+                ImmutableArray<Diagnostic> introduced = [.. FormattingAnalysis.IntroducedErrors(diagnostics, baseline)
                     .Where(IsBlockingError)];
 
                 // Individual passes may introduce an error a later pass repairs, so only the state the
@@ -151,8 +147,7 @@ internal static class CodeFixRunner
 
             Project renamed = await PrepareCandidate(project, collision.Project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            FormattingAnalysis.ValidationResult validation = await analysis
-                .Validate(renamed, diagnostics, actionKey: "naming collisions", optional: false, cancellationToken)
+            FormattingAnalysis.ValidationResult validation = await analysis.Validate(renamed, diagnostics, actionKey: "naming collisions", optional: false, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             ImmutableArray<Diagnostic> renameCompilerErrors = [.. validation.IntroducedErrors.Where(IsCompilerError)];
@@ -167,8 +162,7 @@ internal static class CodeFixRunner
         ImmutableArray<Diagnostic> fixable = [.. diagnostics.Where(diagnostic => IsInEditableDocument(project, editable, diagnostic))];
 
         // A total order keeps the chosen fix identical across runs despite parallel analyzer output.
-        IOrderedEnumerable<Diagnostic> ordered = diagnostics
-            .ToArray()
+        IOrderedEnumerable<Diagnostic> ordered = diagnostics.ToArray()
             .OrderByDescending(static diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning)
             .ThenBy(static diagnostic => diagnostic.Id, StringComparer.Ordinal)
             .ThenBy(static diagnostic => diagnostic.Location.SourceTree?.FilePath ?? string.Empty, StringComparer.Ordinal)
@@ -271,8 +265,7 @@ internal static class CodeFixRunner
 
                     progress.Report($"validating {diagnostic.Id} action '{preferred.Title}'");
 
-                    FormattingAnalysis.ValidationResult validation = await analysis
-                        .Validate(updated, diagnostics, actionKey, optional, cancellationToken)
+                    FormattingAnalysis.ValidationResult validation = await analysis.Validate(updated, diagnostics, actionKey, optional, cancellationToken)
                         .ConfigureAwait(continueOnCapturedContext: false);
 
                     ImmutableArray<Diagnostic> introducedErrors = validation.IntroducedErrors;
@@ -366,8 +359,7 @@ internal static class CodeFixRunner
         SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The naming document has no syntax root.");
 
-        SemanticModel model = await document
-            .GetSemanticModelAsync(cancellationToken)
+        SemanticModel model = await document.GetSemanticModelAsync(cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The naming document has no semantic model.");
 
@@ -375,8 +367,7 @@ internal static class CodeFixRunner
             return null;
 
         // ponytail: handles case-only collisions; extend the comparison if other naming transformations need repair.
-        bool collision = model
-            .LookupSymbols(diagnosticSpan.Start)
+        bool collision = model.LookupSymbols(diagnosticSpan.Start)
             .Any(symbol =>
             symbol is ILocalSymbol or IParameterSymbol && !SymbolEqualityComparer.Default.Equals(symbol, local)
                 && string.Equals(symbol.Name, local.Name, StringComparison.OrdinalIgnoreCase));
@@ -384,8 +375,7 @@ internal static class CodeFixRunner
         if (!collision)
             return null;
 
-        HashSet<string> identifiers = root
-            .DescendantTokens()
+        HashSet<string> identifiers = root.DescendantTokens()
             .Where(static token => token.IsKind(SyntaxKind.IdentifierToken))
             .Select(static token => token.ValueText)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -395,8 +385,7 @@ internal static class CodeFixRunner
         while (identifiers.Contains(name))
             name += "Value";
 
-        Solution renamed = await Renamer
-            .RenameSymbolAsync(document.Project.Solution, local, new SymbolRenameOptions(), name, cancellationToken)
+        Solution renamed = await Renamer.RenameSymbolAsync(document.Project.Solution, local, new SymbolRenameOptions(), name, cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         return renamed.GetProject(document.Project.Id);
@@ -423,8 +412,7 @@ internal static class CodeFixRunner
         Diagnostic? first = null;
 
         foreach (
-            (DocumentId Document, TextSpan SourceSpan, Diagnostic Diagnostic) candidate in candidates
-                .OrderBy(static candidate => candidate.Document.Id)
+            (DocumentId Document, TextSpan SourceSpan, Diagnostic Diagnostic) candidate in candidates.OrderBy(static candidate => candidate.Document.Id)
                 .ThenByDescending(static candidate => candidate.SourceSpan.Start)
         )
         {
@@ -494,8 +482,7 @@ internal static class CodeFixRunner
         // Oscillating analyzer fixes are the usual cause, so every blocking error is listed, not just
         // compiler errors. The formatting compilation escalates every warning, so only in-source errors
         // qualify: reference remarks the consumer build never fails for would bury the real blockers.
-        lines.AddRange(diagnostics
-            .Where(IsBlockingError)
+        lines.AddRange(diagnostics.Where(IsBlockingError)
             .OrderBy(static diagnostic => diagnostic.Location.SourceTree?.FilePath ?? string.Empty, StringComparer.Ordinal)
             .ThenBy(static diagnostic => diagnostic.Location.SourceSpan.Start)
             .Select(static diagnostic => diagnostic.ToString()));
@@ -510,19 +497,16 @@ internal static class CodeFixRunner
         {
             Document document = project.GetDocument(identifier) ?? throw new InvalidOperationException(message: "A formatting document is missing.");
 
-            Document formatted = await Formatter
-                .FormatAsync(document, cancellationToken: cancellationToken)
+            Document formatted = await Formatter.FormatAsync(document, cancellationToken: cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             // Roslyn's formatter ignores insert_final_newline, so the setting is read from the document's configuration.
             SourceText text = await formatted.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            SyntaxTree? tree = await formatted
-                .GetSyntaxTreeAsync(cancellationToken)
+            SyntaxTree? tree = await formatted.GetSyntaxTreeAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            AnalyzerConfigOptions options = project
-                .AnalyzerOptions
+            AnalyzerConfigOptions options = project.AnalyzerOptions
                 .AnalyzerConfigOptionsProvider
                 .GetOptions(tree ?? throw new InvalidOperationException(message: "A syntax tree is missing."));
 
@@ -669,12 +653,10 @@ internal static class CodeFixRunner
             Document beforeDocument = before.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The original document is missing.");
             Document afterDocument = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
 
-            SourceText beforeText = await beforeDocument
-                .GetTextAsync(cancellationToken)
+            SourceText beforeText = await beforeDocument.GetTextAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            SourceText afterText = await afterDocument
-                .GetTextAsync(cancellationToken)
+            SourceText afterText = await afterDocument.GetTextAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             if (!beforeText.ContentEquals(afterText))
@@ -710,12 +692,10 @@ internal static class CodeFixRunner
             Document beforeDocument = before.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The original document is missing.");
             Document afterDocument = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
 
-            SyntaxNode? beforeRoot = await beforeDocument
-                .GetSyntaxRootAsync(cancellationToken)
+            SyntaxNode? beforeRoot = await beforeDocument.GetSyntaxRootAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            SyntaxNode? afterRoot = await afterDocument
-                .GetSyntaxRootAsync(cancellationToken)
+            SyntaxNode? afterRoot = await afterDocument.GetSyntaxRootAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             if (beforeRoot is null || afterRoot is null || !beforeRoot.IsEquivalentTo(afterRoot, topLevel: false))
@@ -735,12 +715,10 @@ internal static class CodeFixRunner
             if (original is null || updated is null)
                 continue;
 
-            SyntaxNode? originalRoot = await original
-                .GetSyntaxRootAsync(cancellationToken)
+            SyntaxNode? originalRoot = await original.GetSyntaxRootAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            SyntaxNode? updatedRoot = await updated
-                .GetSyntaxRootAsync(cancellationToken)
+            SyntaxNode? updatedRoot = await updated.GetSyntaxRootAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             if (originalRoot is null || updatedRoot is null)
@@ -815,8 +793,7 @@ internal static class CodeFixRunner
 
             settled = await PrepareCandidate(settled, fixedLayout, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            FormattingAnalysis.ValidationResult revalidated = await analysis
-                .Validate(settled, before, actionKey + "|layout", optional: true, cancellationToken)
+            FormattingAnalysis.ValidationResult revalidated = await analysis.Validate(settled, before, actionKey + "|layout", optional: true, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             if (revalidated.Diagnostics.IsEmpty && !revalidated.IntroducedErrors.IsEmpty)
@@ -833,8 +810,7 @@ internal static class CodeFixRunner
     // boundary as its public ones, so moving them breaks the same way.
     private static async Task<bool> SharesInternals(Project project, CancellationToken cancellationToken)
     {
-        Compilation? compilation = await project
-            .GetCompilationAsync(cancellationToken)
+        Compilation? compilation = await project.GetCompilationAsync(cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         if (compilation is null)

@@ -70,8 +70,7 @@ public sealed class DocumentationTagFitTests
 
     private static async Task<Diagnostic[]> Analyze(string members)
     {
-        return await AnalyzerTestHarness
-            .Analyze(new DocumentationTagFitAnalyzer(), Wrap(members))
+        return await AnalyzerTestHarness.Analyze(new DocumentationTagFitAnalyzer(), Wrap(members))
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 

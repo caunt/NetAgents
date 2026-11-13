@@ -42,8 +42,7 @@ internal sealed class FormattingHost : AssemblyLoadContext
 
         if (shared)
         {
-            return _taskContext
-                .Assemblies
+            return _taskContext.Assemblies
                 .FirstOrDefault(assembly => string.Equals(assembly.GetName().Name, name, StringComparison.Ordinal));
         }
 

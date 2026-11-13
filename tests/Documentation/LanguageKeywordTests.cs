@@ -66,8 +66,7 @@ public sealed class LanguageKeywordTests
 
     private static async Task<Diagnostic[]> Analyze(string members)
     {
-        return await AnalyzerTestHarness
-            .Analyze(new LanguageKeywordAnalyzer(), Wrap(members))
+        return await AnalyzerTestHarness.Analyze(new LanguageKeywordAnalyzer(), Wrap(members))
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 

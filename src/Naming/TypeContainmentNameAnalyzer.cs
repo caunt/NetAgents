@@ -61,8 +61,7 @@ public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
         }
 
         // Only directories below the project root are source architecture, not checkout locations.
-        bool hasProjectDirectory = context
-            .Options
+        bool hasProjectDirectory = context.Options
             .AnalyzerConfigOptionsProvider
             .GlobalOptions
             .TryGetValue(key: "build_property.MSBuildProjectDirectory", out string? projectDirectory);

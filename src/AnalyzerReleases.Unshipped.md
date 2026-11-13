@@ -49,4 +49,4 @@ NETAGENTS0043 | Configuration | Error | No suppression attributes or pragmas for
 NETAGENTS0044 | Readability | Error | Awaited values named in a local before their members are read
 NETAGENTS0045 | Formatting | Error | Simple statements that fit within 128 characters written on one line
 NETAGENTS0046 | Naming | Error | No local names built only from placeholder words such as result, flag, or temp
-NETAGENTS0047 | Formatting | Error | Member chains on one line up to four links when they fit, otherwise one link per line
+NETAGENTS0047 | Formatting | Error | Member chains on one line up to four links when they fit, otherwise one link per line after the first

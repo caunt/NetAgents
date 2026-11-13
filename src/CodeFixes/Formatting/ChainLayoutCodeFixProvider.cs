@@ -17,8 +17,8 @@ namespace NetAgents.Analyzers.CodeFixes.Formatting;
 /// Moves the line breaks of a member chain to the standard layout.
 /// </summary>
 /// <remarks>
-/// A chain that fits loses every line break before a dot; one that must split gets a line break before every link,
-/// and none inside a namespace or type qualifier of its receiver. Nothing else in the chain changes. The fix is offered
+/// A chain that fits loses every line break before a dot; one that must split gets a line break before every link
+/// after the first, and none before its first link or inside a namespace or type qualifier of its receiver. Nothing else in the chain changes. The fix is offered
 /// only while the analyzer's check still holds against the current text.
 /// </remarks>
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ChainLayoutCodeFixProvider))]
@@ -37,18 +37,15 @@ public sealed class ChainLayoutCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        SyntaxNode? root = await context
-            .Document
+        SyntaxNode? root = await context.Document
             .GetSyntaxRootAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        SemanticModel? model = await context
-            .Document
+        SemanticModel? model = await context.Document
             .GetSemanticModelAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        SourceText text = await context
-            .Document
+        SourceText text = await context.Document
             .GetTextAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 

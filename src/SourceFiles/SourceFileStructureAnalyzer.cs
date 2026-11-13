@@ -55,8 +55,7 @@ public sealed class SourceFileStructureAnalyzer() : PolicyAnalyzer(Rule)
         string fileName = Path.GetFileNameWithoutExtension(context.Node.SyntaxTree.FilePath);
         SyntaxNode parent = context.Node.SyntaxTree.GetRoot(context.CancellationToken);
 
-        int declarationCount = parent
-            .DescendantNodes(static descendant => descendant is not BaseTypeDeclarationSyntax)
+        int declarationCount = parent.DescendantNodes(static descendant => descendant is not BaseTypeDeclarationSyntax)
             .Count(static descendant => descendant is BaseTypeDeclarationSyntax or DelegateDeclarationSyntax);
 
         if (!string.Equals(fileName, identifier.ValueText, StringComparison.Ordinal) || declarationCount > 1)

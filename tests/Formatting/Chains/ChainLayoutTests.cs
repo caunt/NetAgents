@@ -40,8 +40,8 @@ public sealed class ChainLayoutTests
 
     /// <summary>
     /// Verifies the fix joins a short chain and splits one that does not fit or holds more than four links before
-    /// every link, whether it is a field, a property, or a call, while namespace and type qualifiers stay with the
-    /// receiver.
+    /// every link after the first, whether it is a field, a property, or a call, while the first link and namespace
+    /// and type qualifiers stay with the receiver.
     /// </summary>
     /// <param name="written">The statements as written.</param>
     /// <param name="expected">The statements after the fix.</param>
@@ -49,18 +49,18 @@ public sealed class ChainLayoutTests
     [InlineData("await Console\n    .Error.WriteLineAsync(\"Failed\")\n    .ConfigureAwait(continueOnCapturedContext: false);\n\nreturn 0;",
         "await Console.Error.WriteLineAsync(\"Failed\").ConfigureAwait(continueOnCapturedContext: false);\n\nreturn 0;")]
     [InlineData("return values.Where(static value => value > 0 && value < 1000 && value % 2 == 0 && value % 3 == 0).Select(static value => value * 2).Sum();",
-        "return values\n    .Where(static value => value > 0 && value < 1000 && value % 2 == 0 && value % 3 == 0)\n    .Select(static value => value * 2)\n    .Sum();")]
+        "return values.Where(static value => value > 0 && value < 1000 && value % 2 == 0 && value % 3 == 0)\n    .Select(static value => value * 2)\n    .Sum();")]
     [InlineData("return values.Where(static value => value > 0).Select(static value => value * 2).Distinct().Order().Sum();",
-        "return values\n    .Where(static value => value > 0)\n    .Select(static value => value * 2)\n    .Distinct()\n    .Order()\n    .Sum();")]
+        "return values.Where(static value => value > 0)\n    .Select(static value => value * 2)\n    .Distinct()\n    .Order()\n    .Sum();")]
     [InlineData("return rows.Values.Where(static cells => cells.Length > 0).Select(static cells => cells.Length).ToArray().Length;",
-        "return rows\n    .Values\n    .Where(static cells => cells.Length > 0)\n    .Select(static cells => cells.Length)\n    .ToArray()\n    .Length;")]
-    [InlineData("int count = rows.Values\n    .Where(static cells => cells.Length > 0)\n    .Select(static cells => cells.Length)\n    .Distinct()\n    .Count();\n\nreturn count;",
-        "int count = rows\n    .Values\n    .Where(static cells => cells.Length > 0)\n    .Select(static cells => cells.Length)\n    .Distinct()\n    .Count();\n\nreturn count;")]
-    [InlineData("return node.Next.Next.Next.Next.Depth;", "return node\n    .Next\n    .Next\n    .Next\n    .Next\n    .Depth;")]
+        "return rows.Values\n    .Where(static cells => cells.Length > 0)\n    .Select(static cells => cells.Length)\n    .ToArray()\n    .Length;")]
+    [InlineData("int count = rows\n    .Values\n    .Where(static cells => cells.Length > 0)\n    .Select(static cells => cells.Length)\n    .Distinct()\n    .Count();\n\nreturn count;",
+        "int count = rows.Values\n    .Where(static cells => cells.Length > 0)\n    .Select(static cells => cells.Length)\n    .Distinct()\n    .Count();\n\nreturn count;")]
+    [InlineData("return node.Next.Next.Next.Next.Depth;", "return node.Next\n    .Next\n    .Next\n    .Next\n    .Depth;")]
     [InlineData("int length = Console\n    .Out\n    .Encoding\n    .EncodingName\n    .Length;\n\nreturn length;",
         "int length = Console.Out.Encoding.EncodingName.Length;\n\nreturn length;")]
     [InlineData("int length = System.Console.Out.Encoding.EncodingName.Trim().Length;\n\nreturn length;",
-        "int length = System.Console\n    .Out\n    .Encoding\n    .EncodingName\n    .Trim()\n    .Length;\n\nreturn length;")]
+        "int length = System.Console.Out\n    .Encoding\n    .EncodingName\n    .Trim()\n    .Length;\n\nreturn length;")]
     public async Task LaysOutChains(string written, string expected)
     {
         Assert.Equal(Wrap(expected), await CodeFixTestHarness.FixChains(Wrap(written), fixAll: true));

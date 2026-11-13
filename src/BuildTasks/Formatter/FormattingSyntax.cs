@@ -6,8 +6,7 @@ internal static class FormattingSyntax
 {
     public static void Verify(IEnumerable<Diagnostic> diagnostics)
     {
-        string[] errors = [.. diagnostics
-            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+        string[] errors = [.. diagnostics.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .Select(static diagnostic => diagnostic.ToString())];
 
         if (errors.Length > 0)
@@ -23,8 +22,7 @@ internal static class FormattingSyntax
 
         foreach (Document document in project.Documents)
         {
-            SyntaxTree tree = await document
-                .GetSyntaxTreeAsync(cancellationToken)
+            SyntaxTree tree = await document.GetSyntaxTreeAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false)
                 ?? throw new InvalidOperationException(message: "A formatting document has no syntax tree.");
 

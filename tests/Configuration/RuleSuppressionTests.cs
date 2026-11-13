@@ -56,12 +56,10 @@ public sealed class RuleSuppressionTests
 
     private static async Task<Diagnostic[]> Analyze(string code, string member)
     {
-        string source = Type
-            .Replace(oldValue: "CODE", code, StringComparison.Ordinal)
+        string source = Type.Replace(oldValue: "CODE", code, StringComparison.Ordinal)
             .Replace(oldValue: "MEMBER", member, StringComparison.Ordinal);
 
-        return await AnalyzerTestHarness
-            .Analyze(new RuleSuppressionAnalyzer(), source)
+        return await AnalyzerTestHarness.Analyze(new RuleSuppressionAnalyzer(), source)
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 }

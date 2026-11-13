@@ -79,8 +79,7 @@ public sealed class StatementGroupingTests
             }
             """;
 
-        string expected = source
-            .Replace(oldValue: "_count++;\n", newValue: "_count++;\n\n", StringComparison.Ordinal)
+        string expected = source.Replace(oldValue: "_count++;\n", newValue: "_count++;\n\n", StringComparison.Ordinal)
             .Replace(oldValue: "int next = _count + 1;\n", newValue: "int next = _count + 1;\n\n", StringComparison.Ordinal)
             .Replace(oldValue: "_count = 1;\n", newValue: "_count = 1;\n\n", StringComparison.Ordinal);
 

@@ -99,8 +99,7 @@ public sealed class CompositionPartsTests
 
             Compile(partsPath,
                 LanguagePartsSource,
-                references: [typeof(ExportAttribute).Assembly.Location, typeof(CodeFixProvider).Assembly.Location, typeof(Diagnostic)
-                    .Assembly
+                references: [typeof(ExportAttribute).Assembly.Location, typeof(CodeFixProvider).Assembly.Location, typeof(Diagnostic).Assembly
                     .Location]);
 
             using DependencyLoader loader = new(workspace.FullName);
@@ -113,8 +112,7 @@ public sealed class CompositionPartsTests
 
             using CompositionHost container = new ContainerConfiguration().WithParts(selection.Types).CreateContainer();
 
-            string[] providers = [.. container
-                .GetExports<CodeFixProvider>()
+            string[] providers = [.. container.GetExports<CodeFixProvider>()
                 .Select(static provider => provider.GetType().Name)
                 .Order(StringComparer.Ordinal)];
 

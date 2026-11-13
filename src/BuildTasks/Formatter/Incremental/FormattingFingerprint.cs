@@ -72,8 +72,7 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
             Append(hash, directory);
 
             string[] files = Directory.Exists(directory)
-                ? [.. Directory
-                    .EnumerateFiles(directory, searchPattern: "*.dll", SearchOption.AllDirectories)
+                ? [.. Directory.EnumerateFiles(directory, searchPattern: "*.dll", SearchOption.AllDirectories)
                     .Concat(Directory.EnumerateFiles(directory, searchPattern: "*.deps.json", SearchOption.AllDirectories))
                     .Order(StringComparer.Ordinal)]
                 : [];
@@ -112,8 +111,7 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
         {
             string path = item.GetMetadata(metadataName: "FullPath");
 
-            sources[path] = await File
-                .ReadAllBytesAsync(path, cancellationToken)
+            sources[path] = await File.ReadAllBytesAsync(path, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
         }
 
@@ -148,8 +146,7 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
 
         await using (stream.ConfigureAwait(continueOnCapturedContext: false))
         {
-            byte[] checksum = await SHA256
-                .HashDataAsync(stream, cancellationToken)
+            byte[] checksum = await SHA256.HashDataAsync(stream, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             hash.AppendData(checksum);

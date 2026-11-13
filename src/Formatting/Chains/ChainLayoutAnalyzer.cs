@@ -12,7 +12,7 @@ namespace NetAgents.Analyzers.Formatting.Chains;
 
 /// <summary>
 /// Requires member chains to take one layout: on one line when they hold up to four links and fit, otherwise one link
-/// per line, whether the link is a field, a property, an event, or a call.
+/// per line after the first, whether the link is a field, a property, an event, or a call.
 /// </summary>
 /// <remarks>
 /// <code>
@@ -22,8 +22,9 @@ namespace NetAgents.Analyzers.Formatting.Chains;
 /// </code>
 /// <para>
 /// fits within 128 characters with three links, so it becomes one line. A chain of more than four links, or one that
-/// does not fit, starts every link on its own line one level deeper, so <c>root.First.Second.Third.Fourth.Fifth</c>
-/// splits like any chain of calls. The fix only moves line breaks before dots.
+/// does not fit, keeps its first link on the receiver's line and starts every later link on its own line one level
+/// deeper, so <c>root.First.Second.Third.Fourth.Fifth</c> splits like any chain of calls. The fix only moves line
+/// breaks before dots.
 /// </para>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -36,7 +37,7 @@ public sealed class ChainLayoutAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Member chains must use the standard layout",
-        messageFormat: "Lay this chain out the standard way: up to 4 links (field, property, event, or method accesses) on one line when it fits within 128 characters; otherwise every link on its own line, one level deeper",
+        messageFormat: "Lay this chain out the standard way: up to 4 links (field, property, event, or method accesses) on one line when it fits within 128 characters; otherwise the first link on the receiver's line and every later link on its own line, one level deeper",
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

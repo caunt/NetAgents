@@ -35,13 +35,11 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        SyntaxNode? root = await context
-            .Document
+        SyntaxNode? root = await context.Document
             .GetSyntaxRootAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        SemanticModel? model = await context
-            .Document
+        SemanticModel? model = await context.Document
             .GetSemanticModelAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -77,12 +75,10 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            SyntaxNode? root = await document
-                .GetSyntaxRootAsync(cancellationToken)
+            SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            SemanticModel? model = await document
-                .GetSemanticModelAsync(cancellationToken)
+            SemanticModel? model = await document.GetSemanticModelAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             if (root is null || model is null)
@@ -118,8 +114,7 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
 
     private static ExplicitLiteralArgumentName.ArgumentNaming[] SelectOutermost(ImmutableDictionary<TextSpan, ExplicitLiteralArgumentName.ArgumentNaming> namings, ImmutableHashSet<TextSpan>? requestedSpans)
     {
-        ExplicitLiteralArgumentName.ArgumentNaming[] candidates = [.. namings
-            .Where(naming => requestedSpans is null || requestedSpans.Contains(naming.Key))
+        ExplicitLiteralArgumentName.ArgumentNaming[] candidates = [.. namings.Where(naming => requestedSpans is null || requestedSpans.Contains(naming.Key))
             .Select(static naming => naming.Value)
             .Distinct()];
 

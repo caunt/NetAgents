@@ -71,8 +71,7 @@ public sealed class FormattingFingerprintTests
                 }
             case "source-renamed":
                 {
-                    fixture.Inputs.SourceFiles = fixture.Item(relativePath: "Renamed.cs") + "\n" + fixture
-                        .Inputs
+                    fixture.Inputs.SourceFiles = fixture.Item(relativePath: "Renamed.cs") + "\n" + fixture.Inputs
                         .SourceFiles
                         .Split(separator: '\n')[1];
 
@@ -275,12 +274,10 @@ public sealed class FormattingFingerprintTests
 
         public async Task<FormattingFingerprint> Read()
         {
-            Dictionary<string, byte[]> sources = await FormattingFingerprint
-                .ReadSources(Inputs.SourceItems, CancellationToken.None)
+            Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(Inputs.SourceItems, CancellationToken.None)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            return await FormattingFingerprint
-                .Create(Inputs, sources, CancellationToken.None)
+            return await FormattingFingerprint.Create(Inputs, sources, CancellationToken.None)
                 .ConfigureAwait(continueOnCapturedContext: false);
         }
     }

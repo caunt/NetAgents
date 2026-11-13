@@ -50,8 +50,7 @@ public sealed class StatementGroupingCodeFixProvider : CodeFixProvider
     {
         SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-        SemanticModel? model = await document
-            .GetSemanticModelAsync(cancellationToken)
+        SemanticModel? model = await document.GetSemanticModelAsync(cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         if (root is null || model is null)

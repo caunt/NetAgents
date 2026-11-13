@@ -120,8 +120,7 @@ public sealed class StatementGroupSizeTests
 
     private static async Task<Diagnostic[]> Analyze(string members)
     {
-        return await AnalyzerTestHarness
-            .Analyze(new StatementGroupSizeAnalyzer(), Type.Replace(oldValue: "MEMBERS", members, StringComparison.Ordinal))
+        return await AnalyzerTestHarness.Analyze(new StatementGroupSizeAnalyzer(), Type.Replace(oldValue: "MEMBERS", members, StringComparison.Ordinal))
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 }

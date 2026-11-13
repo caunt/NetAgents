@@ -30,8 +30,7 @@ public sealed class EditableDocumentsTests
     {
         using AdhocWorkspace workspace = new();
 
-        Project project = CreateProject(workspace, name: "Editable.cs", source: "class Editable\n{\n    private static int Value;\n}\n")
-            .AddDocument(name: "Generated.g.cs", SourceText.From(GeneratedSource), filePath: "/workspace/Generated.g.cs")
+        Project project = CreateProject(workspace, name: "Editable.cs", source: "class Editable\n{\n    private static int Value;\n}\n").AddDocument(name: "Generated.g.cs", SourceText.From(GeneratedSource), filePath: "/workspace/Generated.g.cs")
             .Project;
 
         CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
@@ -60,8 +59,7 @@ public sealed class EditableDocumentsTests
 
         using AdhocWorkspace workspace = new();
 
-        Project project = CreateProject(workspace, name: "Alpha.cs", plain)
-            .AddDocument(name: "Beta.cs", SourceText.From(quoting), filePath: "/workspace/Beta.cs")
+        Project project = CreateProject(workspace, name: "Alpha.cs", plain).AddDocument(name: "Beta.cs", SourceText.From(quoting), filePath: "/workspace/Beta.cs")
             .Project;
 
         CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
@@ -92,10 +90,9 @@ public sealed class EditableDocumentsTests
 
         using AdhocWorkspace workspace = new();
 
-        Project project = CreateProject(workspace, name, source)
-            .AddAnalyzerConfigDocument(name: ".editorconfig",
-                SourceText.From($"root = true\n\n[*.cs]\ngenerated_code = {generated}\n"),
-                filePath: "/workspace/.editorconfig")
+        Project project = CreateProject(workspace, name, source).AddAnalyzerConfigDocument(name: ".editorconfig",
+            SourceText.From($"root = true\n\n[*.cs]\ngenerated_code = {generated}\n"),
+            filePath: "/workspace/.editorconfig")
             .Project;
 
         CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [], providers: [], static fault => Assert.Fail(fault), CancellationToken.None);
@@ -128,8 +125,7 @@ public sealed class EditableDocumentsTests
 
     private static Project CreateProject(AdhocWorkspace workspace, string name, string source)
     {
-        return workspace
-            .AddProject(name: "Documents", LanguageNames.CSharp)
+        return workspace.AddProject(name: "Documents", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name, SourceText.From(source), filePath: "/workspace/" + name)

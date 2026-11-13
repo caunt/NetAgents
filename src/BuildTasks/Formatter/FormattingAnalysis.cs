@@ -39,16 +39,14 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
     {
         progress.Report(activity: "analyzing project");
 
-        Compilation compilation = await project
-            .GetCompilationAsync(cancellationToken)
+        Compilation compilation = await project.GetCompilationAsync(cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
         CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException, concurrentAnalysis: true, logAnalyzerExecutionTime: false);
         CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers, options);
 
-        ImmutableArray<Diagnostic> diagnostics = await analysis
-            .GetAllDiagnosticsAsync(cancellationToken)
+        ImmutableArray<Diagnostic> diagnostics = await analysis.GetAllDiagnosticsAsync(cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         return diagnostics;
@@ -82,8 +80,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
         {
             progress.Report(activity: "checking candidate compiler diagnostics");
 
-            Compilation compilation = await project
-                .GetCompilationAsync(cancellationToken)
+            Compilation compilation = await project.GetCompilationAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false)
                 ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
@@ -114,13 +111,11 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
     // result, while a second copy of an identical one still counts as introduced.
     internal static ImmutableArray<Diagnostic> IntroducedErrors(ImmutableArray<Diagnostic> after, ImmutableArray<Diagnostic> before)
     {
-        Dictionary<DiagnosticIdentity, int> existing = before
-            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+        Dictionary<DiagnosticIdentity, int> existing = before.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .CountBy(ErrorKey)
             .ToDictionary();
 
-        return [.. after
-            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+        return [.. after.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
             .GroupBy(ErrorKey)
             .SelectMany(group => group.Skip(existing.GetValueOrDefault(group.Key)))];
     }
@@ -137,8 +132,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
 
         try
         {
-            return suppressor
-                .SupportedSuppressions
+            return suppressor.SupportedSuppressions
                 .Any(static suppression => suppression.SuppressedDiagnosticId.StartsWith(value: "CS", StringComparison.Ordinal));
         }
         catch (Exception exception) when (exception is not OperationCanceledException)

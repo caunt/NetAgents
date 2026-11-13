@@ -8,10 +8,9 @@ namespace NetAgents.Analyzers.Tests.Infrastructure;
 
 internal static class AnalyzerTestHarness
 {
-    internal static readonly MetadataReference[] References = [.. Directory
-        .EnumerateFiles(Path.GetDirectoryName(typeof(string).Assembly.Location)
+    internal static readonly MetadataReference[] References = [.. Directory.EnumerateFiles(Path.GetDirectoryName(typeof(string).Assembly.Location)
             ?? throw new InvalidOperationException(message: "The runtime assembly directory is unavailable."),
-            searchPattern: "*.dll")
+        searchPattern: "*.dll")
         .Select(static assemblyPath => MetadataReference.CreateFromFile(assemblyPath))];
 
     public static Task<Diagnostic[]> Analyze(DiagnosticAnalyzer analyzer, string source, string fileName = "ExampleType.cs", bool allowUnsafeCode = false)
@@ -35,14 +34,12 @@ internal static class AnalyzerTestHarness
             References,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: allowUnsafeCode));
 
-        Diagnostic[] compilerErrors = [.. compilation
-            .GetDiagnostics()
+        Diagnostic[] compilerErrors = [.. compilation.GetDiagnostics()
             .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)];
 
         Assert.Empty(compilerErrors);
 
-        ImmutableArray<Diagnostic> diagnostics = await compilation
-            .WithAnalyzers(analyzers: [analyzer])
+        ImmutableArray<Diagnostic> diagnostics = await compilation.WithAnalyzers(analyzers: [analyzer])
             .GetAnalyzerDiagnosticsAsync()
             .ConfigureAwait(continueOnCapturedContext: false);
 

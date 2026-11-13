@@ -17,8 +17,7 @@ internal static class PackageArtifact
     {
         string templateDirectory = Path.Combine(paths: [workspacePath, "microsoft-defaults"]);
 
-        await ConsumerBuild
-            .RunDevelopmentKit(workspacePath, arguments: ["new", "editorconfig", "--output", templateDirectory])
+        await ConsumerBuild.RunDevelopmentKit(workspacePath, arguments: ["new", "editorconfig", "--output", templateDirectory])
             .ConfigureAwait(continueOnCapturedContext: false);
 
         string templatePath = Path.Combine(paths: [templateDirectory, ".editorconfig"]);
@@ -27,14 +26,12 @@ internal static class PackageArtifact
 
         AnalyzerConfig[] templateConfigurations = [AnalyzerConfig.Parse(template, templatePath)];
 
-        AnalyzerConfigOptionsResult templateOptions = AnalyzerConfigSet
-            .Create(templateConfigurations)
+        AnalyzerConfigOptionsResult templateOptions = AnalyzerConfigSet.Create(templateConfigurations)
             .GetOptionsForSourcePath(Path.Combine(paths: [templateDirectory, "ExampleService.cs"]));
 
         Assert.NotEmpty(templateOptions.AnalyzerOptions);
 
-        using Stream embeddedStream = typeof(ConfigurationPolicyAnalyzer)
-            .Assembly
+        using Stream embeddedStream = typeof(ConfigurationPolicyAnalyzer).Assembly
             .GetManifestResourceStream(name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
             ?? throw new InvalidOperationException(message: "The embedded configuration is missing.");
 
@@ -117,8 +114,7 @@ internal static class PackageArtifact
             Assert.NotNull(package.GetEntry(requiredFile));
 
         Assert.Equal(expected: 2,
-            package
-                .Entries
+            package.Entries
                 .Count(static entry => entry.FullName.StartsWith(value: "analyzers/", StringComparison.Ordinal)
             && entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal)));
 

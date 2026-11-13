@@ -22,8 +22,7 @@ internal static class ProjectFormatter
 
     public static async Task Format(FormatProject inputs, CancellationToken cancellationToken)
     {
-        FormattingLock projectLock = await FormattingLock
-            .Acquire(sourcePaths: [.. inputs.SourceItems.Select(GetPath)], cancellationToken)
+        FormattingLock projectLock = await FormattingLock.Acquire(sourcePaths: [.. inputs.SourceItems.Select(GetPath)], cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         await using (projectLock.ConfigureAwait(continueOnCapturedContext: false))
@@ -32,12 +31,10 @@ internal static class ProjectFormatter
 
             progress.Report(activity: "checking formatting inputs");
 
-            Dictionary<string, byte[]> sources = await FormattingFingerprint
-                .ReadSources(inputs.SourceItems, cancellationToken)
+            Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(inputs.SourceItems, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            FormattingFingerprint before = await FormattingFingerprint
-                .Create(inputs, sources, cancellationToken)
+            FormattingFingerprint before = await FormattingFingerprint.Create(inputs, sources, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             FormattingCache cache = new(inputs.CacheFile);
@@ -60,12 +57,10 @@ internal static class ProjectFormatter
             // formatting was in flight. Non-source inputs must also remain unchanged throughout.
             FormattingFingerprint expected = before with { Sources = FormattingFingerprint.HashSources(inputs.SourceItems, sources) };
 
-            Dictionary<string, byte[]> currentSources = await FormattingFingerprint
-                .ReadSources(inputs.SourceItems, cancellationToken)
+            Dictionary<string, byte[]> currentSources = await FormattingFingerprint.ReadSources(inputs.SourceItems, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            FormattingFingerprint after = await FormattingFingerprint
-                .Create(inputs, currentSources, cancellationToken)
+            FormattingFingerprint after = await FormattingFingerprint.Create(inputs, currentSources, cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             if (expected == after)
@@ -110,8 +105,7 @@ internal static class ProjectFormatter
 
         if (languageVersion.Substituted)
         {
-            inputs
-                .Log
+            inputs.Log
                 .LogMessage(MessageImportance.Normal,
                     $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}");
         }
@@ -172,8 +166,7 @@ internal static class ProjectFormatter
 
         foreach (string part in compositionParts.Skipped)
         {
-            inputs
-                .Log
+            inputs.Log
                 .LogMessage(MessageImportance.Normal, $"NetAgents skips the {part} export because this build cannot load every type it declares");
         }
 
@@ -261,8 +254,7 @@ internal static class ProjectFormatter
         Project original = workspace.CurrentSolution.GetProject(projectIdentifier)
             ?? throw new InvalidOperationException(message: "The formatting project is missing.");
 
-        ImmutableArray<DiagnosticAnalyzer> analyzers = [.. original
-            .AnalyzerReferences
+        ImmutableArray<DiagnosticAnalyzer> analyzers = [.. original.AnalyzerReferences
             .SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())];
 
         CodeFixProvider[] providers = [.. composition.GetExports<CodeFixProvider>()];
@@ -275,8 +267,7 @@ internal static class ProjectFormatter
             inputs.Log.LogWarning(fault);
         }
 
-        CodeFixRunner.CodeFixResult codeFixes = await CodeFixRunner
-            .Fix(original, analyzers, providers, ReportBrokenAnalyzer, cancellationToken, progress)
+        CodeFixRunner.CodeFixResult codeFixes = await CodeFixRunner.Fix(original, analyzers, providers, ReportBrokenAnalyzer, cancellationToken, progress)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         List<string> rewritten = [];
@@ -293,8 +284,7 @@ internal static class ProjectFormatter
                 Encoding encoding = after.Encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
                 byte[] bytes = [.. encoding.GetPreamble(), .. encoding.GetBytes(after.ToString())];
 
-                await File
-                    .WriteAllBytesAsync(document.FilePath, bytes, cancellationToken)
+                await File.WriteAllBytesAsync(document.FilePath, bytes, cancellationToken)
                     .ConfigureAwait(continueOnCapturedContext: false);
 
                 sourceBytes[document.FilePath] = bytes;
@@ -339,14 +329,12 @@ internal static class ProjectFormatter
         if (!codeFixes.Introduced.IsEmpty)
         {
             string introduced = string.Join(separator: ", ",
-                codeFixes
-                    .Introduced
+                codeFixes.Introduced
                     .Select(static diagnostic => diagnostic.Id)
                     .Distinct(StringComparer.Ordinal)
                     .Order(StringComparer.Ordinal));
 
-            inputs
-                .Log
+            inputs.Log
                 .LogMessage(MessageImportance.High, $"NetAgents made no change because formatting would have introduced {introduced}");
 
             // Each one is named where formatting would have put it, so it can be found without rebuilding
@@ -365,8 +353,7 @@ internal static class ProjectFormatter
 
             if (located.Count > IntroducedShown)
             {
-                inputs
-                    .Log
+                inputs.Log
                     .LogMessage(MessageImportance.High, string.Create(CultureInfo.InvariantCulture, $"  and {located.Count - IntroducedShown} more"));
             }
 
@@ -383,8 +370,7 @@ internal static class ProjectFormatter
         if (blocking.IsEmpty)
             return;
 
-        string[] identifiers = [.. blocking
-            .Select(static diagnostic => diagnostic.Id)
+        string[] identifiers = [.. blocking.Select(static diagnostic => diagnostic.Id)
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];
 
@@ -392,8 +378,7 @@ internal static class ProjectFormatter
         string rewriteCount = rewritten.Count.ToString(CultureInfo.InvariantCulture);
 
         // The identifiers are what this formatter could not repair; the compiler reports the full set.
-        inputs
-            .Log
+        inputs.Log
             .LogMessage(MessageImportance.High,
                 $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}");
 

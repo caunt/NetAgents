@@ -17,8 +17,7 @@ internal static class LambdaParameterLayout
 
         ParameterSyntax parameter = lambda.ParameterList.Parameters[index: 0];
 
-        return parameter.Type is null && parameter.Default is null && parameter.AttributeLists.Count == 0 && parameter
-            .Modifiers
+        return parameter.Type is null && parameter.Default is null && parameter.AttributeLists.Count == 0 && parameter.Modifiers
             .Count == 0;
     }
 

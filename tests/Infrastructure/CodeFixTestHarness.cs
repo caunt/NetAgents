@@ -46,8 +46,7 @@ internal static class CodeFixTestHarness
 
         foreach (Diagnostic diagnostic in diagnostics)
         {
-            await provider
-                .RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
+            await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
                 .ConfigureAwait(continueOnCapturedContext: false);
         }
 
@@ -68,8 +67,7 @@ internal static class CodeFixTestHarness
 
         foreach (Diagnostic diagnostic in diagnostics)
         {
-            await provider
-                .RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
+            await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
                 .ConfigureAwait(continueOnCapturedContext: false);
         }
 
@@ -187,8 +185,7 @@ internal static class CodeFixTestHarness
         Assert.NotNull(compilation);
         Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
 
-        return await compilation
-            .WithAnalyzers(analyzers: [analyzer])
+        return await compilation.WithAnalyzers(analyzers: [analyzer])
             .GetAnalyzerDiagnosticsAsync()
             .ConfigureAwait(continueOnCapturedContext: false);
     }
@@ -198,8 +195,7 @@ internal static class CodeFixTestHarness
         SyntaxNode sourceRoot = CSharpSyntaxTree.ParseText(source).GetRoot();
         OutputKind outputKind = sourceRoot.ChildNodes().OfType<GlobalStatementSyntax>().Any() ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary;
 
-        Project project = workspace
-            .AddProject(name: "CodeFixTests", LanguageNames.CSharp)
+        Project project = workspace.AddProject(name: "CodeFixTests", LanguageNames.CSharp)
             .WithParseOptions(new CSharpParseOptions(LanguageVersion.CSharp14))
             .WithCompilationOptions(new CSharpCompilationOptions(outputKind, allowUnsafe: true))
             .AddMetadataReferences(AnalyzerTestHarness.References);
@@ -221,8 +217,7 @@ internal static class CodeFixTestHarness
 
         List<CodeAction> actions = [];
 
-        await provider
-            .RegisterCodeFixesAsync(new CodeFixContext(document, diagnostics[index: 0], (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
+        await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostics[index: 0], (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
             .ConfigureAwait(continueOnCapturedContext: false);
 
         CodeAction action = Assert.Single(actions);
@@ -241,8 +236,7 @@ internal static class CodeFixTestHarness
 
             Assert.NotNull(fixAllProvider);
 
-            CodeAction? fixAllAction = await fixAllProvider
-                .GetFixAsync(context)
+            CodeAction? fixAllAction = await fixAllProvider.GetFixAsync(context)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             Assert.NotNull(fixAllAction);
@@ -250,8 +244,7 @@ internal static class CodeFixTestHarness
             action = fixAllAction;
         }
 
-        ImmutableArray<CodeActionOperation> operations = await action
-            .GetOperationsAsync(CancellationToken.None)
+        ImmutableArray<CodeActionOperation> operations = await action.GetOperationsAsync(CancellationToken.None)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         ApplyChangesOperation changes = Assert.Single(operations.OfType<ApplyChangesOperation>());

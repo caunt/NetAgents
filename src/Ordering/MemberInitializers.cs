@@ -170,8 +170,7 @@ internal static class MemberInitializers
     {
         bool valueType = declaration is StructDeclarationSyntax || declaration.Keyword.IsKind(SyntaxKind.StructKeyword);
 
-        bool recordStruct = declaration is RecordDeclarationSyntax record && record
-            .ClassOrStructKeyword
+        bool recordStruct = declaration is RecordDeclarationSyntax record && record.ClassOrStructKeyword
             .IsKind(SyntaxKind.StructKeyword);
 
         if (valueType || recordStruct)

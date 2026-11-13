@@ -17,12 +17,11 @@ namespace NetAgents.Analyzers.Formatting.Chains;
 /// A chain's links are the members reached through dots after its receiver, fields, properties, events, and methods
 /// alike; namespace and type qualifiers belong to the receiver, and an element access belongs to the link before it.
 /// A chain of up to four links stays on one line when that line fits within 128 characters. A longer chain, or one
-/// that does not fit, puts every link on a line of its own, the first included, one level deeper than the line it
-/// starts on:
+/// that does not fit, keeps its first link on the receiver's line and puts every later link on a line of its own,
+/// one level deeper than the line it starts on:
 /// </para>
 /// <code>
-/// string[][] rows = [.. rowsByVersion
-///     .Values
+/// string[][] rows = [.. rowsByVersion.Values
 ///     .Select(static value => value.Cells)
 ///     .OrderByDescending(cells => cells[section.VersionColumnIndex], AppVersion.ValueComparer)];
 /// </code>
@@ -99,9 +98,9 @@ internal static class ChainLayout
 
     public static bool IsSettled(List<ChainLink> links, bool split, SourceText text)
     {
-        foreach (ChainLink link in links)
+        for (int index = 0; index < links.Count; index++)
         {
-            if (StartsLine(link.Dot, text) != (split && !link.IsQualifier))
+            if (StartsLine(links[index].Dot, text) != StartsOwnLine(links, index, split))
                 return false;
         }
 
@@ -155,20 +154,20 @@ internal static class ChainLayout
         SyntaxTriviaList lineBreak = SyntaxFactory.TriviaList(GetLineBreak(root));
         Dictionary<SyntaxToken, SyntaxToken> replacements = [];
 
-        // A call moved to a line of its own goes one level deeper than the line the chain starts on.
+        // A link moved to a line of its own goes one level deeper than the line the chain starts on.
         TextLine start = text.Lines.GetLineFromPosition(links[index: 0].Access.SpanStart);
         string indentation = text.ToString(TextSpan.FromBounds(start.Start, start.Start + CountIndentation(text, start)));
         string deeper = indentation + (indentation.IndexOf(value: '\t') >= 0 ? "\t" : "    ");
 
-        foreach (ChainLink link in links)
+        for (int index = 0; index < links.Count; index++)
         {
-            bool breaks = split && !link.IsQualifier;
+            ChainLink link = links[index];
+            bool breaks = StartsOwnLine(links, index, split);
             SyntaxToken previous = link.Dot.GetPreviousToken();
 
             replacements[previous] = previous.WithTrailingTrivia(breaks ? lineBreak : SyntaxTriviaList.Empty);
 
-            replacements[link.Dot] = link
-                .Dot
+            replacements[link.Dot] = link.Dot
                 .WithLeadingTrivia(breaks ? SyntaxFactory.TriviaList(SyntaxFactory.Whitespace(deeper)) : SyntaxTriviaList.Empty);
         }
 
@@ -322,9 +321,15 @@ internal static class ChainLayout
 
     private static bool StartsLine(SyntaxToken dot, SourceText text)
     {
-        return text.Lines.GetLineFromPosition(dot.GetPreviousToken().Span.End).LineNumber != text
-            .Lines
+        return text.Lines.GetLineFromPosition(dot.GetPreviousToken().Span.End).LineNumber != text.Lines
             .GetLineFromPosition(dot.SpanStart)
             .LineNumber;
+    }
+
+    // When a chain splits, every link after the first starts a line of its own, while the first link and the
+    // namespace and type qualifiers before it stay on the receiver's line.
+    private static bool StartsOwnLine(List<ChainLink> links, int index, bool split)
+    {
+        return split && index > links.FindIndex(static link => !link.IsQualifier);
     }
 }

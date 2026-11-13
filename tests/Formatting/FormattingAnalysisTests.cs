@@ -186,8 +186,7 @@ public sealed class FormattingAnalysisTests
 
     private static Project CreateProject(AdhocWorkspace workspace)
     {
-        return workspace
-            .AddProject(name: "Validation", LanguageNames.CSharp)
+        return workspace.AddProject(name: "Validation", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Reader.cs",
@@ -211,15 +210,13 @@ public sealed class FormattingAnalysisTests
             static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
             new(before.Name, messages.Add));
 
-        ImmutableArray<Diagnostic> baseline = await analysis
-            .GetDiagnostics(before, CancellationToken.None)
+        ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         // A candidate that no longer compiles is what the shortcut exists to reject without analyzers.
         Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() => \"text\"; }\n");
 
-        FormattingAnalysis.ValidationResult validation = await analysis
-            .Validate(candidate, baseline, actionKey: "broken candidate", optional: false, CancellationToken.None)
+        FormattingAnalysis.ValidationResult validation = await analysis.Validate(candidate, baseline, actionKey: "broken candidate", optional: false, CancellationToken.None)
             .ConfigureAwait(continueOnCapturedContext: false);
 
         Assert.False(validation.IntroducedErrors.IsEmpty);
@@ -241,8 +238,7 @@ public sealed class FormattingAnalysisTests
             context.RegisterCodeFix(CodeAction.Create(title: "Change optional candidate",
                     async cancellationToken =>
                     {
-                        SourceText text = await context
-                            .Document
+                        SourceText text = await context.Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -319,8 +315,7 @@ public sealed class FormattingAnalysisTests
 
                 SyntaxTree reader = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Reader.cs");
 
-                SyntaxTree dependency = compilation
-                    .Compilation
+                SyntaxTree dependency = compilation.Compilation
                     .SyntaxTrees
                     .Single(static tree => tree.FilePath == "Dependency.cs");
 
@@ -335,8 +330,7 @@ public sealed class FormattingAnalysisTests
 
                 if (offerFixes)
                 {
-                    SyntaxToken token = reader
-                        .GetRoot()
+                    SyntaxToken token = reader.GetRoot()
                         .DescendantTokens()
                         .Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
 

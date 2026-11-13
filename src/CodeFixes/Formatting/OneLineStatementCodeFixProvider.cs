@@ -38,18 +38,15 @@ public sealed class OneLineStatementCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        SyntaxNode? root = await context
-            .Document
+        SyntaxNode? root = await context.Document
             .GetSyntaxRootAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        SourceText text = await context
-            .Document
+        SourceText text = await context.Document
             .GetTextAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        SemanticModel? model = await context
-            .Document
+        SemanticModel? model = await context.Document
             .GetSemanticModelAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -75,8 +72,7 @@ public sealed class OneLineStatementCodeFixProvider : CodeFixProvider
         StatementSyntax joined = OneLineStatement.Join(statement).WithAdditionalAnnotations(Formatter.Annotation);
         Document updated = document.WithSyntaxRoot(root.ReplaceNode(statement, joined));
 
-        return await Formatter
-            .FormatAsync(updated, Formatter.Annotation, cancellationToken: cancellationToken)
+        return await Formatter.FormatAsync(updated, Formatter.Annotation, cancellationToken: cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 }

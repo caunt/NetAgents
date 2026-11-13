@@ -89,8 +89,7 @@ public sealed class RequiredDocumentationAnalyzerTests
             }
             """;
 
-        return await AnalyzerTestHarness
-            .Analyze(new RequiredDocumentationAnalyzer(), source)
+        return await AnalyzerTestHarness.Analyze(new RequiredDocumentationAnalyzer(), source)
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 }
