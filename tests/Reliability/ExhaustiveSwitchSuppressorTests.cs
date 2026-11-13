@@ -79,7 +79,8 @@ public sealed class ExhaustiveSwitchSuppressorTests
 
         // The populate-switch analyzers ship with the SDK rather than this package, so the shape of
         // their report is reproduced here: the rule identifier, on the switch keyword.
-        Project project = workspace.AddProject(name: "Switches", LanguageNames.CSharp)
+        Project project = workspace
+            .AddProject(name: "Switches", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, generalDiagnosticOption: ReportDiagnostic.Error))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Switches.cs", SourceText.From(Enumeration + "class Switches { " + body + " }\n"), filePath: "Switches.cs").Project;
@@ -103,7 +104,9 @@ public sealed class ExhaustiveSwitchSuppressorTests
 
         CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers: [new PopulateSwitchAnalyzer(diagnosticIdentifier), new ExhaustiveSwitchSuppressor()], options);
 
-        ImmutableArray<Diagnostic> diagnostics = await analysis.GetAllDiagnosticsAsync(CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> diagnostics = await analysis
+            .GetAllDiagnosticsAsync(CancellationToken.None)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         return Assert.Single(diagnostics.Where(candidate => candidate.Id == diagnosticIdentifier));
     }

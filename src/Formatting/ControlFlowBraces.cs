@@ -204,7 +204,9 @@ internal static class ControlFlowBraces
         }
 
         return section.Parent is not SwitchStatementSyntax selection
-            || !selection.DescendantNodes().OfType<SimpleNameSyntax>()
+            || !selection
+                .DescendantNodes()
+                .OfType<SimpleNameSyntax>()
                 .Any(identifier => !section.Span.Contains(identifier.Span) && declarations.Contains(identifier.Identifier.ValueText));
     }
 

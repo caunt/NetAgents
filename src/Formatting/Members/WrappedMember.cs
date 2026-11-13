@@ -42,7 +42,9 @@ internal static class WrappedMember
         if (!brokenBefore && GetLine(text, operatorToken.Span.End) == GetLine(text, after.SpanStart))
             return false;
 
-        SyntaxToken first = member.AttributeLists.Count > 0 ? member.AttributeLists[member.AttributeLists.Count - 1].GetLastToken().GetNextToken() : member.GetFirstToken();
+        // The text on each side of the operator, starting after the attributes, which may stand on lines of their own.
+        AttributeListSyntax? attributes = member.AttributeLists.LastOrDefault();
+        SyntaxToken first = attributes is null ? member.GetFirstToken() : attributes.GetLastToken().GetNextToken();
         string head = text.ToString(TextSpan.FromBounds(first.SpanStart, before.Span.End));
         string tail = text.ToString(TextSpan.FromBounds(after.SpanStart, member.Span.End));
 
@@ -91,8 +93,11 @@ internal static class WrappedMember
     // One space on each side of the operator, and nothing else between the three tokens.
     private static SyntaxToken Respace(SyntaxToken original, SyntaxToken rewritten, SyntaxToken before, SyntaxToken after)
     {
-        return original == before
-            ? rewritten.WithTrailingTrivia(SyntaxFactory.Space)
-            : original == after ? rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty) : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty).WithTrailingTrivia(SyntaxFactory.Space);
+        if (original == before)
+            return rewritten.WithTrailingTrivia(SyntaxFactory.Space);
+
+        SyntaxToken attached = rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty);
+
+        return original == after ? attached : attached.WithTrailingTrivia(SyntaxFactory.Space);
     }
 }

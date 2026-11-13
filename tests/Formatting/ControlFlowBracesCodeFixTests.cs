@@ -87,7 +87,8 @@ public sealed class ControlFlowBracesCodeFixTests
             }
             """;
 
-        string expected = source.Replace(oldValue: "            count =", newValue: "        {\n            count =", StringComparison.Ordinal)
+        string expected = source
+            .Replace(oldValue: "            count =", newValue: "        {\n            count =", StringComparison.Ordinal)
             .Replace(oldValue: "                count - 1);\n", newValue: "                count - 1);\n        }\n", StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixBraces(source, fixAll: true));
@@ -119,8 +120,13 @@ public sealed class ControlFlowBracesCodeFixTests
 
         foreach (string lineEnding in new[] { "\n", "\r\n" })
         {
-            string source = member.Replace(oldValue: "STATEMENTS", statements, StringComparison.Ordinal).Replace(oldValue: "\n", lineEnding, StringComparison.Ordinal);
-            string target = member.Replace(oldValue: "STATEMENTS", expected, StringComparison.Ordinal).Replace(oldValue: "\n", lineEnding, StringComparison.Ordinal);
+            string source = member
+                .Replace(oldValue: "STATEMENTS", statements, StringComparison.Ordinal)
+                .Replace(oldValue: "\n", lineEnding, StringComparison.Ordinal);
+
+            string target = member
+                .Replace(oldValue: "STATEMENTS", expected, StringComparison.Ordinal)
+                .Replace(oldValue: "\n", lineEnding, StringComparison.Ordinal);
 
             string fixedSource = await CodeFixTestHarness.FixBraces(source, fixAll: true);
 
@@ -206,7 +212,8 @@ public sealed class ControlFlowBracesCodeFixTests
             }
             """;
 
-        string expected = source.Replace(oldValue: "        {\n", string.Empty, StringComparison.Ordinal)
+        string expected = source
+            .Replace(oldValue: "        {\n", string.Empty, StringComparison.Ordinal)
             .Replace(oldValue: "        }\n", string.Empty, StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixBraces(source, fixAll: true));
@@ -332,7 +339,8 @@ public sealed class ControlFlowBracesCodeFixTests
             }
             """;
 
-        string expected = source.Replace(oldValue: "        {\n", string.Empty, StringComparison.Ordinal)
+        string expected = source
+            .Replace(oldValue: "        {\n", string.Empty, StringComparison.Ordinal)
             .Replace(oldValue: "        }\n", string.Empty, StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixBraces(source, fixAll: true));
@@ -370,7 +378,8 @@ public sealed class ControlFlowBracesCodeFixTests
             }
             """;
 
-        string expected = source.Replace(oldValue: "        {\n", string.Empty, StringComparison.Ordinal)
+        string expected = source
+            .Replace(oldValue: "        {\n", string.Empty, StringComparison.Ordinal)
             .Replace("        }" + suffix + "\n",
                 suffix.Length == 0 ? string.Empty : "        " + suffix.TrimStart() + "\n",
                 StringComparison.Ordinal);

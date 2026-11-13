@@ -114,7 +114,8 @@ public sealed class StatementSpacingCodeFixTests
             }
             """;
 
-        string expected = source.Replace(oldValue: "        var description", newValue: "\n        var description", StringComparison.Ordinal)
+        string expected = source
+            .Replace(oldValue: "        var description", newValue: "\n        var description", StringComparison.Ordinal)
             .Replace(oldValue: "        var options", newValue: "\n        var options", StringComparison.Ordinal)
             .Replace(oldValue: "        return options.Result;", newValue: "\n        return options.Result;", StringComparison.Ordinal);
 

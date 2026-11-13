@@ -40,7 +40,9 @@ internal sealed class FormattingCache(string path)
 
             directory.Create();
 
-            await File.WriteAllTextAsync(temporaryPath, fingerprint.Value, Encoding.UTF8, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            await File
+                .WriteAllTextAsync(temporaryPath, fingerprint.Value, Encoding.UTF8, cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
             cancellationToken.ThrowIfCancellationRequested();
             File.Move(temporaryPath, path, overwrite: true);

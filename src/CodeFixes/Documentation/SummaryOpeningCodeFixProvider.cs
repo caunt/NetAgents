@@ -81,7 +81,10 @@ public sealed class SummaryOpeningCodeFixProvider : CodeFixProvider
 
     private static async Task<Document> Open(Document document, TextSpan span, string opening, CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await document
+            .GetSyntaxRootAsync(cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
         SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         if (root?.FindNode(span, findInsideTrivia: true, getInnermostNodeForTie: true) is not XmlElementSyntax summary)

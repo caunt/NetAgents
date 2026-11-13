@@ -38,17 +38,26 @@ public sealed class OneLineStatementCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        SyntaxNode? root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-        SourceText text = await context.Document.GetTextAsync(context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await context.Document
+            .GetSyntaxRootAsync(context.CancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
-        if (root is null)
+        SourceText text = await context.Document
+            .GetTextAsync(context.CancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        SemanticModel? model = await context.Document
+            .GetSemanticModelAsync(context.CancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        if (root is null || model is null)
             return;
 
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
             StatementSyntax? statement = root.FindToken(diagnostic.Location.SourceSpan.Start).Parent?.FirstAncestorOrSelf<StatementSyntax>();
 
-            if (statement is null || !OneLineStatement.IsJoinable(statement, text))
+            if (statement is null || !OneLineStatement.IsJoinable(statement, model, text, context.CancellationToken))
                 continue;
 
             context.RegisterCodeFix(CodeAction.Create(title: "Write the statement on one line",
@@ -63,6 +72,8 @@ public sealed class OneLineStatementCodeFixProvider : CodeFixProvider
         StatementSyntax joined = OneLineStatement.Join(statement).WithAdditionalAnnotations(Formatter.Annotation);
         Document updated = document.WithSyntaxRoot(root.ReplaceNode(statement, joined));
 
-        return await Formatter.FormatAsync(updated, Formatter.Annotation, cancellationToken: cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        return await Formatter
+            .FormatAsync(updated, Formatter.Annotation, cancellationToken: cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
     }
 }

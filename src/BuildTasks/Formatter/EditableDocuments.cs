@@ -14,7 +14,9 @@ internal static class EditableDocuments
 {
     public static async Task<ImmutableHashSet<DocumentId>> Find(Project project, CancellationToken cancellationToken)
     {
-        Compilation compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+        Compilation compilation = await project
+            .GetCompilationAsync(cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
         CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException: null, concurrentAnalysis: false, logAnalyzerExecutionTime: false);
@@ -23,12 +25,16 @@ internal static class EditableDocuments
 
         foreach (Document document in project.Documents)
         {
-            SyntaxTree? tree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            SyntaxTree? tree = await document
+                .GetSyntaxTreeAsync(cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
             if (tree is null)
                 continue;
 
-            ImmutableArray<Diagnostic> marks = await analysis.GetAnalyzerSyntaxDiagnosticsAsync(tree, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            ImmutableArray<Diagnostic> marks = await analysis
+                .GetAnalyzerSyntaxDiagnosticsAsync(tree, cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
             if (!marks.IsEmpty)
                 editable.Add(document.Id);

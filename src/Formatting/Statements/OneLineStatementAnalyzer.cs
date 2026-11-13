@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
 
 using NetAgents.Analyzers.Diagnostics;
 
@@ -52,8 +53,9 @@ public sealed class OneLineStatementAnalyzer() : PolicyAnalyzer(Rule)
     private static void AnalyzeStatement(SyntaxNodeAnalysisContext context)
     {
         StatementSyntax statement = (StatementSyntax)context.Node;
+        SourceText text = statement.SyntaxTree.GetText(context.CancellationToken);
 
-        if (OneLineStatement.IsJoinable(statement, statement.SyntaxTree.GetText(context.CancellationToken)))
+        if (OneLineStatement.IsJoinable(statement, context.SemanticModel, text, context.CancellationToken))
             context.ReportDiagnostic(Diagnostic.Create(Rule, statement.GetFirstToken().GetLocation()));
     }
 }

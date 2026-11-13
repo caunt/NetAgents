@@ -35,8 +35,13 @@ public sealed class WrappedMemberCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        SyntaxNode? root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-        SourceText text = await context.Document.GetTextAsync(context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await context.Document
+            .GetSyntaxRootAsync(context.CancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        SourceText text = await context.Document
+            .GetTextAsync(context.CancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         if (root is null)
             return;

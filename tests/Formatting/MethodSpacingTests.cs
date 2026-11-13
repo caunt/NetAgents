@@ -51,7 +51,8 @@ public sealed class MethodSpacingTests
             "class ExampleType", "{", "    void First() { }", "    /// <summary>Second.</summary>",
             "    [System.Obsolete]", "    void Second() { }", "    int Third() => 3;", "}"]);
 
-        string expected = source.Replace(oldValue: "    ///", newline + "    ///", StringComparison.Ordinal)
+        string expected = source
+            .Replace(oldValue: "    ///", newline + "    ///", StringComparison.Ordinal)
             .Replace(oldValue: "    int Third", newline + "    int Third", StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixMethodSpacing(source, fixAll: true));

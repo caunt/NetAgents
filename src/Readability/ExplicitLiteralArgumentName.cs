@@ -110,7 +110,8 @@ internal static class ExplicitLiteralArgumentName
         SeparatedSyntaxList<CollectionElementSyntax> items = SyntaxFactory.SeparatedList(elements, Enumerable.Repeat(comma, elements.Count - 1));
         CollectionExpressionSyntax collection = SyntaxFactory.CollectionExpression(CreateToken(SyntaxKind.OpenBracketToken), items, CreateToken(SyntaxKind.CloseBracketToken));
 
-        return SyntaxFactory.Argument(collection)
+        return SyntaxFactory
+            .Argument(collection)
             .WithNameColon(name)
             .WithLeadingTrivia(first.GetLeadingTrivia())
             .WithTrailingTrivia(last.GetTrailingTrivia());
@@ -236,7 +237,9 @@ internal static class ExplicitLiteralArgumentName
 
     private static bool HasComments(BaseArgumentListSyntax list, TextSpan range)
     {
-        return list.DescendantTrivia().Any(trivia =>
+        return list
+            .DescendantTrivia()
+            .Any(trivia =>
             range.Contains(trivia.SpanStart)
                 && trivia.Kind() is SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia);
     }

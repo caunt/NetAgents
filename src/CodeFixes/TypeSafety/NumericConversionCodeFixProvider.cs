@@ -49,8 +49,13 @@ public sealed class NumericConversionCodeFixProvider : CodeFixProvider
 
     private static async Task<Document> Convert(Document document, ImmutableArray<Diagnostic> diagnostics, CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-        SemanticModel? model = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await document
+            .GetSyntaxRootAsync(cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
+
+        SemanticModel? model = await document
+            .GetSemanticModelAsync(cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         if (root is null || model is null)
             return document;

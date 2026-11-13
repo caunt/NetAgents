@@ -125,7 +125,8 @@ public sealed class EditableDocumentsTests
 
     private static Project CreateProject(AdhocWorkspace workspace, string name, string source)
     {
-        return workspace.AddProject(name: "Documents", LanguageNames.CSharp)
+        return workspace
+            .AddProject(name: "Documents", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name, SourceText.From(source), filePath: "/workspace/" + name).Project;

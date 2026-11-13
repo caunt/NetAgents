@@ -70,7 +70,10 @@ internal static class ConsumerBuild
 
         try
         {
-            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMinutes(minutes: 2)).ConfigureAwait(continueOnCapturedContext: false);
+            await process
+                .WaitForExitAsync()
+                .WaitAsync(TimeSpan.FromMinutes(minutes: 2))
+                .ConfigureAwait(continueOnCapturedContext: false);
         }
         catch (TimeoutException)
         {

@@ -35,11 +35,16 @@ internal static class AnalyzerTestHarness
             References,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: allowUnsafeCode));
 
-        Diagnostic[] compilerErrors = [.. compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)];
+        Diagnostic[] compilerErrors = [.. compilation
+            .GetDiagnostics()
+            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)];
 
         Assert.Empty(compilerErrors);
 
-        ImmutableArray<Diagnostic> diagnostics = await compilation.WithAnalyzers(analyzers: [analyzer]).GetAnalyzerDiagnosticsAsync().ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> diagnostics = await compilation
+            .WithAnalyzers(analyzers: [analyzer])
+            .GetAnalyzerDiagnosticsAsync()
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         Diagnostic[] reported = [.. diagnostics];
 

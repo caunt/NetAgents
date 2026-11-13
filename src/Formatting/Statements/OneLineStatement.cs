@@ -1,7 +1,11 @@
+using System.Threading;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+
+using NetAgents.Analyzers.Formatting.Chains;
 
 namespace NetAgents.Analyzers.Formatting.Statements;
 
@@ -18,7 +22,7 @@ internal static class OneLineStatement
 {
     public const string RuleIdentifier = "NETAGENTS0045";
 
-    public static bool IsJoinable(StatementSyntax statement, SourceText text)
+    public static bool IsJoinable(StatementSyntax statement, SemanticModel model, SourceText text, CancellationToken cancellationToken)
     {
         bool simple = statement is LocalDeclarationStatementSyntax or ExpressionStatementSyntax or ReturnStatementSyntax or ThrowStatementSyntax;
 
@@ -28,6 +32,10 @@ internal static class OneLineStatement
         TextLine first = text.Lines.GetLineFromPosition(statement.SpanStart);
 
         if (first.LineNumber == text.Lines.GetLineFromPosition(statement.Span.End).LineNumber || HasOwnLayout(statement))
+            return false;
+
+        // A chain of more than four links splits even when the statement would fit, and NETAGENTS0047 owns its lines.
+        if (ChainLayout.RequiresSplit(statement, model, text, cancellationToken))
             return false;
 
         // Every line break becomes one space, which the formatter may only shorten, so this bounds the joined width.

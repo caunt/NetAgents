@@ -22,7 +22,9 @@ internal static class ProjectFormatter
 
     public static async Task Format(FormatProject inputs, CancellationToken cancellationToken)
     {
-        FormattingLock projectLock = await FormattingLock.Acquire(sourcePaths: [.. inputs.SourceItems.Select(GetPath)], cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        FormattingLock projectLock = await FormattingLock
+            .Acquire(sourcePaths: [.. inputs.SourceItems.Select(GetPath)], cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         await using (projectLock.ConfigureAwait(continueOnCapturedContext: false))
         {
@@ -30,8 +32,13 @@ internal static class ProjectFormatter
 
             progress.Report(activity: "checking formatting inputs");
 
-            Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(inputs.SourceItems, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-            FormattingFingerprint before = await FormattingFingerprint.Create(inputs, sources, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            Dictionary<string, byte[]> sources = await FormattingFingerprint
+                .ReadSources(inputs.SourceItems, cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
+
+            FormattingFingerprint before = await FormattingFingerprint
+                .Create(inputs, sources, cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
             FormattingCache cache = new(inputs.CacheFile);
 
@@ -53,8 +60,13 @@ internal static class ProjectFormatter
             // formatting was in flight. Non-source inputs must also remain unchanged throughout.
             FormattingFingerprint expected = before with { Sources = FormattingFingerprint.HashSources(inputs.SourceItems, sources) };
 
-            Dictionary<string, byte[]> currentSources = await FormattingFingerprint.ReadSources(inputs.SourceItems, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-            FormattingFingerprint after = await FormattingFingerprint.Create(inputs, currentSources, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            Dictionary<string, byte[]> currentSources = await FormattingFingerprint
+                .ReadSources(inputs.SourceItems, cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
+
+            FormattingFingerprint after = await FormattingFingerprint
+                .Create(inputs, currentSources, cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
             if (expected == after)
                 await cache.Store(after, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -272,7 +284,9 @@ internal static class ProjectFormatter
                 Encoding encoding = after.Encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
                 byte[] bytes = [.. encoding.GetPreamble(), .. encoding.GetBytes(after.ToString())];
 
-                await File.WriteAllBytesAsync(document.FilePath, bytes, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                await File
+                    .WriteAllBytesAsync(document.FilePath, bytes, cancellationToken)
+                    .ConfigureAwait(continueOnCapturedContext: false);
 
                 sourceBytes[document.FilePath] = bytes;
 
@@ -316,7 +330,10 @@ internal static class ProjectFormatter
         if (!codeFixes.Introduced.IsEmpty)
         {
             string introduced = string.Join(separator: ", ",
-                codeFixes.Introduced.Select(static diagnostic => diagnostic.Id).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+                codeFixes.Introduced
+                    .Select(static diagnostic => diagnostic.Id)
+                    .Distinct(StringComparer.Ordinal)
+                    .Order(StringComparer.Ordinal));
 
             inputs.Log.LogMessage(MessageImportance.High, $"NetAgents made no change because formatting would have introduced {introduced}");
 
@@ -350,7 +367,11 @@ internal static class ProjectFormatter
         if (blocking.IsEmpty)
             return;
 
-        string[] identifiers = [.. blocking.Select(static diagnostic => diagnostic.Id).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        string[] identifiers = [.. blocking
+            .Select(static diagnostic => diagnostic.Id)
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)];
+
         string files = rewritten.Count == 1 ? "file" : "files";
         string rewriteCount = rewritten.Count.ToString(CultureInfo.InvariantCulture);
 

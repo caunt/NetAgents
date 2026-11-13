@@ -87,10 +87,14 @@ public sealed class RedundantMethodSuffixAnalyzerTests
         Assert.Equal(expected: 2, diagnostics.Length);
 
         Assert.Contains(diagnostics,
-            static diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains(value: "'UpdateValue'", StringComparison.Ordinal));
+            static diagnostic => diagnostic
+                .GetMessage(CultureInfo.InvariantCulture)
+                .Contains(value: "'UpdateValue'", StringComparison.Ordinal));
 
         Assert.Contains(diagnostics,
-            static diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains(value: "'SetName'", StringComparison.Ordinal));
+            static diagnostic => diagnostic
+                .GetMessage(CultureInfo.InvariantCulture)
+                .Contains(value: "'SetName'", StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -114,7 +118,8 @@ public sealed class RedundantMethodSuffixAnalyzerTests
 
     private static async Task<Diagnostic[]> Analyze(string members)
     {
-        return await AnalyzerTestHarness.Analyze(new RedundantMethodSuffixAnalyzer(), $"public sealed class Item; public sealed class ExampleType {{ {members} }}")
+        return await AnalyzerTestHarness
+            .Analyze(new RedundantMethodSuffixAnalyzer(), $"public sealed class Item; public sealed class ExampleType {{ {members} }}")
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 }

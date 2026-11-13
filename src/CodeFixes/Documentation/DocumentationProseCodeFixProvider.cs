@@ -48,12 +48,14 @@ public sealed class DocumentationProseCodeFixProvider : CodeFixProvider
     // the existing nodes reflows every marker; replacing the prose lines leaves the rest untouched.
     private static async Task<Document> Wrap(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await document
+            .GetSyntaxRootAsync(cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
-        SourceText? source = root is null ? null : await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-
-        if (root is null || source is null)
+        if (root is null)
             return document;
+
+        SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         SyntaxNode? located = root.FindNode(diagnosticSpan, findInsideTrivia: true);
         DocumentationCommentTriviaSyntax? documentation = located?.FirstAncestorOrSelf<DocumentationCommentTriviaSyntax>();

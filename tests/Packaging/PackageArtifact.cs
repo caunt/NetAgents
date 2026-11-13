@@ -17,7 +17,8 @@ internal static class PackageArtifact
     {
         string templateDirectory = Path.Combine(paths: [workspacePath, "microsoft-defaults"]);
 
-        await ConsumerBuild.RunDevelopmentKit(workspacePath, arguments: ["new", "editorconfig", "--output", templateDirectory])
+        await ConsumerBuild
+            .RunDevelopmentKit(workspacePath, arguments: ["new", "editorconfig", "--output", templateDirectory])
             .ConfigureAwait(continueOnCapturedContext: false);
 
         string templatePath = Path.Combine(paths: [templateDirectory, ".editorconfig"]);
@@ -26,7 +27,8 @@ internal static class PackageArtifact
 
         AnalyzerConfig[] templateConfigurations = [AnalyzerConfig.Parse(template, templatePath)];
 
-        AnalyzerConfigOptionsResult templateOptions = AnalyzerConfigSet.Create(templateConfigurations)
+        AnalyzerConfigOptionsResult templateOptions = AnalyzerConfigSet
+            .Create(templateConfigurations)
             .GetOptionsForSourcePath(Path.Combine(paths: [templateDirectory, "ExampleService.cs"]));
 
         Assert.NotEmpty(templateOptions.AnalyzerOptions);

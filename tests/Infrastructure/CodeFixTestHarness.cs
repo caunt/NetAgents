@@ -17,6 +17,7 @@ using NetAgents.Analyzers.CodeFixes.StatementGroups;
 using NetAgents.Analyzers.CodeFixes.TypeSafety;
 using NetAgents.Analyzers.Documentation;
 using NetAgents.Analyzers.Formatting;
+using NetAgents.Analyzers.Formatting.Chains;
 using NetAgents.Analyzers.Formatting.Clauses;
 using NetAgents.Analyzers.Formatting.Members;
 using NetAgents.Analyzers.Formatting.Statements;
@@ -44,7 +45,11 @@ internal static class CodeFixTestHarness
         List<CodeAction> actions = [];
 
         foreach (Diagnostic diagnostic in diagnostics)
-            await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)).ConfigureAwait(continueOnCapturedContext: false);
+        {
+            await provider
+                .RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
+                .ConfigureAwait(continueOnCapturedContext: false);
+        }
 
         Assert.Empty(actions);
     }
@@ -62,7 +67,11 @@ internal static class CodeFixTestHarness
         Assert.False(diagnostics.IsEmpty);
 
         foreach (Diagnostic diagnostic in diagnostics)
-            await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)).ConfigureAwait(continueOnCapturedContext: false);
+        {
+            await provider
+                .RegisterCodeFixesAsync(new CodeFixContext(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
+                .ConfigureAwait(continueOnCapturedContext: false);
+        }
 
         return actions.Count;
     }
@@ -80,6 +89,11 @@ internal static class CodeFixTestHarness
     public static async Task<string> FixBraces(string source, bool fixAll)
     {
         return await Fix(source, new ControlFlowBracesAnalyzer(), new ControlFlowBracesCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixChains(string source, bool fixAll)
+    {
+        return await Fix(source, new ChainLayoutAnalyzer(), new ChainLayoutCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<string> FixDocumentationProse(string source)
@@ -168,12 +182,16 @@ internal static class CodeFixTestHarness
 
     public static async Task<ImmutableArray<Diagnostic>> GetDiagnostics(Document document, DiagnosticAnalyzer analyzer)
     {
-        Compilation? compilation = await document.Project.GetCompilationAsync().ConfigureAwait(continueOnCapturedContext: false);
+        Compilation? compilation = await document.Project
+            .GetCompilationAsync()
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         Assert.NotNull(compilation);
         Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
 
-        return await compilation.WithAnalyzers(analyzers: [analyzer]).GetAnalyzerDiagnosticsAsync()
+        return await compilation
+            .WithAnalyzers(analyzers: [analyzer])
+            .GetAnalyzerDiagnosticsAsync()
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 
@@ -182,7 +200,8 @@ internal static class CodeFixTestHarness
         SyntaxNode sourceRoot = CSharpSyntaxTree.ParseText(source).GetRoot();
         OutputKind outputKind = sourceRoot.ChildNodes().OfType<GlobalStatementSyntax>().Any() ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary;
 
-        Project project = workspace.AddProject(name: "CodeFixTests", LanguageNames.CSharp)
+        Project project = workspace
+            .AddProject(name: "CodeFixTests", LanguageNames.CSharp)
             .WithParseOptions(new CSharpParseOptions(LanguageVersion.CSharp14))
             .WithCompilationOptions(new CSharpCompilationOptions(outputKind, allowUnsafe: true))
             .AddMetadataReferences(AnalyzerTestHarness.References);
@@ -204,7 +223,9 @@ internal static class CodeFixTestHarness
 
         List<CodeAction> actions = [];
 
-        await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostics[index: 0], (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None)).ConfigureAwait(continueOnCapturedContext: false);
+        await provider
+            .RegisterCodeFixesAsync(new CodeFixContext(document, diagnostics[index: 0], (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         CodeAction action = Assert.Single(actions);
 
@@ -222,14 +243,18 @@ internal static class CodeFixTestHarness
 
             Assert.NotNull(fixAllProvider);
 
-            CodeAction? fixAllAction = await fixAllProvider.GetFixAsync(context).ConfigureAwait(continueOnCapturedContext: false);
+            CodeAction? fixAllAction = await fixAllProvider
+                .GetFixAsync(context)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
             Assert.NotNull(fixAllAction);
 
             action = fixAllAction;
         }
 
-        ImmutableArray<CodeActionOperation> operations = await action.GetOperationsAsync(CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<CodeActionOperation> operations = await action
+            .GetOperationsAsync(CancellationToken.None)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         ApplyChangesOperation changes = Assert.Single(operations.OfType<ApplyChangesOperation>());
         Document? changedDocument = changes.ChangedSolution.GetDocument(document.Id);

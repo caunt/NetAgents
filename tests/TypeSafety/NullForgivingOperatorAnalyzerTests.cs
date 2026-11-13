@@ -100,7 +100,9 @@ public sealed class NullForgivingOperatorAnalyzerTests
 
         Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
 
-        Diagnostic[] diagnostics = [.. await compilation.WithAnalyzers(analyzers: [new NullForgivingOperatorAnalyzer()]).GetAnalyzerDiagnosticsAsync()];
+        Diagnostic[] diagnostics = [.. await compilation
+            .WithAnalyzers(analyzers: [new NullForgivingOperatorAnalyzer()])
+            .GetAnalyzerDiagnosticsAsync()];
 
         Assert.Equal(expected: 2, diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, diagnostic.Id));

@@ -295,7 +295,8 @@ public sealed class RazorCodeTests
 
     private static SyntaxTree[] CreateComponent(string members, string razorPath = "/workspace/Sample.razor", string render = "", string generated = "")
     {
-        string source = Component.Replace(oldValue: "RENDER", render, StringComparison.Ordinal)
+        string source = Component
+            .Replace(oldValue: "RENDER", render, StringComparison.Ordinal)
             .Replace(oldValue: "GENERATED", generated, StringComparison.Ordinal)
             .Replace(oldValue: "MEMBERS", members, StringComparison.Ordinal)
             .Replace(oldValue: "RAZOR", razorPath, StringComparison.Ordinal);

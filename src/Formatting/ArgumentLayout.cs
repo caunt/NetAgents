@@ -17,9 +17,7 @@ internal static class ArgumentLayout
 
     internal static bool CanFix(SyntaxNode list)
     {
-        return !list.ContainsDirectives && list.DescendantTrivia().All(static trivia =>
-            trivia.Kind() is SyntaxKind.WhitespaceTrivia or SyntaxKind.EndOfLineTrivia
-                or SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia);
+        return !list.ContainsDirectives && list.DescendantTrivia().All(IsWhitespaceOrComment);
     }
 
     internal static TextChange[] GetChanges(SyntaxNode list, SourceText source)
@@ -217,9 +215,7 @@ internal static class ArgumentLayout
     private static string GetItemIndentation(SyntaxNode list, SourceText source)
     {
         int line = GetLine(source, list.SpanStart);
-
-        int depth = 1 + list.Ancestors()
-            .Count(ancestor => IsList(ancestor) && ancestor.ChildNodes().Skip(count: 1).Any() && GetLine(source, ancestor.SpanStart) == line);
+        int depth = 1 + list.Ancestors().Count(ancestor => SpreadsFromLine(ancestor, source, line));
 
         return GetIndentation(source, list.SpanStart) + new string(c: ' ', 4 * depth);
     }
@@ -248,7 +244,8 @@ internal static class ArgumentLayout
     // that spreads over lines, directly or in a block or call nested inside them.
     private static AnonymousFunctionExpressionSyntax[] GetSpreadLambdas(SyntaxNode list)
     {
-        return [.. list.DescendantNodes()
+        return [.. list
+            .DescendantNodes()
             .OfType<AnonymousFunctionExpressionSyntax>()
             .Where(function => function.Block is BlockSyntax body && function.Ancestors().First(IsList) == list
                     && body.DescendantTokens().Any(HoldsSpreadStatement))];
@@ -292,6 +289,12 @@ internal static class ArgumentLayout
                 or SwitchStatementSyntax or CheckedStatementSyntax or UnsafeStatementSyntax => token == token.Parent.GetFirstToken(),
             _ => false,
         };
+    }
+
+    private static bool IsWhitespaceOrComment(SyntaxTrivia trivia)
+    {
+        return trivia.Kind() is SyntaxKind.WhitespaceTrivia or SyntaxKind.EndOfLineTrivia
+            or SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia;
     }
 
     // One walk over the tokens answers everything the bracket needs: their combined width, how many
@@ -349,6 +352,12 @@ internal static class ArgumentLayout
     private static bool SharesLine(SourceText source, SyntaxToken token)
     {
         return GetLine(source, token.SpanStart) == GetLine(source, token.GetPreviousToken().Span.End);
+    }
+
+    // A list that opens on the given line and holds more than one item, so it continues past that line.
+    private static bool SpreadsFromLine(SyntaxNode node, SourceText source, int line)
+    {
+        return IsList(node) && node.ChildNodes().Skip(count: 1).Any() && GetLine(source, node.SpanStart) == line;
     }
 
     // The item starts a later line than the token before it, at the indentation given.

@@ -148,7 +148,10 @@ public sealed class MemberOrderingTests
 
         TypeDeclarationSyntax declaration = root.DescendantNodes().OfType<TypeDeclarationSyntax>().First();
         MemberDeclarationSyntax[] members = [.. declaration.Members];
-        string[] initializers = [.. members.Where(static member => member is FieldDeclarationSyntax or PropertyDeclarationSyntax).Select(static member => member.ToString())];
+
+        string[] initializers = [.. members
+            .Where(static member => member is FieldDeclarationSyntax or PropertyDeclarationSyntax)
+            .Select(static member => member.ToString())];
 
         Assert.Contains(expectedSubstring: "Zebra", initializers[0], StringComparison.Ordinal);
         Assert.Contains(expectedSubstring: "Middle", initializers[1], StringComparison.Ordinal);

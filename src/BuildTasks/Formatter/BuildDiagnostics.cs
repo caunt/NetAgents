@@ -14,7 +14,9 @@ internal sealed class BuildDiagnostics(ImmutableArray<Diagnostic> diagnostics) :
 
     public override async Task<IEnumerable<Diagnostic>> GetDocumentDiagnosticsAsync(Document document, CancellationToken cancellationToken)
     {
-        SyntaxTree? tree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxTree? tree = await document
+            .GetSyntaxTreeAsync(cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         return diagnostics.Where(diagnostic => diagnostic.Location.SourceTree == tree);
     }

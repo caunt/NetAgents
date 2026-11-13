@@ -45,7 +45,9 @@ public sealed class LambdaParameterLayoutCodeFixProvider : CodeFixProvider
 
     private static async Task<Document> DropParentheses(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await document
+            .GetSyntaxRootAsync(cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         if (root is null)
             return document;

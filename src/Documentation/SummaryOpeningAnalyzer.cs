@@ -68,7 +68,10 @@ public sealed class SummaryOpeningAnalyzer() : PolicyAnalyzer(Rule)
     private static void AnalyzeDeclaration(SyntaxNodeAnalysisContext context)
     {
         DocumentedMember? member = DocumentationTags.Find(context.Node, context.SemanticModel, context.CancellationToken);
-        XmlElementSyntax? summary = member?.Elements.OfType<XmlElementSyntax>().FirstOrDefault(static element => DocumentationTags.GetName(element) is "summary");
+
+        XmlElementSyntax? summary = member?.Elements
+            .OfType<XmlElementSyntax>()
+            .FirstOrDefault(static element => DocumentationTags.GetName(element) is "summary");
 
         if (member is null || summary is null)
             return;

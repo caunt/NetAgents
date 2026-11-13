@@ -186,7 +186,8 @@ public sealed class FormattingAnalysisTests
 
     private static Project CreateProject(AdhocWorkspace workspace)
     {
-        return workspace.AddProject(name: "Validation", LanguageNames.CSharp)
+        return workspace
+            .AddProject(name: "Validation", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Reader.cs",
@@ -208,7 +209,9 @@ public sealed class FormattingAnalysisTests
             static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
             new(before.Name, messages.Add));
 
-        ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> baseline = await analysis
+            .GetDiagnostics(before, CancellationToken.None)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         // A candidate that no longer compiles is what the shortcut exists to reject without analyzers.
         Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() => \"text\"; }\n");
@@ -236,7 +239,9 @@ public sealed class FormattingAnalysisTests
             context.RegisterCodeFix(CodeAction.Create(title: "Change optional candidate",
                     async cancellationToken =>
                     {
-                        SourceText text = await context.Document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                        SourceText text = await context.Document
+                            .GetTextAsync(cancellationToken)
+                            .ConfigureAwait(continueOnCapturedContext: false);
 
                         string next = rejected ? "2" : text.ToString(context.Span) == "1" ? "3" : "4";
 
@@ -322,7 +327,10 @@ public sealed class FormattingAnalysisTests
 
                 if (offerFixes)
                 {
-                    SyntaxToken token = reader.GetRoot().DescendantTokens().Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
+                    SyntaxToken token = reader
+                        .GetRoot()
+                        .DescendantTokens()
+                        .Single(static token => token.IsKind(SyntaxKind.NumericLiteralToken));
 
                     compilation.ReportDiagnostic(Diagnostic.Create(RejectedSuggestion, token.GetLocation()));
 

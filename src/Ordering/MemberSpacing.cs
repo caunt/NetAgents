@@ -141,7 +141,10 @@ internal static class MemberSpacing
 
     private static bool StandsAlone(MemberDeclarationSyntax member)
     {
-        return member is not BaseFieldDeclarationSyntax and not PropertyDeclarationSyntax || member.AttributeLists.Count > 0 || HasDocumentation(member) || member.ToString().Contains(value: "\n");
+        bool fieldOrProperty = member is BaseFieldDeclarationSyntax or PropertyDeclarationSyntax;
+        bool annotated = member.AttributeLists.Count > 0 || HasDocumentation(member);
+
+        return !fieldOrProperty || annotated || member.ToString().Contains(value: "\n");
     }
 
     // A member starts a line of its own when the token before it ends one, which its leading trivia cannot show.

@@ -45,6 +45,8 @@ public sealed class RepeatedDocumentationTextAnalyzerTests
             }
             """;
 
-        return await AnalyzerTestHarness.Analyze(new RepeatedDocumentationTextAnalyzer(), source).ConfigureAwait(continueOnCapturedContext: false);
+        return await AnalyzerTestHarness
+            .Analyze(new RepeatedDocumentationTextAnalyzer(), source)
+            .ConfigureAwait(continueOnCapturedContext: false);
     }
 }

@@ -111,7 +111,10 @@ public sealed class CompositionPartsTests
 
             using CompositionHost container = new ContainerConfiguration().WithParts(selection.Types).CreateContainer();
 
-            string[] providers = [.. container.GetExports<CodeFixProvider>().Select(static provider => provider.GetType().Name).Order(StringComparer.Ordinal)];
+            string[] providers = [.. container
+                .GetExports<CodeFixProvider>()
+                .Select(static provider => provider.GetType().Name)
+                .Order(StringComparer.Ordinal)];
 
             Assert.Equal(expectedSpan: ["CSharpFix", "SharedFix"], providers);
         }

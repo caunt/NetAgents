@@ -272,9 +272,13 @@ public sealed class FormattingFingerprintTests
 
         public async Task<FormattingFingerprint> Read()
         {
-            Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(Inputs.SourceItems, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
+            Dictionary<string, byte[]> sources = await FormattingFingerprint
+                .ReadSources(Inputs.SourceItems, CancellationToken.None)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
-            return await FormattingFingerprint.Create(Inputs, sources, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
+            return await FormattingFingerprint
+                .Create(Inputs, sources, CancellationToken.None)
+                .ConfigureAwait(continueOnCapturedContext: false);
         }
     }
 }

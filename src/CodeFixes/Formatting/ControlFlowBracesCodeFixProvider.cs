@@ -85,7 +85,10 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
             affectedSpans.Add((body is SwitchSectionSyntax ? body : body.Parent ?? body).FullSpan);
         }
 
-        TextChange[] orderedChanges = [.. changes.OrderBy(static change => change.Span.Start).ThenBy(static change => change.Span.Length)];
+        TextChange[] orderedChanges = [.. changes
+            .OrderBy(static change => change.Span.Start)
+            .ThenBy(static change => change.Span.Length)];
+
         Document changedDocument = document.WithText(source.WithChanges(orderedChanges));
         IEnumerable<TextSpan> formattingSpans = affectedSpans.Select(span => TextSpan.FromBounds(Translate(span.Start, orderedChanges, includeInsertions: false), Translate(span.End, orderedChanges, includeInsertions: true)));
 
@@ -93,7 +96,8 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
 
         options = options.WithChangedOption(FormattingOptions.NewLine, LanguageNames.CSharp, lineEnding);
 
-        return await Formatter.FormatAsync(changedDocument, formattingSpans, options, cancellationToken)
+        return await Formatter
+            .FormatAsync(changedDocument, formattingSpans, options, cancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 
@@ -106,14 +110,17 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            SyntaxNode? root = await document
+                .GetSyntaxRootAsync(cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
             if (root is null)
                 return document;
 
             SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            SyntaxNode[] bodies = [.. ControlFlowBraces.GetChanges(root, source)
+            SyntaxNode[] bodies = [.. ControlFlowBraces
+                .GetChanges(root, source)
                 .Where(change => requestedSpans is null || requestedSpans.Contains(change.Key))
                 .Select(static change => change.Value)];
 
@@ -122,7 +129,9 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
 
             document = await ApplyBraceChanges(document, source, bodies, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            SourceText changedSource = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            SourceText changedSource = await document
+                .GetTextAsync(cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
 
             hasChanges = fixAll && !source.ContentEquals(changedSource);
             requestedSpans = null;

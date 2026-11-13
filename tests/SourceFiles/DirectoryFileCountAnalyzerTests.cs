@@ -117,7 +117,9 @@ public sealed class DirectoryFileCountAnalyzerTests
     [Fact]
     public async Task RejectsSuppression()
     {
-        SyntaxTree[] files = [.. Enumerable.Range(start: 0, count: 17).Select(static index =>
+        SyntaxTree[] files = [.. Enumerable
+            .Range(start: 0, count: 17)
+            .Select(static index =>
             CSharpSyntaxTree.ParseText(text: "#pragma warning disable NETAGENTS0018\n",
                 path: "Features/Source" + index.ToString(format: "D2", CultureInfo.InvariantCulture) + ".cs"))];
 
@@ -146,6 +148,8 @@ public sealed class DirectoryFileCountAnalyzerTests
     {
         string prefix = directory.Length == 0 ? string.Empty : directory + "/";
 
-        return [.. Enumerable.Range(start: 0, count).Select(index => CSharpSyntaxTree.ParseText(text: "// Authored source.\n", path: prefix + "Source" + index.ToString(format: "D2", CultureInfo.InvariantCulture) + ".cs"))];
+        return [.. Enumerable
+            .Range(start: 0, count)
+            .Select(index => CSharpSyntaxTree.ParseText(text: "// Authored source.\n", path: prefix + "Source" + index.ToString(format: "D2", CultureInfo.InvariantCulture) + ".cs"))];
     }
 }

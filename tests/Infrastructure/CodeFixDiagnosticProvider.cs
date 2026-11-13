@@ -18,7 +18,9 @@ internal sealed class CodeFixDiagnosticProvider(DiagnosticAnalyzer analyzer) : F
 
     public override async Task<IEnumerable<Diagnostic>> GetDocumentDiagnosticsAsync(Document document, CancellationToken cancellationToken)
     {
-        return [.. await CodeFixTestHarness.GetDiagnostics(document, analyzer).ConfigureAwait(continueOnCapturedContext: false)];
+        return [.. await CodeFixTestHarness
+            .GetDiagnostics(document, analyzer)
+            .ConfigureAwait(continueOnCapturedContext: false)];
     }
 
     public override Task<IEnumerable<Diagnostic>> GetProjectDiagnosticsAsync(Project project, CancellationToken cancellationToken)

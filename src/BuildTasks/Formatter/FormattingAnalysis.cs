@@ -39,13 +39,17 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
     {
         progress.Report(activity: "analyzing project");
 
-        Compilation compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+        Compilation compilation = await project
+            .GetCompilationAsync(cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
         CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException, concurrentAnalysis: true, logAnalyzerExecutionTime: false);
         CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers, options);
 
-        ImmutableArray<Diagnostic> diagnostics = await analysis.GetAllDiagnosticsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        ImmutableArray<Diagnostic> diagnostics = await analysis
+            .GetAllDiagnosticsAsync(cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
 
         return diagnostics;
     }
@@ -78,7 +82,9 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
         {
             progress.Report(activity: "checking candidate compiler diagnostics");
 
-            Compilation compilation = await project.GetCompilationAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+            Compilation compilation = await project
+                .GetCompilationAsync(cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false)
                 ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
             ImmutableArray<Diagnostic> compilerDiagnostics = compilation.GetDiagnostics(cancellationToken);
@@ -108,11 +114,15 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
     // result, while a second copy of an identical one still counts as introduced.
     internal static ImmutableArray<Diagnostic> IntroducedErrors(ImmutableArray<Diagnostic> after, ImmutableArray<Diagnostic> before)
     {
-        Dictionary<DiagnosticIdentity, int> existing = before.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-            .CountBy(ErrorKey).ToDictionary();
+        Dictionary<DiagnosticIdentity, int> existing = before
+            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            .CountBy(ErrorKey)
+            .ToDictionary();
 
-        return [.. after.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-            .GroupBy(ErrorKey).SelectMany(group => group.Skip(existing.GetValueOrDefault(group.Key)))];
+        return [.. after
+            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            .GroupBy(ErrorKey)
+            .SelectMany(group => group.Skip(existing.GetValueOrDefault(group.Key)))];
     }
 
     private static DiagnosticIdentity ErrorKey(Diagnostic diagnostic)
