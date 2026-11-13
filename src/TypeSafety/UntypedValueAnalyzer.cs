@@ -24,7 +24,7 @@ public sealed class UntypedValueAnalyzer() : PolicyAnalyzer(Rule, analyzesRazorC
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Untyped values are forbidden",
-        messageFormat: "Replace object or dynamic with an explicit type, interface, or generic type parameter",
+        messageFormat: "Replace object or dynamic with the value's real type, an interface it implements, or a generic type parameter, so callers and readers can see what the value is." + PolicyMessages.ChangeTheCode,
         category: "TypeSafety",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

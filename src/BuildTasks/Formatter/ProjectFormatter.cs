@@ -22,7 +22,7 @@ internal static class ProjectFormatter
 
     public static async Task Format(FormatProject inputs, CancellationToken cancellationToken)
     {
-        FormattingLock projectLock = await FormattingLock.Acquire(sourcePaths: [.. inputs.SourceFiles.Select(GetPath)], cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        FormattingLock projectLock = await FormattingLock.Acquire(sourcePaths: [.. inputs.SourceItems.Select(GetPath)], cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         await using (projectLock.ConfigureAwait(continueOnCapturedContext: false))
         {
@@ -30,7 +30,7 @@ internal static class ProjectFormatter
 
             progress.Report(activity: "checking formatting inputs");
 
-            Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(inputs.SourceFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(inputs.SourceItems, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             FormattingFingerprint before = await FormattingFingerprint.Create(inputs, sources, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             FormattingCache cache = new(inputs.CacheFile);
@@ -51,9 +51,9 @@ internal static class ProjectFormatter
 
             // Remember the bytes actually analyzed and written, not an unrelated edit made while
             // formatting was in flight. Non-source inputs must also remain unchanged throughout.
-            FormattingFingerprint expected = before with { Sources = FormattingFingerprint.HashSources(inputs.SourceFiles, sources) };
+            FormattingFingerprint expected = before with { Sources = FormattingFingerprint.HashSources(inputs.SourceItems, sources) };
 
-            Dictionary<string, byte[]> currentSources = await FormattingFingerprint.ReadSources(inputs.SourceFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            Dictionary<string, byte[]> currentSources = await FormattingFingerprint.ReadSources(inputs.SourceItems, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             FormattingFingerprint after = await FormattingFingerprint.Create(inputs, currentSources, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             if (expected == after)
@@ -111,7 +111,7 @@ internal static class ProjectFormatter
         Dictionary<string, SourceText> sources = [];
         List<Diagnostic> syntaxDiagnostics = [];
 
-        foreach (ITaskItem source in inputs.SourceFiles)
+        foreach (ITaskItem source in inputs.SourceItems)
         {
             string path = GetPath(source);
             byte[] bytes = sourceBytes[path];
@@ -131,7 +131,7 @@ internal static class ProjectFormatter
 
         loader.AddDependencyLocation(Path.Combine(inputs.SdkAssemblyDirectory, path2: "dependencies.dll"));
 
-        string[] analyzerPaths = [.. inputs.AnalyzerFiles.Select(GetPath).Where(File.Exists).Distinct(StringComparer.Ordinal)];
+        string[] analyzerPaths = [.. inputs.AnalyzerItems.Select(GetPath).Where(File.Exists).Distinct(StringComparer.Ordinal)];
 
         foreach (string path in analyzerPaths)
             loader.AddDependencyLocation(path);
@@ -195,7 +195,7 @@ internal static class ProjectFormatter
             filePath: inputs.ProjectPath,
             compilationOptions: compilationOptions,
             parseOptions: parseOptions,
-            metadataReferences: inputs.References.Select(CreateReference),
+            metadataReferences: inputs.ReferenceItems.Select(CreateReference),
             analyzerReferences: analyzerCatalog.References);
 
         Project initial = workspace.CurrentSolution.AddProject(information).GetProject(projectIdentifier)
@@ -204,7 +204,7 @@ internal static class ProjectFormatter
         Solution solution = initial.WithDefaultNamespace(inputs.RootNamespace).Solution;
         string projectDirectory = Path.GetDirectoryName(inputs.ProjectPath) ?? throw new InvalidOperationException(message: "The project directory is missing.");
 
-        foreach (ITaskItem source in inputs.SourceFiles)
+        foreach (ITaskItem source in inputs.SourceItems)
         {
             string path = GetPath(source);
             SourceText text = sources[path];
@@ -219,7 +219,7 @@ internal static class ProjectFormatter
             solution = solution.AddDocument(DocumentId.CreateNewId(projectIdentifier), Path.GetFileName(path), text, folders, path);
         }
 
-        foreach (ITaskItem configuration in inputs.ConfigurationFiles)
+        foreach (ITaskItem configuration in inputs.ConfigurationItems)
         {
             string path = GetPath(configuration);
 
@@ -228,7 +228,7 @@ internal static class ProjectFormatter
             solution = solution.AddAnalyzerConfigDocument(DocumentId.CreateNewId(projectIdentifier), Path.GetFileName(path), text, filePath: path);
         }
 
-        foreach (ITaskItem additional in inputs.AdditionalFiles)
+        foreach (ITaskItem additional in inputs.AdditionalItems)
         {
             string path = GetPath(additional);
 

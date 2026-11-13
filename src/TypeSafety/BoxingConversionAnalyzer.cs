@@ -20,7 +20,7 @@ public sealed class BoxingConversionAnalyzer() : PolicyAnalyzer(Rule, analyzesRa
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Boxing conversions are forbidden",
-        messageFormat: "Use a strongly typed or constrained generic operation instead of boxing a value",
+        messageFormat: "Keep this value typed instead of boxing it: call a generic or overloaded API that takes the value's own type, format it with ToString or string.Create, or keep it in a typed collection. Casting it to object or to an interface boxes it just the same." + PolicyMessages.ChangeTheCode,
         category: "TypeSafety",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

@@ -24,7 +24,7 @@ public sealed class SourceFileStructureAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Each top-level type needs its own matching file",
-        messageFormat: "Keep one top-level type per file and match the file name to the type name",
+        messageFormat: "Keep one top-level type per file and match the file name to the type name, so a reader finds each type by its file." + PolicyMessages.ChangeTheCode,
         category: "Structure",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

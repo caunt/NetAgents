@@ -49,15 +49,15 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
         Append(hash, typeof(CSharpCompilation).Assembly.ManifestModule.ModuleVersionId.ToString());
 
         // Each file the compilation reads is hashed by content, so an edited reference or analyzer misses the cache.
-        await AppendFiles(hash, inputs.References, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-        await AppendFiles(hash, inputs.AnalyzerFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        await AppendFiles(hash, inputs.ReferenceItems, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        await AppendFiles(hash, inputs.AnalyzerItems, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         // Configuration, additional, and build files decide which rules run and how they read the sources.
-        await AppendFiles(hash, inputs.ConfigurationFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-        await AppendFiles(hash, inputs.AdditionalFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-        await AppendFiles(hash, inputs.BuildFiles, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        await AppendFiles(hash, inputs.ConfigurationItems, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        await AppendFiles(hash, inputs.AdditionalItems, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        await AppendFiles(hash, inputs.BuildItems, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-        AppendItems(hash, inputs.BuildProperties);
+        Append(hash, inputs.BuildProperties);
 
         string packagedDirectory = Path.GetDirectoryName(typeof(FormatProject).Assembly.Location)
             ?? throw new InvalidOperationException(message: "The formatting task's directory is unavailable.");
@@ -65,7 +65,7 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
         // Include both hosts and every sibling dependency the analyzer loader can resolve, not just
         // the analyzer entry points. Adding or removing an assembly also changes this inventory.
         IEnumerable<string> directories = new[] { packagedDirectory, inputs.SdkAssemblyDirectory, inputs.CodeFixDirectory }
-            .Concat(inputs.AnalyzerFiles.Select(static item => Path.GetDirectoryName(item.GetMetadata(metadataName: "FullPath")) ?? string.Empty));
+            .Concat(inputs.AnalyzerItems.Select(static item => Path.GetDirectoryName(item.GetMetadata(metadataName: "FullPath")) ?? string.Empty));
 
         foreach (string directory in directories.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
         {
@@ -82,10 +82,10 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
                 await AppendFile(hash, file, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
         }
 
-        return new(Convert.ToHexString(hash.GetHashAndReset()), HashSources(inputs.SourceFiles, sources));
+        return new(Convert.ToHexString(hash.GetHashAndReset()), HashSources(inputs.SourceItems, sources));
     }
 
-    public static string HashSources(ITaskItem[] items, IReadOnlyDictionary<string, byte[]> sources)
+    public static string HashSources(IReadOnlyList<ITaskItem> items, IReadOnlyDictionary<string, byte[]> sources)
     {
         using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
@@ -102,7 +102,7 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
         return Convert.ToHexString(hash.GetHashAndReset());
     }
 
-    public static async Task<Dictionary<string, byte[]>> ReadSources(ITaskItem[] items, CancellationToken cancellationToken)
+    public static async Task<Dictionary<string, byte[]>> ReadSources(IReadOnlyList<ITaskItem> items, CancellationToken cancellationToken)
     {
         Dictionary<string, byte[]> sources = new(StringComparer.Ordinal);
 
@@ -150,7 +150,7 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
         }
     }
 
-    private static async Task AppendFiles(IncrementalHash hash, ITaskItem[] items, CancellationToken cancellationToken)
+    private static async Task AppendFiles(IncrementalHash hash, IReadOnlyList<ITaskItem> items, CancellationToken cancellationToken)
     {
         AppendItems(hash, items);
 
@@ -158,9 +158,9 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
             await AppendFile(hash, item.GetMetadata(metadataName: "FullPath"), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
     }
 
-    private static void AppendItems(IncrementalHash hash, ITaskItem[] items)
+    private static void AppendItems(IncrementalHash hash, IReadOnlyList<ITaskItem> items)
     {
-        Append(hash, items.Length.ToString(CultureInfo.InvariantCulture));
+        Append(hash, items.Count.ToString(CultureInfo.InvariantCulture));
 
         foreach (ITaskItem item in items)
         {

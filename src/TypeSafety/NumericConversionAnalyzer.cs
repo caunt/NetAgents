@@ -21,7 +21,7 @@ public sealed class NumericConversionAnalyzer() : PolicyAnalyzer(Rule, analyzesR
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Numeric conversions must name their overflow behavior",
-        messageFormat: "Convert '{0}' to '{1}' with {1}.CreateChecked, CreateSaturating, or CreateTruncating instead of a numeric cast",
+        messageFormat: "Convert '{0}' to '{1}' with {1}.CreateChecked when an out-of-range value is a bug, {1}.CreateSaturating when it should clamp to the nearest limit, or {1}.CreateTruncating when wrapping or dropping the fraction is intended, instead of a numeric cast",
         category: "TypeSafety",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

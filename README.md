@@ -41,9 +41,11 @@ Unchanged builds reuse completed formatting after checking a content fingerprint
 
 ## 🗂️ Member order
 
-Members are sorted by kind, visibility, const/static/instance, readonly, then name. Nested classes follow methods. Overloads with matching sorting keys retain their relative order.
+Members are sorted by kind, visibility, const/static/instance, members fixed at construction before settable ones, then name. Nested classes follow methods. Overloads with matching sorting keys retain their relative order.
 
-Sorting preserves initializer order and storage order in structs and types with explicit layout. Types containing preprocessor directives retain their member order.
+Blank lines follow the same groups: single-line fields, properties, and events of one kind and visibility sit together, one blank line separates groups, and methods and documented or multiline members stand alone. A comment line starts a new group and keeps the members written under it together, and a group of more than four members needs comments saying what each part is for.
+
+Sorting keeps the order of initializers that run code or read other members, and the field and property order of structs, explicit layouts, and serialized types. Types containing preprocessor directives retain their member order. A member wrapped at `=` or `=>` that fits within 128 characters is joined onto one line.
 
 ## ✅ Code standards
 
@@ -53,7 +55,7 @@ Sorting preserves initializer order and storage order in structs and types with 
 | 🏗️ Design | Return dedicated named records, classes, or structs instead of tuple result types, including wrapped tuple results. Lambdas with one inferred parameter drop the optional parentheses. |
 | 🏷️ Naming and structure | Descriptive names, method names that do not repeat their first parameter, imported type names instead of qualified ones, one top-level type per matching file, files under 1,000 lines not counting comment lines, and at most 16 authored C# files per directory. |
 | 📝 Documentation | Hand-written documentation that tells a reader what the name cannot: every public and protected member documents each parameter, type parameter, result, value, and exception it throws, with `<remarks>` and `<example>` code where usage is not obvious. Tags fit the member, say different things, end their sentences, write `null`, `true`, and `false` as `<see langword="…"/>`, and open property and constructor summaries the .NET way. One `<summary>` per documentation comment. |
-| 🛡️ Reliability | Consume return values. No discarded results, empty catches, null-forgiving operators, or unconditional loops. |
+| 🛡️ Reliability | Consume return values. No discarded results, empty catches, null-forgiving operators, or unconditional loops. Required rules cannot be suppressed, by pragma, attribute, configuration, or project setting. |
 | ⚡ Concurrency | Use asynchronous composition or Nito.AsyncEx for coordination. No `lock`, framework synchronization primitives, or blocking waits. |
 | 📖 Documentation | XML comments are required for public APIs. |
 

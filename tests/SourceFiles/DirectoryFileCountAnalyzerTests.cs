@@ -29,7 +29,9 @@ public sealed class DirectoryFileCountAnalyzerTests
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, diagnostic.Id);
         Assert.Equal(expected: "Features/Source00.cs", diagnostic.Location.SourceTree?.FilePath);
 
-        Assert.Equal(expected: "Directory 'Features' contains 17 authored C# files (maximum 16); organize these files into subdirectories with narrower responsibilities",
+        Assert.Equal("Directory 'Features' contains 17 authored C# files (maximum 16); move them into subdirectories, each named for the narrower "
+            + "responsibility its files share, such as Parsing or Transport. Catch-all folders such as Helpers, Misc, or Part2 only move the problem."
+            + " Change the code itself; a pragma or suppression attribute for this rule fails the build.",
             diagnostic.GetMessage(CultureInfo.InvariantCulture));
     }
 

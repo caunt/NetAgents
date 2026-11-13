@@ -130,9 +130,7 @@ public sealed class NumericConversionCodeFixProvider : CodeFixProvider
     private sealed class Replacement(string factory, string receiver, bool written)
     {
         public string Factory { get; } = factory;
-
         public string Receiver { get; } = receiver;
-
         public bool Written { get; } = written;
     }
 }

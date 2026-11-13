@@ -359,16 +359,15 @@ internal static class ArgumentLayout
 
     private readonly struct LineFitMeasurement(bool blockComment, bool inlineComment, bool lineBreak, bool spreadStatement, int tokens, int width)
     {
+        // What keeps the list off one line whatever its width: a comment inside it, a statement spreading over lines,
+        // or a line break written inside a token such as a verbatim string.
         public bool HasBlockComment { get; } = blockComment;
-
         public bool HasInlineComment { get; } = inlineComment;
-
         public bool HasSpreadStatement { get; } = spreadStatement;
-
         public bool HasTokenLineBreak { get; } = lineBreak;
 
+        // The compact width: the text of every token, and how many gaps between them normalizing could widen.
         public int Tokens { get; } = tokens;
-
         public int Width { get; } = width;
     }
 }

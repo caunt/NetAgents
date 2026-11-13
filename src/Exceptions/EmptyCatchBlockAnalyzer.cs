@@ -20,7 +20,7 @@ public sealed class EmptyCatchBlockAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Catch blocks must handle exceptions",
-        messageFormat: "Handle, log, or explicitly rethrow the caught exception",
+        messageFormat: "Do something with the caught exception: recover in a way the code shows, log it with the context a reader needs, or rethrow it with throw, and catch only the types this code expects. A comment, an empty statement, or a discarded variable does not handle it." + PolicyMessages.ChangeTheCode,
         category: "Exceptions",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

@@ -892,8 +892,12 @@ public sealed class PackageConsumptionTests
 
         await File.WriteAllTextAsync(excessFile, contents: "// Authored source.\n").ConfigureAwait(continueOnCapturedContext: false);
         await ConsumerBuild.RunDevelopmentKit(workspacePath, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0018").ConfigureAwait(continueOnCapturedContext: false);
+
+        // A pragma neither silences the limit nor goes unnoticed: NETAGENTS0043 reports the suppression itself.
         await File.WriteAllTextAsync(Path.Combine(directory, path2: "Component00.cs"), contents: "#pragma warning disable NETAGENTS0018\n").ConfigureAwait(continueOnCapturedContext: false);
         await ConsumerBuild.RunDevelopmentKit(workspacePath, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0018").ConfigureAwait(continueOnCapturedContext: false);
+        await ConsumerBuild.RunDevelopmentKit(workspacePath, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0043").ConfigureAwait(continueOnCapturedContext: false);
+        await File.WriteAllTextAsync(Path.Combine(directory, path2: "Component00.cs"), contents: "// Authored source.\n").ConfigureAwait(continueOnCapturedContext: false);
 
         File.Move(excessFile, Path.Combine(childDirectory, path2: "Component16.cs"));
 

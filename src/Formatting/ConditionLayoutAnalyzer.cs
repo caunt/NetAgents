@@ -23,7 +23,7 @@ public sealed class ConditionLayoutAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Conditions must fit on one short line",
-        messageFormat: "Keep the condition on one line and within {0} characters; move longer conditions into a separate variable declaration",
+        messageFormat: "Keep the condition on one line and within {0} characters: move the long part into a local named for what it means, such as bool hasCapacity = …, and test that." + PolicyMessages.ChangeTheCode,
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

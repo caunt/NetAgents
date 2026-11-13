@@ -32,7 +32,7 @@ public sealed class RedundantMethodSuffixAnalyzer() : PolicyAnalyzer(Rule, analy
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Method names must not repeat their first parameter",
-        messageFormat: "Rename '{0}' so it does not end with '{1}', which its first parameter '{2}' already says",
+        messageFormat: "Rename '{0}' so it does not end with '{1}', which its first parameter '{2}' already says: drop those words from the method name, so a call reads like cart.Add(item). Renaming only the parameter to get past this leaves the call repeating itself." + PolicyMessages.ChangeTheCode,
         category: "Naming",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

@@ -41,7 +41,7 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0019 | Require single-line conditions of at most 128 characters in `if`/`else if`, `while`, `do`, `for`, ternary expressions, catch filters, and switch `when` guards. Extract longer conditions into a separate variable declaration. |
 | NETAGENTS0020 | Keep argument and parameter lists on one line when their compact contents are at most 128 characters; otherwise keep the first item beside the opening delimiter, put each later item on a line of its own one level deeper, and close the list right after the last item. Includes an automatic fix and Fix All support. |
 | NETAGENTS0021 | Require a blank line between adjacent method declarations, including constructors, destructors, and operators. Includes an automatic fix and Fix All support. |
-| NETAGENTS0022 | Order type members by kind, visibility, const/static/instance, readonly, then ordinal name. Includes an automatic fix and Fix All support. |
+| NETAGENTS0022 | Organize the members of every type: order them by kind, visibility, const/static/instance, members fixed once construction ends (readonly fields; get-only, `init`, `required`, and computed properties) before settable ones, then ordinal name, and separate their groups with one blank line and none inside a group. Single-line fields, properties, and events of one bucket group together; methods, constructors, nested types, and members spanning lines or carrying documentation or attributes stand alone; a comment line opens a new group and heads a section whose members stay below it. Includes an automatic fix and Fix All support. |
 | NETAGENTS0023 | Forbid blank lines directly after an opening brace or before a closing brace, in every block: type bodies, method and statement blocks, accessor lists, namespaces, enums, switch bodies, initializers, lambdas, and local functions. Includes an automatic fix and Fix All support. |
 | NETAGENTS0024 | Reject tuple result contracts, including C# tuples, `System.ValueTuple`, `System.Tuple`, and tuples nested inside asynchronous or other wrapper types. Return a dedicated named record, class, or struct instead. |
 | NETAGENTS0025 | Require one `<summary>` element per documentation comment, so a declaration is described once. Describe parameters, results, and detail with `<param>`, `<returns>`, and `<remarks>` instead. |
@@ -59,8 +59,10 @@ Every custom diagnostic is an error and is marked non-configurable.
 | NETAGENTS0037 | Require public and protected summaries to open as the .NET API documentation does: a property with "Gets", "Sets", or "Gets or sets" to match the accessors a caller outside the assembly can use ("Gets or initializes" is accepted for `init`), and a constructor with "Initializes a new instance of the `<see cref="T"/>` class", "struct", or "record". Includes an automatic fix and Fix All support for constructors, which replaces an opening written another way or places the standard sentence before the author's text; property summaries are reported only. |
 | NETAGENTS0038 | Require `null`, `true`, and `false` in public and protected documentation text to be written as `<see langword="…"/>`, including a `<c>` element holding only the keyword, and a Boolean `<returns>` or `<value>` to read "`<see langword="true"/>` if …; otherwise, `<see langword="false"/>`." Keywords inside code and hyphenated prose such as "non-null" are left alone. Includes an automatic fix and Fix All support for keywords; Boolean wording is reported only. |
 | NETAGENTS0039 | Require the statements of every block to sit in groups of one kind, with one blank line between groups and none inside a group. Declarations, declarations of awaited results (`string text = await reader.ReadToEndAsync();`), assignments (including compound assignments, increments, and decrements), assignments of awaited results (`text = await reader.ReadToEndAsync();`), event subscriptions (`+=` and `-=` on an event), calls, await statements, and argument checks (static `ThrowIf…` calls on `ArgumentException` and the types deriving from it) each form groups of their own. A comment line starts a new group, with the blank line above the comment; a comment sharing a statement's line does not. Every statement written over several lines stands alone, whatever its kind, so two multiline statements never share a group, and so does every other statement, as `NETAGENTS0016` keeps control flow and multiline declarations. Method, constructor, operator, accessor, lambda, anonymous method, local function, nested block, switch section, and top-level statement lists are all covered. Includes an automatic fix and Fix all support that only moves blank lines. |
-| NETAGENTS0040 | Allow at most four statements in a group of `NETAGENTS0039`, so a longer run is split by comment lines that say what each part is for. A blank line does not end a group, since the formatter removes it. Runs of argument checks, and constructor runs where every statement stores a parameter as it is (`Price = price;`), are exempt. There is no automatic fix: the message asks for one short sentence above each part that says what the part achieves or why it is needed, not what the code already says. |
+| NETAGENTS0040 | Allow at most four statements in a group of `NETAGENTS0039`, and at most four fields, properties, or events in a group of `NETAGENTS0022`, so a longer run is split by comment lines that say what each part is for. A blank line does not end a group, since the formatter removes it. Runs of argument checks, and constructor runs where every statement stores a parameter as it is (`Price = price;`), are exempt. There is no automatic fix: the message asks for one short sentence above each part that says what the part achieves or why it is needed, not what the code already says. |
 | NETAGENTS0041 | Keep the `when` keyword on the line of the clause it guards: `catch (IOException exception) when (…)`, `case int count when count > 0:`, and `int count when count > 0 => …` in a switch expression. A `when` that starts a line of its own is reported. Includes an automatic fix and Fix All support that moves `when` up behind the clause with one space; when a comment stands between the two, the rule reports without a fix so the author decides where the comment goes. |
+| NETAGENTS0042 | Write a field, property, event, method, constructor, operator, or indexer on one line when it is wrapped only at the `=` of its initializer or the `=>` of its expression body and the whole member fits within 128 characters. A member that spans lines anywhere else is left to the rules for its argument lists, initializers, and lambdas, and a comment beside the operator keeps it wrapped. Includes an automatic fix and Fix All support. |
+| NETAGENTS0043 | Reject suppressions written into the code for the rules the build requires: `[SuppressMessage]` and `[UnconditionalSuppressMessage]` on any member or the assembly, and `#pragma warning disable`, when they name a NetAgents rule, a code analysis (`CA`) rule, a code style (`IDE`) rule, or `CS1591`, and a bare `#pragma warning disable` that silences every warning. Together with `NETAGENTS0013` and `NETAGENTS0014`, which reject configuration and project-file suppressions, this leaves changing the code as the only way through. Suppressions of other analyzers stay available. |
 
 Condition length counts source characters, including spaces and comments, between condition parentheses (excluding the parentheses). For `for`, only the condition between semicolons is checked; for ternaries, only the condition expression is checked (`?` and `:` branches may span multiple lines); for `when` guards, the text after `when` through the condition is checked. Newlines immediately inside condition parentheses are also forbidden. Extraction is manual: preserve evaluation frequency and short-circuit behavior, especially in loops.
 
@@ -425,12 +427,44 @@ and newline styles are preserved. This rule does not add padding inside method b
 Member ordering follows StyleCop's kind order: fields, constructors, finalizers, events, enums,
 interfaces, properties, indexers, operators, methods, structs, classes, and delegates. Records follow
 their class or struct kind. Within each kind, order by public, internal, protected internal,
-protected, private protected, then private; next by const, static, then instance; next readonly
-before writable; finally by case-sensitive ordinal name. Overloads with equal keys retain their
-relative order. Each partial declaration is ordered independently.
+protected, private protected, then private; next by const, static, then instance; next members fixed
+once construction ends before settable ones, so a readonly field or a get-only, `init`, `required`, or
+computed property comes before a writable field or a property with a `set` accessor; finally by
+case-sensitive ordinal name. Overloads with equal keys retain their relative order. Each partial
+declaration is ordered independently.
 
-Automatic sorting preserves the relative execution order of nonconstant field, event, and property
-initializers, taking precedence over the ordinary ordering keys. Storage members also retain their
-relative order in structs and types annotated with StructLayout. Types containing preprocessor
-directives are excluded from ordering so region, conditional compilation, nullable, and warning
-boundaries remain intact. Comments and attributes move with their member.
+Members that share every key but the name form a bucket, and the blank lines between members follow
+the buckets, as statement groups do:
+
+```csharp
+private readonly byte[] _localPrivateKey;
+private readonly byte[] _sessionKey;
+
+// Filled in as the handshake goes on.
+private byte[]? _remotePublicKey;
+private byte[]? _sharedKey;
+
+/// <summary>Gets the role of the peer at the other end.</summary>
+public RemotePeerRole With { get; }
+
+public void Reset() { }
+```
+
+Single-line fields, properties, and events of one bucket sit together with no blank line between them.
+One blank line separates buckets, and every method, constructor, nested type, and member that spans
+lines or carries XML documentation or attributes stands alone. A comment line opens a new group with
+the blank line above it, and within its bucket it heads a section: the members written below it stay
+below it, sorted by name, so the comment can say what they are for. A group holds at most four
+members (`NETAGENTS0040`); a longer run needs comment lines above its parts. The space after the
+opening brace belongs to `NETAGENTS0023`.
+
+Sorting keeps the relative order only where it is observable. Initializers run in written order, so
+those that run code (a call, an object creation) keep their order among themselves, and when any
+initializer reads another member of the type, every initializer of that phase, static or instance,
+keeps its order. Initializers that only read constants, literals, or constructor parameters sort
+freely. Fields and properties keep their written order in structs, types annotated with
+`StructLayout`, and types that serializers read: those marked `[DataContract]`, `[Serializable]`,
+`[ProtoContract]`, or `[MessagePackObject]`, and those with a member carrying a `Json…`, `Xml…`,
+`[DataMember]`, `[Column]`, or `[ProtoMember]` attribute. Types containing preprocessor directives are
+excluded from ordering so region, conditional compilation, nullable, and warning boundaries remain
+intact. Comments and attributes move with their member.

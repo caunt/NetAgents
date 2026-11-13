@@ -32,8 +32,9 @@ public sealed class SourceFileLengthAnalyzerTests
 
         Assert.Equal(SourceFileLengthAnalyzer.RuleIdentifier, diagnostic.Id);
 
-        Assert.Equal(expected: "Split this file by responsibility; it has 1000 lines besides comments, and authored files may have at most 999",
-            diagnostic.GetMessage(CultureInfo.InvariantCulture));
+        Assert.StartsWith(expectedStartString: "This file has 1000 lines besides comments, and authored files may have at most 999. Split it by responsibility",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
     }
 
     /// <summary>

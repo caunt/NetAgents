@@ -9,8 +9,6 @@ namespace NetAgents.Analyzers.Documentation;
 internal sealed class DocumentedMember(SyntaxNode declaration, ISymbol symbol, List<XmlNodeSyntax> elements)
 {
     public SyntaxNode Declaration { get; } = declaration;
-
     public List<XmlNodeSyntax> Elements { get; } = elements;
-
     public ISymbol Symbol { get; } = symbol;
 }

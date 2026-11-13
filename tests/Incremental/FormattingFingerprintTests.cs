@@ -1,7 +1,5 @@
 using NetAgents.BuildTasks;
 
-using TaskItem = Microsoft.Build.Utilities.TaskItem;
-
 namespace NetAgents.Analyzers.Tests.Incremental;
 
 /// <summary>Checks that persisted formatting is reusable only for identical effective inputs.</summary>
@@ -61,43 +59,43 @@ public sealed class FormattingFingerprintTests
         {
             case "source-added":
                 {
-                    fixture.Inputs.SourceFiles = [.. fixture.Inputs.SourceFiles, fixture.Item(relativePath: "Extra.cs")];
+                    fixture.Inputs.SourceFiles += "\n" + fixture.Item(relativePath: "Extra.cs");
 
                     break;
                 }
             case "source-removed":
                 {
-                    fixture.Inputs.SourceFiles = [fixture.Inputs.SourceFiles[0]];
+                    fixture.Inputs.SourceFiles = fixture.Inputs.SourceFiles.Split(separator: '\n')[0];
 
                     break;
                 }
             case "source-renamed":
                 {
-                    fixture.Inputs.SourceFiles = [fixture.Item(relativePath: "Renamed.cs"), fixture.Inputs.SourceFiles[1]];
+                    fixture.Inputs.SourceFiles = fixture.Item(relativePath: "Renamed.cs") + "\n" + fixture.Inputs.SourceFiles.Split(separator: '\n')[1];
 
                     break;
                 }
             case "reference-removed":
                 {
-                    fixture.Inputs.References = [];
+                    fixture.Inputs.References = string.Empty;
 
                     break;
                 }
             case "analyzer-removed":
                 {
-                    fixture.Inputs.AnalyzerFiles = [];
+                    fixture.Inputs.AnalyzerFiles = string.Empty;
 
                     break;
                 }
             case "configuration-added":
                 {
-                    fixture.Inputs.ConfigurationFiles = [.. fixture.Inputs.ConfigurationFiles, fixture.Item(relativePath: "Other.globalconfig")];
+                    fixture.Inputs.ConfigurationFiles += "\n" + fixture.Item(relativePath: "Other.globalconfig");
 
                     break;
                 }
             case "additional-removed":
                 {
-                    fixture.Inputs.AdditionalFiles = [];
+                    fixture.Inputs.AdditionalFiles = string.Empty;
 
                     break;
                 }
@@ -180,25 +178,27 @@ public sealed class FormattingFingerprintTests
                 }
             case "source-link":
                 {
-                    fixture.Inputs.SourceFiles[0].SetMetadata(metadataName: "Link", metadataValue: "Linked/Source.cs");
+                    string[] sources = fixture.Inputs.SourceFiles.Split(separator: '\n');
+
+                    fixture.Inputs.SourceFiles = sources[0] + "\tLinked/Source.cs\n" + sources[1];
 
                     break;
                 }
             case "reference-aliases":
                 {
-                    fixture.Inputs.References[0].SetMetadata(metadataName: "Aliases", metadataValue: "External");
+                    fixture.Inputs.References += "\tExternal";
 
                     break;
                 }
             case "embed-interop-types":
                 {
-                    fixture.Inputs.References[0].SetMetadata(metadataName: "EmbedInteropTypes", metadataValue: "true");
+                    fixture.Inputs.References += "\t\ttrue";
 
                     break;
                 }
             case "compiler-option":
                 {
-                    fixture.Inputs.BuildProperties[0].SetMetadata(metadataName: "Optimize", metadataValue: "true");
+                    fixture.Inputs.BuildProperties = "Optimize=true";
 
                     break;
                 }
@@ -217,7 +217,7 @@ public sealed class FormattingFingerprintTests
 
         FormattingFingerprint before = await fixture.Read();
 
-        string path = fixture.Inputs.SourceFiles[0].ItemSpec;
+        string path = fixture.Inputs.SourceItems[index: 0].ItemSpec;
 
         File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddDays(value: 1));
         Assert.Equal(before, await fixture.Read());
@@ -230,29 +230,26 @@ public sealed class FormattingFingerprintTests
             // The project, and the sources it compiles, one of them generated.
             Inputs.ProjectPath = Path.Combine(Root.FullName, path2: "Consumer.csproj");
             Inputs.AssemblyName = "Consumer";
-            Inputs.SourceFiles = [Item(relativePath: "Source.cs"), Item(relativePath: "Generated.g.cs")];
+            Inputs.SourceFiles = Item(relativePath: "Source.cs") + "\n" + Item(relativePath: "Generated.g.cs");
 
             // What the compilation references, and the analyzers it runs.
-            Inputs.References = [Item(relativePath: "references/Library.dll")];
-            Inputs.AnalyzerFiles = [Item(relativePath: "analyzers/Rules.dll")];
+            Inputs.References = Item(relativePath: "references/Library.dll");
+            Inputs.AnalyzerFiles = Item(relativePath: "analyzers/Rules.dll");
 
             // Files and properties that configure the rules and the build.
-            Inputs.ConfigurationFiles = [Item(relativePath: ".editorconfig")];
-            Inputs.AdditionalFiles = [Item(relativePath: "Additional.txt")];
-            Inputs.BuildFiles = [Item(relativePath: "project.assets.json"), Item(relativePath: "Directory.Build.props")];
-            Inputs.BuildProperties = [new TaskItem(itemSpec: "Compiler")];
+            Inputs.ConfigurationFiles = Item(relativePath: ".editorconfig");
+            Inputs.AdditionalFiles = Item(relativePath: "Additional.txt");
+            Inputs.BuildFiles = Item(relativePath: "project.assets.json") + "\n" + Item(relativePath: "Directory.Build.props");
+            Inputs.BuildProperties = "Optimize=false";
 
             // The folders the formatter loads its fixes and Roslyn from.
-            Inputs.CodeFixDirectory = Path.GetDirectoryName(Item(relativePath: "fixes/StyleFixes.dll").ItemSpec) ?? string.Empty;
-            Inputs.SdkAssemblyDirectory = Path.GetDirectoryName(Item(relativePath: "sdk/Microsoft.CodeAnalysis.dll").ItemSpec) ?? string.Empty;
+            Inputs.CodeFixDirectory = Path.GetDirectoryName(Item(relativePath: "fixes/StyleFixes.dll")) ?? string.Empty;
+            Inputs.SdkAssemblyDirectory = Path.GetDirectoryName(Item(relativePath: "sdk/Microsoft.CodeAnalysis.dll")) ?? string.Empty;
 
-            TaskItem dependency = Item(relativePath: "analyzers/Dependency.dll");
-
-            Assert.True(File.Exists(dependency.ItemSpec));
+            Assert.True(File.Exists(Item(relativePath: "analyzers/Dependency.dll")));
         }
 
         public DirectoryInfo Root { get; } = Directory.CreateTempSubdirectory(prefix: "netagents-fingerprint-");
-
         public FormatProject Inputs { get; } = new();
 
         public void Dispose()
@@ -261,7 +258,8 @@ public sealed class FormattingFingerprintTests
             Root.Delete(recursive: true);
         }
 
-        public TaskItem Item(string relativePath)
+        // Writes the file and returns its full path, the line the targets would write for it.
+        public string Item(string relativePath)
         {
             string path = Path.Combine(Root.FullName, relativePath);
             FileInfo file = new(path);
@@ -269,12 +267,12 @@ public sealed class FormattingFingerprintTests
             file.Directory?.Create();
             File.WriteAllText(path, contents: "before");
 
-            return new(path);
+            return path;
         }
 
         public async Task<FormattingFingerprint> Read()
         {
-            Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(Inputs.SourceFiles, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
+            Dictionary<string, byte[]> sources = await FormattingFingerprint.ReadSources(Inputs.SourceItems, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
 
             return await FormattingFingerprint.Create(Inputs, sources, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
         }

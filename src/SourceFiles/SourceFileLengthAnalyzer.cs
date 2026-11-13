@@ -32,7 +32,7 @@ public sealed class SourceFileLengthAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Source files must contain fewer than one thousand lines besides comments",
-        messageFormat: "Split this file by responsibility; it has {0} lines besides comments, and authored files may have at most 999",
+        messageFormat: "This file has {0} lines besides comments, and authored files may have at most 999. Split it by responsibility: move a cohesive part, such as a nested type, a set of helpers, or one concern of a large class, into its own type and file named for what it does. Partial files split by line count, or lines joined to save space, only hide the size." + PolicyMessages.ChangeTheCode,
         category: "Structure",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

@@ -25,7 +25,7 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Names must use full descriptive words",
-        messageFormat: "Expand single-letter names, acronyms, and known abbreviations into full descriptive words",
+        messageFormat: "Rename this to full words that say what it holds or does here, such as retryCount instead of rc or count2: expand single letters, acronyms, and known abbreviations." + PolicyMessages.ChangeTheCode,
         category: "Naming",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

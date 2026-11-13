@@ -112,13 +112,14 @@ public sealed class MemberOrderingTests
     }
 
     /// <summary>
-    /// Verifies comments and attributes travel with sorted declarations.
+    /// Verifies comments and attributes travel with sorted declarations, and that methods stand alone with a blank
+    /// line between them.
     /// </summary>
     [Fact]
     public async Task PreservesDocumentation()
     {
         const string source = "class ExampleType\r\n{\r\n    void Zebra() {} // zebra\r\n    /// <summary>Alpha.</summary>\r\n    [System.Obsolete]\r\n    void Alpha() {}\r\n}";
-        const string expected = "class ExampleType\r\n{\r\n    /// <summary>Alpha.</summary>\r\n    [System.Obsolete]\r\n    void Alpha() {}\r\n    void Zebra() {} // zebra\r\n}";
+        const string expected = "class ExampleType\r\n{\r\n    /// <summary>Alpha.</summary>\r\n    [System.Obsolete]\r\n    void Alpha() {}\r\n\r\n    void Zebra() {} // zebra\r\n}";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixMemberOrdering(source, fixAll: false));
     }
@@ -166,7 +167,8 @@ public sealed class MemberOrderingTests
     }
 
     /// <summary>
-    /// Verifies member kind, accessibility, storage, and alphabetical ordering.
+    /// Verifies member kind, accessibility, storage, mutability, and alphabetical ordering, with each member here in a
+    /// bucket of its own or standing alone, so a blank line separates every one.
     /// </summary>
     [Fact]
     public async Task SortsMembers()
@@ -198,21 +200,37 @@ public sealed class MemberOrderingTests
             class ExampleType
             {
                 public const int Constant = 1;
+
                 public static int staticField;
+
                 public readonly int ReadonlyField;
+
                 public int instanceField;
+
                 private int privateField;
+
                 public ExampleType() { }
+
                 public int Property => 1;
+
                 public static void StaticMethod() { }
+
                 public void Alpha() { }
+
                 public void Zebra() { }
+
                 internal void InternalMethod() { }
+
                 protected internal void ProtectedInternalMethod() { }
+
                 protected void ProtectedMethod() { }
+
                 private protected void PrivateProtectedMethod() { }
+
                 private void PrivateMethod() { }
+
                 public class AlphaNested { }
+
                 private class ZebraNested { }
             }
             """;

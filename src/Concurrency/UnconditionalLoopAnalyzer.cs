@@ -20,7 +20,7 @@ public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule, analyzesR
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Unconditional loops are forbidden",
-        messageFormat: "Use an explicit termination or cancellation condition",
+        messageFormat: "Give the loop a condition its body or a cancellation token actually changes, so a reader sees when it stops; while (true) with a break inside, or a flag nothing sets, still never says." + PolicyMessages.ChangeTheCode,
         category: "Concurrency",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

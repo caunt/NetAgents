@@ -24,7 +24,7 @@ NETAGENTS0018 | Structure | Error | At most sixteen authored C# files directly i
 NETAGENTS0019 | Formatting | Error | Single-line conditions of at most 128 characters
 NETAGENTS0020 | Formatting | Error | Single-line argument and parameter lists up to 128 characters, otherwise one item per line
 NETAGENTS0021 | Formatting | Error | Blank lines between adjacent method declarations
-NETAGENTS0022 | Ordering | Error | Order members by kind, visibility, storage, readonly modifier, and name
+NETAGENTS0022 | Ordering | Error | Members ordered by kind, visibility, storage, mutability, and name, grouped with one blank line between groups
 NETAGENTS0023 | Formatting | Error | No blank lines directly after an opening brace or before a closing brace
 NETAGENTS0024 | Design | Error | Dedicated named types for result contracts instead of tuples
 NETAGENTS0025 | Documentation | Error | One summary element per documentation comment
@@ -42,5 +42,7 @@ NETAGENTS0036 | Documentation | Error | Documentation text ends with a full stop
 NETAGENTS0037 | Documentation | Error | Property and constructor summaries open as the .NET documentation does
 NETAGENTS0038 | Documentation | Error | Language keywords written as langword references in documentation
 NETAGENTS0039 | Formatting | Error | Statements grouped by kind, one blank line between groups and none inside them
-NETAGENTS0040 | Readability | Error | Statement groups of at most four statements, split by comments that say what each part is for
+NETAGENTS0040 | Readability | Error | Groups of at most four statements or members, split by comments that say what each part is for
 NETAGENTS0041 | Formatting | Error | The when keyword on the line of the catch clause, case pattern, or switch arm it guards
+NETAGENTS0042 | Formatting | Error | Members that fit within 128 characters written on one line instead of wrapped at = or =>
+NETAGENTS0043 | Configuration | Error | No suppression attributes or pragmas for NetAgents, code analysis, style, or documentation rules

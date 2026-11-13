@@ -14,11 +14,16 @@ namespace NetAgents.Analyzers.Documentation;
 // about the declaration a tag has to agree with.
 internal static class DocumentationTags
 {
-    // What a constructor's opening names, so the fix writes the same cref and kind the rule expects.
+    // Keys of the facts a diagnostic carries to its fix, so the fix need not work out again what the rule found:
+    // the cref and kind a constructor's opening names, how a tag is repaired, and the keyword a langword replaces.
     public const string CrefProperty = "Cref";
-
-    // How a reported tag is repaired, carried in the diagnostic so the fix need not work it out again.
     public const string FixProperty = "Fix";
+    public const string KeywordProperty = "Keyword";
+    public const string KindProperty = "Kind";
+
+    // The repairs the fix property names: putting the tags in the declaration's order, or removing one.
+    public const string Order = "Order";
+    public const string Remove = "Remove";
 
     // Every report asking for words ends with what makes them worth reading. The rules can tell that a
     // tag is missing or empty; only the author can make it useful, so the message says what useful means.
@@ -26,22 +31,10 @@ internal static class DocumentationTags
         + "cannot say, and add a <remarks> element on the behavior behind the member or an <example> with a short code sample "
         + "wherever its use is not obvious.";
 
-    // The keyword a langword reference replaces.
-    public const string KeywordProperty = "Keyword";
-
-    public const string KeywordRuleIdentifier = "NETAGENTS0038";
-
-    public const string KindProperty = "Kind";
-
-    public const string Order = "Order";
-
-    public const string Remove = "Remove";
-
-    public const string SentenceRuleIdentifier = "NETAGENTS0036";
-
-    public const string SummaryOpeningRuleIdentifier = "NETAGENTS0037";
-
     // The rules whose fixes live in the code-fix assembly, which sees this file but not the analyzers.
+    public const string KeywordRuleIdentifier = "NETAGENTS0038";
+    public const string SentenceRuleIdentifier = "NETAGENTS0036";
+    public const string SummaryOpeningRuleIdentifier = "NETAGENTS0037";
     public const string TagFitRuleIdentifier = "NETAGENTS0034";
 
     // The declarations a documentation comment can describe, which are the ones CS1591 asks about.
@@ -70,7 +63,6 @@ internal static class DocumentationTags
     public static readonly ImmutableHashSet<string> Descriptions = ImmutableHashSet.Create(StringComparer.Ordinal, items: ["summary", "param", "typeparam", "returns", "value", "exception", "remarks"]);
 
     private static readonly Regex ExteriorPattern = new(pattern: @"\r?\n[ \t]*///", RegexOptions.CultureInvariant);
-
     private static readonly Regex WhitespacePattern = new(pattern: @"\s+", RegexOptions.CultureInvariant);
 
     // The comment's top-level elements, or nothing when the declaration is not documented or the

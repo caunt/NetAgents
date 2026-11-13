@@ -18,6 +18,7 @@ using NetAgents.Analyzers.CodeFixes.TypeSafety;
 using NetAgents.Analyzers.Documentation;
 using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Formatting.Clauses;
+using NetAgents.Analyzers.Formatting.Members;
 using NetAgents.Analyzers.Ordering;
 using NetAgents.Analyzers.Readability;
 using NetAgents.Analyzers.StatementGroups;
@@ -152,6 +153,11 @@ internal static class CodeFixTestHarness
     public static async Task<string> FixWhenClauses(string source, bool fixAll)
     {
         return await Fix(source, new WhenClausePlacementAnalyzer(), new WhenClausePlacementCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixWrappedMembers(string source, bool fixAll)
+    {
+        return await Fix(source, new WrappedMemberAnalyzer(), new WrappedMemberCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<ImmutableArray<Diagnostic>> GetDiagnostics(Document document, DiagnosticAnalyzer analyzer)

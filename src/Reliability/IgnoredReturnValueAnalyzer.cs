@@ -21,7 +21,7 @@ public sealed class IgnoredReturnValueAnalyzer() : PolicyAnalyzer(Rule, analyzes
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Values must be consumed instead of discarded",
-        messageFormat: "Consume returned values and use descriptive names instead of assigning values to '_' or discarding deconstructed values",
+        messageFormat: "Use the returned value: check it, return it, or pass it on, or call an overload that returns nothing. Assigning it to '_' or to a variable nothing reads, or discarding deconstructed values, only hides that a result was dropped." + PolicyMessages.ChangeTheCode,
         category: "Reliability",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

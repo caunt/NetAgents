@@ -10,9 +10,7 @@ namespace NetAgents.BuildTasks;
 internal sealed class HostedAnalyzerReference(string path, ImmutableArray<DiagnosticAnalyzer> analyzers) : AnalyzerReference
 {
     public override string Display => Path.GetFileName(path);
-
     public override string FullPath => path;
-
     public override object Id => path;
 
     public override ImmutableArray<DiagnosticAnalyzer> GetAnalyzers(string language)

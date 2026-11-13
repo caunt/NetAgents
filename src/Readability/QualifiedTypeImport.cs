@@ -235,11 +235,8 @@ internal static class QualifiedTypeImport
     internal sealed class ImportResolution(INamespaceSymbol container, string name, bool import, bool collides)
     {
         public bool Collides { get; } = collides;
-
         public INamespaceSymbol Container { get; } = container;
-
         public bool Import { get; } = import;
-
         public string Name { get; } = name;
     }
 }

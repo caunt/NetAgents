@@ -24,7 +24,7 @@ public sealed class TupleReturnTypeAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Tuple return types are forbidden",
-        messageFormat: "Return a dedicated named record, class, or struct instead of a tuple",
+        messageFormat: "Return a dedicated named record, class, or struct that says what the result is, with a property for each value, instead of a tuple. Out parameters, KeyValuePair, or arrays used to carry several results hide their meaning the same way." + PolicyMessages.ChangeTheCode,
         category: "Design",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

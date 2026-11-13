@@ -30,9 +30,7 @@ public sealed class LanguageKeywordAnalyzer() : PolicyAnalyzer(Rule)
 
     // The same words outside an attribute: a keyword already quoted inside a reference is not wrapped again.
     private static readonly Regex PlainBooleanPattern = new(pattern: @"(?<![\w""-])(true|false)(?![\w""-])", RegexOptions.CultureInvariant);
-
     private static readonly Regex LanguageWordPattern = new(pattern: @"<see\s+langword\s*=\s*""(\w+)""\s*/>|<c>\s*(null|true|false)\s*</c>", RegexOptions.CultureInvariant);
-
     private static readonly Regex BooleanPattern = new(pattern: @"^<see langword=""true""/> if .+; otherwise, <see langword=""false""/>\.?$", RegexOptions.CultureInvariant);
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,

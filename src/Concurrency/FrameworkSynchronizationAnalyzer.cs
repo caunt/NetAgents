@@ -22,9 +22,12 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
     /// </summary>
     public const string RuleIdentifier = "NETAGENTS0012";
 
+    private static readonly ImmutableArray<string> BlockingMembers = ["Sleep", "Result", "Wait", "WaitAll", "WaitAny", "GetResult"];
+    private static readonly ImmutableArray<string> CompilerServices = ["CompilerServices", "Runtime", "System"];
+
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Framework synchronization and blocking waits are forbidden",
-        messageFormat: "Prefer immutable state, atomics, concurrent collections, channels, or Nito.AsyncEx; await asynchronous work",
+        messageFormat: "Coordinate asynchronously instead: await the work, share state through immutable values, Interlocked, concurrent collections, or channels, or use a Nito.AsyncEx primitive such as AsyncLock. Blocking waits and framework locks stall threads and invite deadlocks." + PolicyMessages.ChangeTheCode,
         category: "Concurrency",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
@@ -35,12 +38,7 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
         "SpinLock", "SpinWait", "AutoResetEvent", "ManualResetEvent", "ManualResetEventSlim", "EventWaitHandle",
         "WaitHandle", "CountdownEvent", "Barrier"]);
 
-    private static readonly ImmutableArray<string> BlockingMembers = ["Sleep", "Result", "Wait", "WaitAll", "WaitAny", "GetResult"];
-
-    private static readonly ImmutableArray<string> CompilerServices = ["CompilerServices", "Runtime", "System"];
-
     private static readonly ImmutableArray<string> Tasks = ["Tasks", "Threading", "System"];
-
     private static readonly ImmutableArray<string> Threading = ["Threading", "System"];
 
     /// <inheritdoc />

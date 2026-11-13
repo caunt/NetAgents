@@ -22,7 +22,7 @@ public sealed class TypeContainmentNameAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Type names must differ from containing segments",
-        messageFormat: "Choose a type name that differs from its namespace and containing feature directories",
+        messageFormat: "Choose a type name that says what the type is and differs from its namespace and containing feature directories, which a reader already sees." + PolicyMessages.ChangeTheCode,
         category: "Naming",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

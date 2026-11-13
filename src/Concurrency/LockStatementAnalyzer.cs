@@ -19,7 +19,7 @@ public sealed class LockStatementAnalyzer() : PolicyAnalyzer(Rule, analyzesRazor
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Lock statements are forbidden",
-        messageFormat: "Prefer immutable state, atomics, channels, or Nito.AsyncEx when coordination is unavoidable",
+        messageFormat: "Remove the lock: keep shared state immutable, update it with Interlocked or a concurrent collection, pass it through a channel, or take a Nito.AsyncEx AsyncLock where exclusive access is unavoidable. Monitor, Mutex, and SemaphoreSlim are the same lock under another name." + PolicyMessages.ChangeTheCode,
         category: "Concurrency",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

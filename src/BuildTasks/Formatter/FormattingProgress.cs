@@ -6,6 +6,7 @@ namespace NetAgents.BuildTasks;
 internal sealed class FormattingProgress(string projectName, Action<string>? report)
 {
     private readonly Stopwatch _elapsed = Stopwatch.StartNew();
+
     private int _pass;
 
     public void NextPass()

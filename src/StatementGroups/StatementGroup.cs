@@ -12,10 +12,7 @@ namespace NetAgents.Analyzers.StatementGroups;
 internal sealed class StatementGroup(StatementSyntax first, StatementSyntax last, StatementKind kind, int count)
 {
     public int Count { get; } = count;
-
     public StatementSyntax First { get; } = first;
-
     public StatementKind Kind { get; } = kind;
-
     public StatementSyntax Last { get; } = last;
 }

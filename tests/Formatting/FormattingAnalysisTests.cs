@@ -296,9 +296,9 @@ public sealed class FormattingAnalysisTests
             isEnabledByDefault: true,
             customTags: [WellKnownDiagnosticTags.CompilationEnd]);
 
-        public int Runs { get; private set; }
-
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule, RejectedSuggestion, AcceptedSuggestion];
+
+        public int Runs { get; private set; }
 
         public override void Initialize(AnalysisContext context)
         {

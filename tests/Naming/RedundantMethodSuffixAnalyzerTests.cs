@@ -50,8 +50,10 @@ public sealed class RedundantMethodSuffixAnalyzerTests
     {
         Diagnostic diagnostic = Assert.Single(await Analyze(members: "public string GetAppStoreId(string appStoreId) => appStoreId;"));
 
-        Assert.Equal(expected: "Rename 'GetAppStoreId' so it does not end with 'AppStoreId', which its first parameter 'appStoreId' already says",
-            diagnostic.GetMessage(CultureInfo.InvariantCulture));
+        Assert.StartsWith("Rename 'GetAppStoreId' so it does not end with 'AppStoreId', which its first parameter 'appStoreId' already says: "
+            + "drop those words from the method name",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
     }
 
     /// <summary>

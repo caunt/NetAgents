@@ -7,10 +7,10 @@ namespace NetAgents.BuildTasks;
 
 internal sealed class AnalyzerLoader() : AssemblyLoadContext(isCollectible: true), IAnalyzerAssemblyLoader, IDisposable
 {
+    private readonly List<string> _directories = [];
+
     private readonly AssemblyLoadContext _sharedContext = GetLoadContext(typeof(AnalyzerLoader).Assembly)
         ?? throw new InvalidOperationException(message: "The formatting task's assembly context is unavailable.");
-
-    private readonly List<string> _directories = [];
 
     public void AddDependencyLocation(string fullPath)
     {

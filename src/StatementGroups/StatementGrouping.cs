@@ -25,9 +25,7 @@ namespace NetAgents.Analyzers.StatementGroups;
 internal static class StatementGrouping
 {
     public const int Limit = 4;
-
     public const string RuleIdentifier = "NETAGENTS0039";
-
     public const string SizeRuleIdentifier = "NETAGENTS0040";
 
     public static ImmutableDictionary<TextSpan, TextChange> GetChanges(SyntaxNode root, SemanticModel model, SourceText source, CancellationToken cancellationToken)

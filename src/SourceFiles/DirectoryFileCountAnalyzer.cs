@@ -28,7 +28,7 @@ public sealed class DirectoryFileCountAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Directories must have a focused scope",
-        messageFormat: "Directory '{0}' contains {1} authored C# files (maximum {2}); organize these files into subdirectories with narrower responsibilities",
+        messageFormat: "Directory '{0}' contains {1} authored C# files (maximum {2}); move them into subdirectories, each named for the narrower responsibility its files share, such as Parsing or Transport. Catch-all folders such as Helpers, Misc, or Part2 only move the problem." + PolicyMessages.ChangeTheCode,
         category: "Structure",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

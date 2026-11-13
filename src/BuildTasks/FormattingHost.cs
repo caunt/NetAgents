@@ -16,7 +16,6 @@ internal sealed class FormattingHost : AssemblyLoadContext
     private static readonly ConcurrentDictionary<string, Action<FormatProject, CancellationToken>> Engines = new(StringComparer.Ordinal);
 
     private readonly string[] _directories;
-
     private readonly AssemblyLoadContext _taskContext;
 
     private FormattingHost(string packagedDirectory, string sdkAssemblyDirectory) : base(name: "NetAgents formatting")

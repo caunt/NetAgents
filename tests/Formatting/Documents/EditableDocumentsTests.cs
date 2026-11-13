@@ -173,7 +173,6 @@ public sealed class EditableDocumentsTests
     private sealed class PrivateFieldFix(string reach) : CodeFixProvider
     {
         public const string DiagnosedDocuments = "diagnosed documents";
-
         public const string EveryDocument = "every document";
 
         public override ImmutableArray<string> FixableDiagnosticIds => [PrivateFieldAnalyzer.Identifier];

@@ -99,7 +99,7 @@ public sealed class ConditionLayoutAnalyzerTests
 
         Assert.Equal(ConditionLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
 
-        Assert.Contains(expectedSubstring: "separate variable declaration",
+        Assert.Contains(expectedSubstring: "move the long part into a local named for what it means",
             diagnostics[0].GetMessage(CultureInfo.InvariantCulture),
             StringComparison.Ordinal);
     }

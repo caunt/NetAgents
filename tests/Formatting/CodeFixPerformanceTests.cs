@@ -244,12 +244,10 @@ public sealed class CodeFixPerformanceTests
             isEnabledByDefault: true,
             customTags: [WellKnownDiagnosticTags.CompilationEnd]);
 
-        public int Runs { get; private set; }
-
         public List<string> States { get; } = [];
-
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [RequiredRule, SuggestionRule];
 
+        public int Runs { get; private set; }
         public int TreeVisits { get; private set; }
 
         public override void Initialize(AnalysisContext context)
@@ -342,9 +340,9 @@ public sealed class CodeFixPerformanceTests
             isEnabledByDefault: true,
             customTags: [WellKnownDiagnosticTags.CompilationEnd]);
 
-        public int Runs { get; private set; }
-
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [AdvanceRule, BrokenRule, DriftRule];
+
+        public int Runs { get; private set; }
 
         public override void Initialize(AnalysisContext context)
         {

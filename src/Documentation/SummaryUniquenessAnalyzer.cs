@@ -21,7 +21,7 @@ public sealed class SummaryUniquenessAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Documentation comments describe a declaration once",
-        messageFormat: "Keep one summary and describe the rest with param, returns, or remarks elements",
+        messageFormat: "Keep one summary and move what the others say into param, returns, value, or remarks elements, where a reader looks for it." + PolicyMessages.ChangeTheCode,
         category: "Documentation",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

@@ -23,7 +23,7 @@ public sealed class OverloadSummaryAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Overloads describe what separates them",
-        messageFormat: "Say what this overload of '{0}' does differently; an earlier one already carries this summary",
+        messageFormat: "Say what this overload of '{0}' does differently; an earlier one already carries this summary. Name the parameters or behavior that set it apart, so a reader choosing between the overloads can tell." + PolicyMessages.ChangeTheCode,
         category: "Documentation",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

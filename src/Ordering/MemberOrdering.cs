@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -8,6 +6,20 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace NetAgents.Analyzers.Ordering;
 
+/// <summary>
+/// Puts the members of a type in order and places the blank lines between them.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Members sort by bucket, which is kind, visibility, storage, and mutability (see <see cref="MemberKeys"/>), then by
+/// name, except where their order is observable (see <see cref="MemberInitializers"/>). Blank lines then follow the
+/// groups of <see cref="MemberSpacing"/>, so a member never keeps the blank line that happened to sit where it lands.
+/// </para>
+/// <para>
+/// Within a bucket, a field, property, or event that carries a comment line heads a section: the members written
+/// after it stay below it, sorted by name, so a comment can name the purpose of the members gathered under it.
+/// </para>
+/// </remarks>
 internal static class MemberOrdering
 {
     public const string RuleIdentifier = "NETAGENTS0022";
@@ -23,164 +35,118 @@ internal static class MemberOrdering
         if (declaration.ContainsDirectives)
             return declaration.Members;
 
-        MemberDeclarationSyntax[] members = [.. declaration.Members];
+        List<MemberDeclarationSyntax> sorted = Arrange(declaration);
+        List<MemberDeclarationSyntax> spaced = [];
 
-        MemberDeclarationSyntax[] sorted = [.. members
-            .OrderBy(GetKind)
-            .ThenBy(GetVisibility)
-            .ThenBy(GetStorage)
-            .ThenBy(static member => member.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) ? 0 : 1)
-            .ThenBy(GetName, StringComparer.Ordinal)];
-
-        // Preserve initializer execution order, including dependencies between fields and properties.
-        Queue<MemberDeclarationSyntax> initializers = new(members.Where(HasInitializer));
-
-        for (int index = 0; index < sorted.Length; index++)
+        for (int index = 0; index < sorted.Count; index++)
         {
-            if (HasInitializer(sorted[index]))
-                sorted[index] = initializers.Dequeue();
+            MemberDeclarationSyntax member = index == 0 ? MemberSpacing.WithOpeningSpace(sorted[index], declaration.Members[index: 0]) : sorted[index];
+
+            spaced.Add(MemberSpacing.WithSpacing(member, index == 0 ? null : sorted[index - 1]));
         }
 
-        // Field order is observable in value types and types with an explicit layout contract.
-        bool preserveFieldOrder = declaration is StructDeclarationSyntax or RecordDeclarationSyntax { ClassOrStructKeyword.RawKind: (int)SyntaxKind.StructKeyword }
-            || HasExplicitLayout(declaration);
+        return SyntaxFactory.List(spaced);
+    }
 
-        if (preserveFieldOrder)
+    // Each step takes the member that sorts first among those free to move, and a member of a chain is free only once
+    // every member written before it in that chain has been placed. Without chains this is a stable sort.
+    private static List<MemberDeclarationSyntax> Arrange(TypeDeclarationSyntax declaration)
+    {
+        List<MemberDeclarationSyntax> remaining = [.. declaration.Members];
+        List<MemberDeclarationSyntax> arranged = [];
+        Sections sections = new(declaration);
+
+        // The chains of members that keep their written order, and how many of each chain are placed so far.
+        List<List<MemberDeclarationSyntax>> chains = MemberInitializers.GetChains(declaration);
+        int[] placed = new int[chains.Count];
+
+        while (remaining.Count > 0)
         {
-            // Keep all storage members in their original relative order, including initializers.
-            Queue<MemberDeclarationSyntax> storage = new(members.Where(IsStorage));
+            int chosen = -1;
 
-            for (int index = 0; index < sorted.Length; index++)
+            for (int index = 0; index < remaining.Count; index++)
             {
-                if (IsStorage(sorted[index]))
-                    sorted[index] = storage.Dequeue();
+                bool free = IsFree(remaining[index], chains, placed);
+
+                if (free && (chosen < 0 || sections.Compare(remaining[index], remaining[chosen]) < 0))
+                    chosen = index;
+            }
+
+            MemberDeclarationSyntax next = remaining[chosen];
+
+            for (int chain = 0; chain < chains.Count; chain++)
+            {
+                if (placed[chain] < chains[chain].Count && chains[chain][placed[chain]] == next)
+                    placed[chain]++;
+            }
+
+            arranged.Add(next);
+            remaining.RemoveAt(chosen);
+        }
+
+        return arranged;
+    }
+
+    private static bool IsFree(MemberDeclarationSyntax member, List<List<MemberDeclarationSyntax>> chains, int[] placed)
+    {
+        for (int chain = 0; chain < chains.Count; chain++)
+        {
+            int position = chains[chain].IndexOf(member);
+
+            if (position > placed[chain])
+                return false;
+        }
+
+        return true;
+    }
+
+    // The sections of a type, numbered per bucket in written order, and the members that head them.
+    private sealed class Sections
+    {
+        private readonly HashSet<MemberDeclarationSyntax> _headers = [];
+        private readonly Dictionary<MemberDeclarationSyntax, int> _numbers = [];
+
+        public Sections(TypeDeclarationSyntax declaration)
+        {
+            Dictionary<int, int> current = [];
+
+            foreach (MemberDeclarationSyntax member in declaration.Members)
+            {
+                if (member is not BaseFieldDeclarationSyntax and not PropertyDeclarationSyntax)
+                    continue;
+
+                int bucket = MemberKeys.GetBucket(member);
+                int number = current.TryGetValue(bucket, out int last) ? last : 0;
+
+                if (MemberSpacing.StartsGroup(member))
+                {
+                    number++;
+
+                    _headers.UnionWith(other: [member]);
+                }
+
+                current[bucket] = number;
+                _numbers[member] = number;
             }
         }
 
-        // Blank line separators belong to the slot in the file, not to the member that used to occupy it.
-        for (int index = 0; index < sorted.Length; index++)
-            sorted[index] = WithSlotSeparator(sorted[index], members[index]);
-
-        return SyntaxFactory.List(sorted);
-    }
-
-    private static int CountSeparator(SyntaxTriviaList trivia)
-    {
-        int count = 0;
-
-        while (count < trivia.Count && (trivia[count].IsKind(SyntaxKind.WhitespaceTrivia) || trivia[count].IsKind(SyntaxKind.EndOfLineTrivia)))
-            count++;
-
-        return count;
-    }
-
-    private static int GetKind(MemberDeclarationSyntax member)
-    {
-        return member switch
+        public int Compare(MemberDeclarationSyntax left, MemberDeclarationSyntax right)
         {
-            FieldDeclarationSyntax => 0,
-            ConstructorDeclarationSyntax => 1,
-            DestructorDeclarationSyntax => 2,
-            EventFieldDeclarationSyntax or EventDeclarationSyntax => 3,
-            EnumDeclarationSyntax => 4,
-            InterfaceDeclarationSyntax => 5,
-            PropertyDeclarationSyntax => 6,
-            IndexerDeclarationSyntax => 7,
-            OperatorDeclarationSyntax or ConversionOperatorDeclarationSyntax => 8,
-            MethodDeclarationSyntax => 9,
-            StructDeclarationSyntax => 10,
-            RecordDeclarationSyntax record when record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword) => 10,
-            ClassDeclarationSyntax or RecordDeclarationSyntax => 11,
-            DelegateDeclarationSyntax => 12,
-            _ => 13
-        };
-    }
+            int bucket = MemberKeys.GetBucket(left).CompareTo(MemberKeys.GetBucket(right));
+            int section = GetNumber(left).CompareTo(GetNumber(right));
 
-    private static string GetName(MemberDeclarationSyntax member)
-    {
-        return member switch
-        {
-            BaseFieldDeclarationSyntax field => field.Declaration.Variables.FirstOrDefault()?.Identifier.ValueText ?? string.Empty,
-            BaseTypeDeclarationSyntax type => type.Identifier.ValueText,
-            MethodDeclarationSyntax method => method.Identifier.ValueText,
-            ConstructorDeclarationSyntax constructor => constructor.Identifier.ValueText,
-            DestructorDeclarationSyntax destructor => destructor.Identifier.ValueText,
-            PropertyDeclarationSyntax property => property.Identifier.ValueText,
-            EventDeclarationSyntax eventDeclaration => eventDeclaration.Identifier.ValueText,
-            DelegateDeclarationSyntax delegateDeclaration => delegateDeclaration.Identifier.ValueText,
-            OperatorDeclarationSyntax operatorDeclaration => operatorDeclaration.OperatorToken.ValueText,
-            ConversionOperatorDeclarationSyntax conversion => conversion.Type.ToString(),
-            _ => string.Empty
-        };
-    }
+            if (bucket != 0 || section != 0)
+                return bucket != 0 ? bucket : section;
 
-    private static int GetStorage(MemberDeclarationSyntax member)
-    {
-        return member.Modifiers.Any(SyntaxKind.ConstKeyword) ? 0 : member.Modifiers.Any(SyntaxKind.StaticKeyword) ? 1 : 2;
-    }
+            // The member carrying the comment stays first, so the comment still heads its section.
+            int header = _headers.Contains(right).CompareTo(_headers.Contains(left));
 
-    private static int GetVisibility(MemberDeclarationSyntax member)
-    {
-        SyntaxTokenList modifiers = member.Modifiers;
-
-        return modifiers.Any(SyntaxKind.PublicKeyword)
-            ? 0
-            : modifiers.Any(SyntaxKind.ProtectedKeyword)
-            ? modifiers.Any(SyntaxKind.InternalKeyword) ? 2 : modifiers.Any(SyntaxKind.PrivateKeyword) ? 4 : 3
-            : modifiers.Any(SyntaxKind.InternalKeyword)
-            ? 1
-            : modifiers.Any(SyntaxKind.PrivateKeyword) ? 5 : member.Parent is InterfaceDeclarationSyntax ? 0 : 5;
-    }
-
-    private static bool HasExplicitLayout(TypeDeclarationSyntax declaration)
-    {
-        foreach (AttributeListSyntax list in declaration.AttributeLists)
-        {
-            foreach (AttributeSyntax attribute in list.Attributes)
-            {
-                if (attribute.Name.ToString().Contains(value: "StructLayout"))
-                    return true;
-            }
+            return header != 0 ? header : string.CompareOrdinal(MemberKeys.GetName(left), MemberKeys.GetName(right));
         }
 
-        return false;
-    }
-
-    private static bool HasInitializer(MemberDeclarationSyntax member)
-    {
-        if (member is BaseFieldDeclarationSyntax field && !field.Modifiers.Any(SyntaxKind.ConstKeyword))
+        private int GetNumber(MemberDeclarationSyntax member)
         {
-            foreach (VariableDeclaratorSyntax variable in field.Declaration.Variables)
-            {
-                if (variable.Initializer is not null)
-                    return true;
-            }
+            return _numbers.TryGetValue(member, out int number) ? number : 0;
         }
-
-        return member is PropertyDeclarationSyntax { Initializer: not null };
-    }
-
-    private static bool IsStorage(MemberDeclarationSyntax member)
-    {
-        return member is BaseFieldDeclarationSyntax or PropertyDeclarationSyntax;
-    }
-
-    private static MemberDeclarationSyntax WithSlotSeparator(MemberDeclarationSyntax member, MemberDeclarationSyntax slot)
-    {
-        SyntaxTriviaList trivia = member.GetLeadingTrivia();
-        SyntaxTriviaList separator = slot.GetLeadingTrivia();
-
-        // The member takes over the blank lines that led its new slot and drops its own, keeping the rest of its trivia.
-        int adopted = CountSeparator(separator);
-        int discarded = CountSeparator(trivia);
-        List<SyntaxTrivia> replacement = [];
-
-        for (int index = 0; index < adopted; index++)
-            replacement.Add(separator[index]);
-
-        for (int index = discarded; index < trivia.Count; index++)
-            replacement.Add(trivia[index]);
-
-        return member.WithLeadingTrivia(replacement);
     }
 }

@@ -451,9 +451,7 @@ internal static class ExplicitLiteralArgumentName
     internal sealed class ArgumentNaming(BaseArgumentListSyntax list, BaseArgumentListSyntax replacement, ImmutableArray<TextSpan> spans)
     {
         public BaseArgumentListSyntax List { get; } = list;
-
         public BaseArgumentListSyntax Replacement { get; } = replacement;
-
         public ImmutableArray<TextSpan> Spans { get; } = spans;
     }
 }

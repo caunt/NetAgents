@@ -596,9 +596,9 @@ public sealed class CodeFixRunnerTests
 
     private sealed class AccessibilityFix(string mode) : CodeFixProvider
     {
-        public int Attempts { get; private set; }
-
         public override ImmutableArray<string> FixableDiagnosticIds => [MarkerAnalyzer.Identifier];
+
+        public int Attempts { get; private set; }
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -639,7 +639,6 @@ public sealed class CodeFixRunnerTests
     private sealed class CascadeAnalyzer : DiagnosticAnalyzer
     {
         public const string PrivateIdentifier = "TEST0002";
-
         public const string PublicIdentifier = "TEST0003";
 
         private static readonly DiagnosticDescriptor PrivateRule = new(PrivateIdentifier,
@@ -681,9 +680,9 @@ public sealed class CodeFixRunnerTests
     /// <param name="identifier">The compiler diagnostic this provider claims.</param>
     private sealed class CompilerErrorFix(string identifier) : CodeFixProvider
     {
-        public int Attempts { get; private set; }
-
         public override ImmutableArray<string> FixableDiagnosticIds => [identifier];
+
+        public int Attempts { get; private set; }
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -783,9 +782,9 @@ public sealed class CodeFixRunnerTests
 
     private sealed class ReplacementFix(string source) : CodeFixProvider
     {
-        public int Attempts { get; private set; }
-
         public override ImmutableArray<string> FixableDiagnosticIds => ["CS0219"];
+
+        public int Attempts { get; private set; }
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -801,9 +800,9 @@ public sealed class CodeFixRunnerTests
     /// <summary>Offers a suggestion fix that rewrites nothing, leaving the run without progress.</summary>
     private sealed class StalledSuggestionFix : CodeFixProvider
     {
-        public int Attempts { get; private set; }
-
         public override ImmutableArray<string> FixableDiagnosticIds => ["CS8019"];
+
+        public int Attempts { get; private set; }
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -825,9 +824,9 @@ public sealed class CodeFixRunnerTests
     /// <summary>Offers a suggestion fix that replaces the document with uncompilable source.</summary>
     private sealed class SuggestionFix(string source) : CodeFixProvider
     {
-        public int Attempts { get; private set; }
-
         public override ImmutableArray<string> FixableDiagnosticIds => ["CS8019"];
+
+        public int Attempts { get; private set; }
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -843,10 +842,10 @@ public sealed class CodeFixRunnerTests
     /// <summary>Reproduces a provider built against another Roslyn version, failing at one chosen stage.</summary>
     private sealed class ThrowingFix(string stage) : CodeFixProvider
     {
-        public int Attempts { get; private set; }
+        // A provider built against another Roslyn fails while listing what it fixes, which is the behavior under test.
+        public override ImmutableArray<string> FixableDiagnosticIds => stage == "identifiers" ? ListSkewedIdentifiers() : [MarkerAnalyzer.Identifier];
 
-        [SuppressMessage("Design", "CA1065", Justification = "A skewed provider fails exactly here, which is the behavior under test.")]
-        public override ImmutableArray<string> FixableDiagnosticIds => stage == "identifiers" ? throw Skew() : [MarkerAnalyzer.Identifier];
+        public int Attempts { get; private set; }
 
         public override FixAllProvider? GetFixAllProvider()
         {
@@ -881,6 +880,11 @@ public sealed class CodeFixRunnerTests
                 context.Diagnostics);
 
             return Task.CompletedTask;
+        }
+
+        private static ImmutableArray<string> ListSkewedIdentifiers()
+        {
+            throw Skew();
         }
 
         private static MissingMethodException Skew()

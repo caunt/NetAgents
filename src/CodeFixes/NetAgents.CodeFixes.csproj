@@ -12,6 +12,10 @@
     <Compile Include="../Documentation/DocumentationTags.cs" Link="Documentation/DocumentationTags.cs" />
     <Compile Include="../Documentation/DocumentedMember.cs" Link="Documentation/DocumentedMember.cs" />
     <Compile Include="../Ordering/MemberOrdering.cs" Link="Ordering/MemberOrdering.cs" />
+    <Compile Include="../Ordering/MemberGroup.cs" Link="Ordering/MemberGroup.cs" />
+    <Compile Include="../Ordering/MemberInitializers.cs" Link="Ordering/MemberInitializers.cs" />
+    <Compile Include="../Ordering/MemberKeys.cs" Link="Ordering/MemberKeys.cs" />
+    <Compile Include="../Ordering/MemberSpacing.cs" Link="Ordering/MemberSpacing.cs" />
     <Compile Include="../Readability/ExplicitLiteralArgumentName.cs" Link="Readability/ExplicitLiteralArgumentName.cs" />
     <Compile Include="../Readability/QualifiedTypeImport.cs" Link="Readability/QualifiedTypeImport.cs" />
     <Compile Include="../Formatting/LayoutLimits.cs" Link="Formatting/LayoutLimits.cs" />
@@ -23,6 +27,7 @@
     <Compile Include="../Formatting/ControlFlowBraces.cs" Link="Formatting/ControlFlowBraces.cs" />
     <Compile Include="../Formatting/LambdaParameterLayout.cs" Link="Formatting/LambdaParameterLayout.cs" />
     <Compile Include="../Formatting/Clauses/WhenClausePlacement.cs" Link="Formatting/Clauses/WhenClausePlacement.cs" />
+    <Compile Include="../Formatting/Members/WrappedMember.cs" Link="Formatting/Members/WrappedMember.cs" />
     <Compile Include="../TypeSafety/NumericConversion.cs" Link="TypeSafety/NumericConversion.cs" />
     <Compile Include="../StatementGroups/StatementClassifier.cs" Link="StatementGroups/StatementClassifier.cs" />
     <Compile Include="../StatementGroups/StatementGroup.cs" Link="StatementGroups/StatementGroup.cs" />
