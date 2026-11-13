@@ -98,7 +98,11 @@ internal static class LiteralConcatenation
             {
                 if (content is InterpolatedStringTextSyntax part)
                 {
-                    text += part.TextToken.ValueText;
+                    // The token's value keeps a brace escape doubled, though it stands for one brace.
+                    text += part.TextToken
+                        .ValueText
+                        .Replace(oldValue: "{{", newValue: "{")
+                        .Replace(oldValue: "}}", newValue: "}");
 
                     continue;
                 }
