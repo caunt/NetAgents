@@ -50,4 +50,3 @@ NETAGENTS0044 | Readability | Error | Awaited values named in a local before the
 NETAGENTS0045 | Formatting | Error | Simple statements that fit within 128 characters written on one line
 NETAGENTS0046 | Naming | Error | No local names built only from placeholder words such as result, flag, or temp
 NETAGENTS0047 | Formatting | Error | Member chains on one line up to four links when they fit, otherwise one call per line
-NETAGENTS0048 | Readability | Error | No more than four property, field, or event accesses in a row

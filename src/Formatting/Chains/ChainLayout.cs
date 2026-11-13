@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -36,7 +35,6 @@ internal static class ChainLayout
 {
     public const int MaximumLinks = 4;
 
-    public const string PathRuleIdentifier = "NETAGENTS0048";
     public const string RuleIdentifier = "NETAGENTS0047";
 
     // The links of the chain that ends at this expression, or nothing when it is no chain the rule lays out. Leading
@@ -82,21 +80,6 @@ internal static class ChainLayout
         }
 
         return node is ConditionalAccessExpressionSyntax ? null : Finish(links, model, cancellationToken);
-    }
-
-    // The longest run of property, field, and event accesses with no call between them.
-    public static int GetLongestPath(List<ChainLink> links)
-    {
-        int longest = 0;
-        int run = 0;
-
-        foreach (ChainLink link in links)
-        {
-            run = link.IsCall ? 0 : run + 1;
-            longest = Math.Max(longest, run);
-        }
-
-        return longest;
     }
 
     // The layout the chain must take, or nothing where the rule leaves it as written.
@@ -190,7 +173,7 @@ internal static class ChainLayout
     {
         links.Reverse();
 
-        if (links.Count <= MaximumLinks && GetLongestPath(links) <= MaximumLinks)
+        if (links.Count <= MaximumLinks)
             return links;
 
         int qualifiers = 0;
