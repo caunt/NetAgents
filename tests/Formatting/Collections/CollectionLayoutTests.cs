@@ -30,8 +30,8 @@ public sealed class CollectionLayoutTests
 
     /// <summary>
     /// Verifies the fix joins a collection expression and an initializer that fit onto the line before them without
-    /// their trailing comma, and gives a collection expression that does not fit one element per line, its first beside
-    /// the bracket and none after the last.
+    /// their trailing comma, and gives a collection expression that does not fit its brackets on lines of their own and
+    /// one element per line, each followed by a comma.
     /// </summary>
     /// <param name="written">The statements as written.</param>
     /// <param name="expected">The statements after the fix.</param>
@@ -40,7 +40,7 @@ public sealed class CollectionLayoutTests
         "int[] values = [1, 2];\n\nConsole.WriteLine(values.Length);")]
     [InlineData("ExampleType example = new()\n{\n    First = 1,\n    Second = 2,\n};\n\nConsole.WriteLine(example.First);",
         "ExampleType example = new() { First = 1, Second = 2 };\n\nConsole.WriteLine(example.First);")]
-    [InlineData("string[] lines =\n[\n    \"First line of the help text that is long enough\",\n    \"Second line of the help text that is long enough\",\n    \"Third line of the help text\",\n];\n\nConsole.WriteLine(lines.Length);",
+    [InlineData("string[] lines = [\"First line of the help text that is long enough\",\n    \"Second line of the help text that is long enough\",\n    \"Third line of the help text\"];\n\nConsole.WriteLine(lines.Length);",
         "string[] lines =\n[\n    \"First line of the help text that is long enough\",\n    \"Second line of the help text that is long enough\",\n    \"Third line of the help text\",\n];\n\nConsole.WriteLine(lines.Length);")]
     public async Task LaysOutCollections(string written, string expected)
     {
