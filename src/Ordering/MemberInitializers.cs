@@ -22,21 +22,10 @@ internal static class MemberInitializers
 {
     // Attribute names, without the Attribute suffix, that mark a type whose fields and properties serializers,
     // object-relational mappers, or interop read in declaration order.
-    private static readonly HashSet<string> SerializedTypeMarkers = new(StringComparer.Ordinal)
-    {
-        "DataContract",
-        "MessagePackObject",
-        "ProtoContract",
-        "Serializable",
-        "StructLayout",
-    };
+    private static readonly HashSet<string> SerializedTypeMarkers = new(StringComparer.Ordinal) { "DataContract", "MessagePackObject", "ProtoContract", "Serializable", "StructLayout" };
 
-    private static readonly HashSet<string> SerializedMemberMarkers = new(StringComparer.Ordinal)
-    {
-        "Column",
-        "DataMember",
-        "ProtoMember",
-    };
+    // Attribute names that mark a single field or property a serializer reads, which marks its type the same way.
+    private static readonly HashSet<string> SerializedMemberMarkers = new(StringComparer.Ordinal) { "Column", "DataMember", "ProtoMember" };
 
     // Each list is one chain: its members keep their written order relative to one another.
     public static List<List<MemberDeclarationSyntax>> GetChains(TypeDeclarationSyntax declaration)

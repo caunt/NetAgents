@@ -208,7 +208,7 @@ public sealed class RequiredDocumentationAnalyzer() : PolicyAnalyzer(Rule)
         {
             string? container = current.ContainingNamespace?.ToDisplayString();
 
-            if (current.Name == "Exception" && string.Equals(container, b: "System", StringComparison.Ordinal))
+            if (current.Name == "Exception" && container is "System")
                 return true;
         }
 
@@ -231,7 +231,7 @@ public sealed class RequiredDocumentationAnalyzer() : PolicyAnalyzer(Rule)
         {
             CrefSyntax? cref = DocumentationTags.GetCref(element);
 
-            if (cref is null || !string.Equals(DocumentationTags.GetName(element), b: "exception", StringComparison.Ordinal))
+            if (cref is null || DocumentationTags.GetName(element) is not "exception")
                 continue;
 
             if (context.SemanticModel.GetSymbolInfo(cref, context.CancellationToken).Symbol is INamedTypeSymbol type)

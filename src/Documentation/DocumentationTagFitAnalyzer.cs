@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -80,7 +79,7 @@ public sealed class DocumentationTagFitAnalyzer() : PolicyAnalyzer(Rule)
 
             foreach (XmlNodeSyntax placeholder in element.DescendantNodesAndSelf().OfType<XmlNodeSyntax>())
             {
-                if (string.Equals(DocumentationTags.GetName(placeholder), b: "placeholder", StringComparison.Ordinal))
+                if (DocumentationTags.GetName(placeholder) is "placeholder")
                     Report(context, placeholder, DocumentationTags.Remove, message: "Remove this <placeholder> element and write the text it stands for");
             }
         }

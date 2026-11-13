@@ -226,7 +226,7 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
     private static bool IsSystem(string namespaceName)
     {
-        return string.Equals(namespaceName, b: "System", StringComparison.Ordinal) || namespaceName.StartsWith(value: "System.", StringComparison.Ordinal);
+        return namespaceName is "System" || namespaceName.StartsWith(value: "System.", StringComparison.Ordinal);
     }
 
     // The short name already spells the type, including any type arguments.

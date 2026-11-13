@@ -818,7 +818,7 @@ internal static class CodeFixRunner
 
         foreach (AttributeData attribute in compilation.Assembly.GetAttributes())
         {
-            if (string.Equals(attribute.AttributeClass?.Name, b: "InternalsVisibleToAttribute", StringComparison.Ordinal))
+            if (attribute.AttributeClass?.Name is "InternalsVisibleToAttribute")
                 return true;
         }
 

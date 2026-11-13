@@ -107,7 +107,7 @@ public sealed class OverloadSummaryAnalyzer() : PolicyAnalyzer(Rule)
                 if (node is not XmlElementSyntax element)
                     continue;
 
-                if (string.Equals(element.StartTag.Name.LocalName.ValueText, b: "summary", StringComparison.Ordinal))
+                if (element.StartTag.Name.LocalName.ValueText is "summary")
                     return Flatten(element.Content.ToString());
             }
         }

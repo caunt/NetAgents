@@ -1,5 +1,3 @@
-using System;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -122,7 +120,7 @@ public sealed class DocumentationInformationAnalyzer() : PolicyAnalyzer(Rule)
     {
         foreach (XmlNodeSyntax node in documentation.Content)
         {
-            if (string.Equals(GetName(node), b: "inheritdoc", StringComparison.Ordinal))
+            if (GetName(node) is "inheritdoc")
                 return true;
         }
 
@@ -174,16 +172,12 @@ public sealed class DocumentationInformationAnalyzer() : PolicyAnalyzer(Rule)
                 continue;
             }
 
-            bool describes = string.Equals(element, b: "summary", StringComparison.Ordinal)
-                || string.Equals(element, b: "param", StringComparison.Ordinal)
-                || string.Equals(element, b: "typeparam", StringComparison.Ordinal);
+            bool describes = element is "summary" or "param" or "typeparam";
 
             if (!describes)
                 continue;
 
-            string? subject = string.Equals(element, b: "summary", StringComparison.Ordinal)
-                ? GetSubject(documentation)
-                : GetAttribute(node);
+            string? subject = element is "summary" ? GetSubject(documentation) : GetAttribute(node);
 
             if (subject is null || !DocumentationInformation.RestatesName(node.ToString(), subject))
                 continue;

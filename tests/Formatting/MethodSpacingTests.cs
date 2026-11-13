@@ -47,9 +47,14 @@ public sealed class MethodSpacingTests
     public async Task SeparatesMethods(string newline)
     {
         string source = string.Join(newline,
-            value: [
-            "class ExampleType", "{", "    void First() { }", "    /// <summary>Second.</summary>",
-            "    [System.Obsolete]", "    void Second() { }", "    int Third() => 3;", "}"]);
+            value: ["class ExampleType",
+                "{",
+                "    void First() { }",
+                "    /// <summary>Second.</summary>",
+                "    [System.Obsolete]",
+                "    void Second() { }",
+                "    int Third() => 3;",
+                "}"]);
 
         string expected = source.Replace(oldValue: "    ///", newline + "    ///", StringComparison.Ordinal)
             .Replace(oldValue: "    int Third", newline + "    int Third", StringComparison.Ordinal);

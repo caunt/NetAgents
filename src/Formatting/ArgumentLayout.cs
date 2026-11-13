@@ -15,6 +15,19 @@ internal static class ArgumentLayout
 
     private static readonly char[] LineBreaks = ['\r', '\n', '\u0085', '\u2028', '\u2029'];
 
+    // Joins a delimiter and its neighbouring item, unless a comment between them keeps them on separate lines.
+    internal static TextChange Attach(SourceText source, int start, int end, string newline, string indentation)
+    {
+        return HasComment(source, start, end)
+            ? SeparateItems(source, start, end, newline, indentation)
+            : new TextChange(TextSpan.FromBounds(start, end), string.Empty);
+    }
+
+    internal static bool Breaks(SourceText source, int start, int end)
+    {
+        return GetLine(source, end) > GetLine(source, start);
+    }
+
     internal static bool CanFix(SyntaxNode list)
     {
         return !list.ContainsDirectives && list.DescendantTrivia().All(IsWhitespaceOrComment);
@@ -86,6 +99,23 @@ internal static class ArgumentLayout
     internal static string GetCompactText(SyntaxNode list)
     {
         return list.WithoutTrivia().NormalizeWhitespace(indentation: "", eol: " ").ToFullString();
+    }
+
+    internal static string GetIndentation(SourceText source, int position)
+    {
+        TextLine line = source.Lines.GetLineFromPosition(position);
+
+        return new(value: [.. source.ToString(line.Span).TakeWhile(static character => character is ' ' or '\t')]);
+    }
+
+    internal static int GetLine(SourceText source, int position)
+    {
+        return source.Lines.GetLineFromPosition(position).LineNumber;
+    }
+
+    internal static bool HasComment(SourceText source, int start, int end)
+    {
+        return source.ToString(TextSpan.FromBounds(start, end)).Trim().Length > 0;
     }
 
     internal static bool HasExpectedLayout(SyntaxNode list, SourceText source)
@@ -163,17 +193,13 @@ internal static class ArgumentLayout
         return compact.Length - 2 > LayoutLimits.MaximumInlineLength || compact.IndexOfAny(LineBreaks) >= 0;
     }
 
-    // Joins a delimiter and its neighbouring item, unless a comment between them keeps them on separate lines.
-    private static TextChange Attach(SourceText source, int start, int end, string newline, string indentation)
+    internal static TextChange SeparateItems(SourceText source, int start, int end, string newline, string indentation)
     {
-        return HasComment(source, start, end)
-            ? SeparateItems(source, start, end, newline, indentation)
-            : new TextChange(TextSpan.FromBounds(start, end), string.Empty);
-    }
+        TextSpan span = TextSpan.FromBounds(start, end);
+        string comments = source.ToString(span).Trim();
+        string replacement = comments.Length == 0 ? newline + indentation : newline + indentation + comments + newline + indentation;
 
-    private static bool Breaks(SourceText source, int start, int end)
-    {
-        return GetLine(source, end) > GetLine(source, start);
+        return new TextChange(span, replacement);
     }
 
     private static void Classify(SyntaxNode list, SyntaxTrivia trivia, ref bool blockComment, ref bool inlineComment)
@@ -203,13 +229,6 @@ internal static class ArgumentLayout
         return function.Block ?? throw new InvalidOperationException(message: "A spread lambda has no block body.");
     }
 
-    private static string GetIndentation(SourceText source, int position)
-    {
-        TextLine line = source.Lines.GetLineFromPosition(position);
-
-        return new(value: [.. source.ToString(line.Span).TakeWhile(static character => character is ' ' or '\t')]);
-    }
-
     // Later items sit one level deeper than the line the list starts on, and one more for each enclosing
     // list that opens on that line and continues past it, so nested lists never share an indentation.
     private static string GetItemIndentation(SyntaxNode list, SourceText source)
@@ -233,11 +252,6 @@ internal static class ArgumentLayout
         bool attached = index == 0 && !HasComment(source, item.GetFirstToken().GetPreviousToken().Span.End, item.SpanStart);
 
         return attached ? GetIndentation(source, list.SpanStart) : GetItemIndentation(list, source);
-    }
-
-    private static int GetLine(SourceText source, int position)
-    {
-        return source.Lines.GetLineFromPosition(position).LineNumber;
     }
 
     // The lambdas and anonymous methods this list encloses most closely whose bodies hold a statement
@@ -266,11 +280,6 @@ internal static class ArgumentLayout
             if (statements.Count > 1 && node.Ancestors().First(IsList) == list)
                 yield return statements;
         }
-    }
-
-    private static bool HasComment(SourceText source, int start, int end)
-    {
-        return source.ToString(TextSpan.FromBounds(start, end)).Trim().Length > 0;
     }
 
     // Some statements never share one line inside an argument, and joining the list would undo their
@@ -338,15 +347,6 @@ internal static class ArgumentLayout
 
         return GetLine(source, brace.SpanStart) > GetLine(source, brace.GetPreviousToken().Span.End)
             && GetIndentation(source, brace.SpanStart) == GetIndentation(source, function.SpanStart);
-    }
-
-    private static TextChange SeparateItems(SourceText source, int start, int end, string newline, string indentation)
-    {
-        TextSpan span = TextSpan.FromBounds(start, end);
-        string comments = source.ToString(span).Trim();
-        string replacement = comments.Length == 0 ? newline + indentation : newline + indentation + comments + newline + indentation;
-
-        return new TextChange(span, replacement);
     }
 
     private static bool SharesLine(SourceText source, SyntaxToken token)

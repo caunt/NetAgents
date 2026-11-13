@@ -78,11 +78,17 @@ public sealed class StatementGroupingConvergenceTests
         "await Task.Run(() =>\n{\n    int length = prices.Length;\n\n    Console.WriteLine(length);\n});\n\nreturn 0;")]
     public async Task SettlesWithTheOtherLayoutRules(string written, string expected)
     {
-        DiagnosticAnalyzer[] analyzers = [new StatementGroupingAnalyzer(), new StatementSpacingAnalyzer(), new BlockPaddingAnalyzer(),
-            new ControlFlowBracesAnalyzer(), new ArgumentLayoutAnalyzer()];
+        DiagnosticAnalyzer[] analyzers = [new StatementGroupingAnalyzer(),
+            new StatementSpacingAnalyzer(),
+            new BlockPaddingAnalyzer(),
+            new ControlFlowBracesAnalyzer(),
+            new ArgumentLayoutAnalyzer()];
 
-        CodeFixProvider[] providers = [new StatementGroupingCodeFixProvider(), new StatementSpacingCodeFixProvider(), new BlockPaddingCodeFixProvider(),
-            new ControlFlowBracesCodeFixProvider(), new ArgumentLayoutCodeFixProvider()];
+        CodeFixProvider[] providers = [new StatementGroupingCodeFixProvider(),
+            new StatementSpacingCodeFixProvider(),
+            new BlockPaddingCodeFixProvider(),
+            new ControlFlowBracesCodeFixProvider(),
+            new ArgumentLayoutCodeFixProvider()];
 
         using AdhocWorkspace workspace = new();
 

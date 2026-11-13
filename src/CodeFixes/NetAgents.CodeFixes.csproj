@@ -31,6 +31,11 @@
     <Compile Include="../Formatting/Statements/OneLineStatement.cs" Link="Formatting/Statements/OneLineStatement.cs" />
     <Compile Include="../Formatting/Chains/ChainLayout.cs" Link="Formatting/Chains/ChainLayout.cs" />
     <Compile Include="../Formatting/Chains/ChainLink.cs" Link="Formatting/Chains/ChainLink.cs" />
+    <Compile Include="../Formatting/Collections/CollectionLayout.cs" Link="Formatting/Collections/CollectionLayout.cs" />
+    <Compile Include="../Readability/NestedTry.cs" Link="Readability/NestedTry.cs" />
+    <Compile Include="../Readability/LiteralConcatenation.cs" Link="Readability/LiteralConcatenation.cs" />
+    <Compile Include="../Readability/LiteralComparison.cs" Link="Readability/LiteralComparison.cs" />
+    <Compile Include="../Readability/DelegateCreation.cs" Link="Readability/DelegateCreation.cs" />
     <Compile Include="../TypeSafety/NumericConversion.cs" Link="TypeSafety/NumericConversion.cs" />
     <Compile Include="../StatementGroups/StatementClassifier.cs" Link="StatementGroups/StatementClassifier.cs" />
     <Compile Include="../StatementGroups/StatementGroup.cs" Link="StatementGroups/StatementGroup.cs" />

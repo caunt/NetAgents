@@ -34,9 +34,22 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
     private static readonly ImmutableHashSet<string> ForbiddenTypes = ImmutableHashSet.Create(StringComparer.Ordinal,
-        items: [        "Lock", "Monitor", "Semaphore", "SemaphoreSlim", "Mutex", "ReaderWriterLock", "ReaderWriterLockSlim",
-        "SpinLock", "SpinWait", "AutoResetEvent", "ManualResetEvent", "ManualResetEventSlim", "EventWaitHandle",
-        "WaitHandle", "CountdownEvent", "Barrier"]);
+        items: ["Lock",
+            "Monitor",
+            "Semaphore",
+            "SemaphoreSlim",
+            "Mutex",
+            "ReaderWriterLock",
+            "ReaderWriterLockSlim",
+            "SpinLock",
+            "SpinWait",
+            "AutoResetEvent",
+            "ManualResetEvent",
+            "ManualResetEventSlim",
+            "EventWaitHandle",
+            "WaitHandle",
+            "CountdownEvent",
+            "Barrier"]);
 
     private static readonly ImmutableArray<string> Tasks = ["Tasks", "Threading", "System"];
     private static readonly ImmutableArray<string> Threading = ["Threading", "System"];

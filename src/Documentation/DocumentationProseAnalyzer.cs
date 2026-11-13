@@ -1,5 +1,3 @@
-using System;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -59,7 +57,7 @@ public sealed class DocumentationProseAnalyzer() : PolicyAnalyzer(Rule)
                 _ => null,
             };
 
-            if (string.Equals(name?.LocalName.ValueText, b: "inheritdoc", StringComparison.Ordinal))
+            if (name?.LocalName.ValueText is "inheritdoc")
                 return true;
         }
 

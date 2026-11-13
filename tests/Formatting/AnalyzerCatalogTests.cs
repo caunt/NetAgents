@@ -14,7 +14,7 @@ public sealed class AnalyzerCatalogTests
 {
     private static readonly string CodeStylePath = Path.Combine(typeof(AnalyzerCatalogTests).Assembly
         .GetCustomAttributes<AssemblyMetadataAttribute>()
-        .Single(static attribute => string.Equals(attribute.Key, b: "CodeStyleDirectory", StringComparison.Ordinal))
+        .Single(static attribute => attribute.Key is "CodeStyleDirectory")
         .Value
             ?? throw new InvalidOperationException(message: "The building SDK's code-style directory is unknown."),
         path2: "Microsoft.CodeAnalysis.CSharp.CodeStyle.dll");

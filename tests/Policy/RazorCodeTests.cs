@@ -302,7 +302,8 @@ public sealed class RazorCodeTests
 
         CSharpParseOptions options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp14);
 
-        return [CSharpSyntaxTree.ParseText(source, options, path: "Sample_razor.g.cs"), CSharpSyntaxTree.ParseText(Framework, options, path: "Framework.g.cs")];
+        return [CSharpSyntaxTree.ParseText(source, options, path: "Sample_razor.g.cs"),
+            CSharpSyntaxTree.ParseText(Framework, options, path: "Framework.g.cs")];
     }
 
     private static string DescribeLocation(Diagnostic diagnostic)

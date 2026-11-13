@@ -58,7 +58,8 @@ public sealed class DirectoryFileCountAnalyzerTests
     public async Task CountsParentChildAndSiblingDirectoriesSeparately()
     {
         SyntaxTree[] files = [.. CreateFiles(directory: "Features", count: 16),
-            .. CreateFiles(directory: "Features/Buying", count: 16), .. CreateFiles(directory: "Features/Selling", count: 16)];
+            .. CreateFiles(directory: "Features/Buying", count: 16),
+            .. CreateFiles(directory: "Features/Selling", count: 16)];
 
         Assert.Empty(await AnalyzerTestHarness.Analyze(new DirectoryFileCountAnalyzer(), files));
     }

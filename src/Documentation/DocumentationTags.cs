@@ -38,9 +38,7 @@ internal static class DocumentationTags
     public const string TagFitRuleIdentifier = "NETAGENTS0034";
 
     // The declarations a documentation comment can describe, which are the ones CS1591 asks about.
-    public static readonly ImmutableArray<SyntaxKind> DeclarationKinds =
-    [
-        SyntaxKind.ClassDeclaration,
+    public static readonly ImmutableArray<SyntaxKind> DeclarationKinds = [SyntaxKind.ClassDeclaration,
         SyntaxKind.StructDeclaration,
         SyntaxKind.RecordDeclaration,
         SyntaxKind.RecordStructDeclaration,
@@ -56,8 +54,7 @@ internal static class DocumentationTags
         SyntaxKind.IndexerDeclaration,
         SyntaxKind.EventDeclaration,
         SyntaxKind.EventFieldDeclaration,
-        SyntaxKind.FieldDeclaration,
-    ];
+        SyntaxKind.FieldDeclaration];
 
     // The elements whose text describes the declaration, as opposed to the markup used inside that text.
     public static readonly ImmutableHashSet<string> Descriptions = ImmutableHashSet.Create(StringComparer.Ordinal, items: ["summary", "param", "typeparam", "returns", "value", "exception", "remarks"]);
@@ -347,7 +344,7 @@ internal static class DocumentationTags
         {
             string? name = GetName(element);
 
-            if (string.Equals(name, b: "inheritdoc", StringComparison.Ordinal) || string.Equals(name, b: "include", StringComparison.Ordinal))
+            if (name is "inheritdoc" or "include")
                 return true;
         }
 
@@ -389,7 +386,7 @@ internal static class DocumentationTags
 
     private static bool IsResultlessTask(ITypeSymbol type)
     {
-        return type is INamedTypeSymbol { IsGenericType: false } named && named.Name is "Task" or "ValueTask" && string.Equals(named.ContainingNamespace?.ToDisplayString(), b: "System.Threading.Tasks", StringComparison.Ordinal);
+        return type is INamedTypeSymbol { IsGenericType: false } named && named.Name is "Task" or "ValueTask" && named.ContainingNamespace?.ToDisplayString() is "System.Threading.Tasks";
     }
 }
 

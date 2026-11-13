@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
@@ -11,11 +12,13 @@ using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 
 using NetAgents.Analyzers.Formatting;
+using NetAgents.Analyzers.Formatting.Collections;
 
 namespace NetAgents.Analyzers.CodeFixes.Formatting;
 
 /// <summary>
-/// Collapses short argument and parameter lists and expands long lists without changing parameter values.
+/// Collapses short argument and parameter lists, collection expressions, and initializers, and expands long ones without
+/// changing what they hold.
 /// </summary>
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ArgumentLayoutCodeFixProvider))]
 [Shared]
@@ -44,8 +47,9 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
             SyntaxNode list = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
+            bool fixable = ArgumentLayout.IsList(list) ? ArgumentLayout.CanFix(list) : CollectionLayout.CanLayOut(list);
 
-            if (!ArgumentLayout.IsList(list) || !ArgumentLayout.CanFix(list))
+            if (!fixable)
                 continue;
 
             context.RegisterCodeFix(CodeAction.Create(title: "Fix argument and parameter layout",
@@ -71,17 +75,15 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
 
             SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            SyntaxNode? list = root.DescendantNodes()
-                .FirstOrDefault(node => ArgumentLayout.IsList(node)
-                && !node.ContainsDiagnostics && ArgumentLayout.CanFix(node)
-                && (requestedSpan is null || node.Span == requestedSpan)
-                && !ArgumentLayout.HasExpectedLayout(node, source));
+            SyntaxNode? list = root.DescendantNodes().FirstOrDefault(node => NeedsLayout(node, requestedSpan, source));
 
             if (list is null)
                 return document;
 
-            SourceText changedSource = source.WithChanges(ArgumentLayout.GetChanges(list, source));
-            TextSpan changedSpan = new(list.SpanStart, list.Span.Length + changedSource.Length - source.Length);
+            TextChange[] changes = ArgumentLayout.IsList(list) ? ArgumentLayout.GetChanges(list, source) : CollectionLayout.GetChanges(list, source);
+            SourceText changedSource = source.WithChanges(changes);
+            int start = Math.Min(list.SpanStart, changes[0].Span.Start);
+            TextSpan changedSpan = TextSpan.FromBounds(start, list.Span.End + changedSource.Length - source.Length);
 
             document = await Formatter.FormatAsync(document.WithText(changedSource), changedSpan, cancellationToken: cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
@@ -94,5 +96,12 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
         while (requestedSpan is null && hasChanges);
 
         return document;
+    }
+
+    private static bool NeedsLayout(SyntaxNode node, TextSpan? requestedSpan, SourceText source)
+    {
+        return (requestedSpan is not TextSpan span || node.Span == span) && (ArgumentLayout.IsList(node)
+            ? !node.ContainsDiagnostics && ArgumentLayout.CanFix(node) && !ArgumentLayout.HasExpectedLayout(node, source)
+            : CollectionLayout.CanLayOut(node) && !CollectionLayout.HasExpectedLayout(node, source));
     }
 }

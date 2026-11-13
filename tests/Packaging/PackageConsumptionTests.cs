@@ -164,13 +164,10 @@ public sealed class PackageConsumptionTests
 
             await File.WriteAllTextAsync(Path.Combine(ignoredHost, path2: "Microsoft.CodeAnalysis.dll"), contents: "Not an assembly.");
 
-            string[] pathOverrideArguments =
-            [
-                .. buildArguments,
+            string[] pathOverrideArguments = [.. buildArguments,
                 "-p:NetAgentsBuildTaskPath=" + Path.Combine(ignoredHost, path2: "missing-task.dll"),
                 "-p:NetAgentsGlobalConfigurationPath=" + Path.Combine(ignoredHost, path2: "missing.globalconfig"),
-                "-p:NetAgentsRoslynDirectory=" + ignoredHost,
-            ];
+                "-p:NetAgentsRoslynDirectory=" + ignoredHost];
 
             await File.WriteAllTextAsync(sourcePath, source);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, pathOverrideArguments, withoutShell: true);
@@ -478,7 +475,9 @@ public sealed class PackageConsumptionTests
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 reportingArguments,
                 expectedDiagnosticIdentifier: "NETAGENTS0015",
-                expectedOutput: ["NetAgents rewrote " + relativeSourcePath, "NetAgents rewrote 1 file before this build failed on diagnostics no fix repairs: NETAGENTS0015", "NETAGENTS0015"],
+                expectedOutput: ["NetAgents rewrote " + relativeSourcePath,
+                    "NetAgents rewrote 1 file before this build failed on diagnostics no fix repairs: NETAGENTS0015",
+                    "NETAGENTS0015"],
                 withoutShell: true);
 
             // A diagnostic no fix repairs is a finished run: the formatting is recorded so the next
@@ -614,11 +613,7 @@ public sealed class PackageConsumptionTests
             await File.WriteAllTextAsync(sourcePath, lookupSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments);
 
-            string[] ignoredLookups =
-            [
-                "values.TryGetValue(recipientName, out string? greeting);",
-                "_ = values.TryGetValue(recipientName, out string? greeting);",
-            ];
+            string[] ignoredLookups = ["values.TryGetValue(recipientName, out string? greeting);", "_ = values.TryGetValue(recipientName, out string? greeting);"];
 
             foreach (string ignoredLookup in ignoredLookups)
             {
@@ -714,9 +709,7 @@ public sealed class PackageConsumptionTests
 
             string editorConfigurationPath = Path.Combine(paths: [workspace.FullName, ".editorconfig"]);
 
-            string[] conflictingEditorSettings =
-            [
-                "csharp_style_var_elsewhere = true:silent",
+            string[] conflictingEditorSettings = ["csharp_style_var_elsewhere = true:silent",
                 "csharp_prefer_braces = true:silent",
                 "insert_final_newline = false",
                 "dotnet_diagnostic.NETAGENTS0001.severity = none",
@@ -732,8 +725,7 @@ public sealed class PackageConsumptionTests
                 "dotnet_diagnostic.NETAGENTS0030.severity = none",
                 "dotnet_diagnostic.IDE0005.severity = none",
                 "dotnet_diagnostic.IDE0059.severity = none",
-                "dotnet_diagnostic.CS1591.severity = none",
-            ];
+                "dotnet_diagnostic.CS1591.severity = none"];
 
             foreach (string conflictingSetting in conflictingEditorSettings)
             {
@@ -743,9 +735,7 @@ public sealed class PackageConsumptionTests
 
             File.Delete(editorConfigurationPath);
 
-            string[] conflictingProjectSettings =
-            [
-                "<Nullable>disable</Nullable>",
+            string[] conflictingProjectSettings = ["<Nullable>disable</Nullable>",
                 "<AnalysisLevel>none</AnalysisLevel>",
                 "<AnalysisMode>Minimum</AnalysisMode>",
                 "<AnalysisLevelStyle>none</AnalysisLevelStyle>",
@@ -757,8 +747,7 @@ public sealed class PackageConsumptionTests
                 "<TreatWarningsAsErrors>false</TreatWarningsAsErrors>",
                 "<GenerateDocumentationFile>false</GenerateDocumentationFile>",
                 "<WarningsAsErrors>CS0168</WarningsAsErrors>",
-                "<EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>",
-            ];
+                "<EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>"];
 
             foreach (string conflictingSetting in conflictingProjectSettings)
             {
@@ -772,9 +761,7 @@ public sealed class PackageConsumptionTests
 
             await File.WriteAllTextAsync(projectPath, projectContent);
 
-            string[] conflictingBuildArguments =
-            [
-                "-p:RunAnalyzers=false",
+            string[] conflictingBuildArguments = ["-p:RunAnalyzers=false",
                 "-p:CodeAnalysisTreatWarningsAsErrors=false",
                 "-p:GenerateDocumentationFile=false",
                 "-p:SkipGlobalAnalyzerConfigForPackage=true",
@@ -787,8 +774,7 @@ public sealed class PackageConsumptionTests
                 "-p:NoWarn=1591",
                 "-p:WarningsNotAsErrors=CS1591",
                 "-p:NoWarn=IDE0005",
-                "-p:WarningsNotAsErrors=CA1311",
-            ];
+                "-p:WarningsNotAsErrors=CA1311"];
 
             foreach (string conflictingArgument in conflictingBuildArguments)
                 await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: [.. buildArguments, conflictingArgument], expectedDiagnosticIdentifier: "NETAGENTS0014");
@@ -925,14 +911,11 @@ public sealed class PackageConsumptionTests
 
     private static async Task VerifyDiscardAssignments(string workspacePath, string sourcePath, string[] buildArguments)
     {
-        string[] discardedValues =
-        [
-            "_ = 42;",
+        string[] discardedValues = ["_ = 42;",
             "_ = recipientName;",
             "_ = recipientName?.Length;",
             "_ = new System.Text.StringBuilder();",
-            "System.Action<string> consume = _ => _ = string.Empty;\n\n        consume(recipientName);",
-        ];
+            "System.Action<string> consume = _ => _ = string.Empty;\n\n        consume(recipientName);"];
 
         foreach (string discardedValue in discardedValues)
         {

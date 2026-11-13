@@ -175,6 +175,6 @@ public sealed class TupleReturnTypeAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
         INamedTypeSymbol definition = type.OriginalDefinition;
 
         return (type.IsTupleType || definition.Name is "Tuple" or "ValueTuple")
-            && string.Equals(definition.ContainingNamespace.ToDisplayString(), b: "System", StringComparison.Ordinal);
+            && definition.ContainingNamespace.ToDisplayString() is "System";
     }
 }

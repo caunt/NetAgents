@@ -28,13 +28,11 @@ internal static class LambdaParameterLayout
         ParameterListSyntax parameters = lambda.ParameterList;
         ParameterSyntax parameter = parameters.Parameters[index: 0];
 
-        SyntaxTrivia[] leading = [
-            .. parameters.OpenParenToken.LeadingTrivia,
+        SyntaxTrivia[] leading = [.. parameters.OpenParenToken.LeadingTrivia,
             .. Meaningful(parameters.OpenParenToken.TrailingTrivia),
             .. Meaningful(parameter.GetLeadingTrivia())];
 
-        SyntaxTrivia[] trailing = [
-            .. Meaningful(parameter.GetTrailingTrivia()),
+        SyntaxTrivia[] trailing = [.. Meaningful(parameter.GetTrailingTrivia()),
             .. Meaningful(parameters.CloseParenToken.LeadingTrivia),
             .. parameters.CloseParenToken.TrailingTrivia];
 

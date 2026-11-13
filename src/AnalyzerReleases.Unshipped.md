@@ -22,7 +22,7 @@ NETAGENTS0016 | Formatting | Error | Blank lines around control flow and multili
 NETAGENTS0017 | Formatting | Error | Braces for multiline bodies and consistent conditional chains
 NETAGENTS0018 | Structure | Error | At most sixteen authored C# files directly in each directory per project
 NETAGENTS0019 | Formatting | Error | Single-line conditions of at most 128 characters
-NETAGENTS0020 | Formatting | Error | Single-line argument and parameter lists up to 128 characters, otherwise one item per line
+NETAGENTS0020 | Formatting | Error | Single-line argument and parameter lists, collection expressions, and initializers up to 128 characters, otherwise one item per line
 NETAGENTS0021 | Formatting | Error | Blank lines between adjacent method declarations
 NETAGENTS0022 | Ordering | Error | Members ordered by kind, visibility, storage, mutability, and name, grouped with one blank line between groups
 NETAGENTS0023 | Formatting | Error | No blank lines directly after an opening brace or before a closing brace
@@ -50,3 +50,7 @@ NETAGENTS0044 | Readability | Error | Awaited values named in a local before the
 NETAGENTS0045 | Formatting | Error | Simple statements that fit within 128 characters written on one line
 NETAGENTS0046 | Naming | Error | No local names built only from placeholder words such as result, flag, or temp
 NETAGENTS0047 | Formatting | Error | Member chains on one line up to four links when they fit, otherwise one link per line after the first
+NETAGENTS0049 | Readability | Error | A try that only adds a finally merged with the try it wraps
+NETAGENTS0050 | Readability | Error | Strings joined with + on one line written as one string
+NETAGENTS0051 | Readability | Error | Comparisons with a string literal written as a constant pattern
+NETAGENTS0052 | Readability | Error | Lambdas and method groups assigned directly instead of wrapped in a delegate constructor

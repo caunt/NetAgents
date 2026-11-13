@@ -37,8 +37,7 @@ internal sealed class FormattingHost : AssemblyLoadContext
 
         // The inputs and the build log cross this boundary, so both sides need the same task and
         // MSBuild types rather than a second copy of them.
-        bool shared = string.Equals(name, b: "NetAgents.BuildTasks", StringComparison.Ordinal)
-            || name.StartsWith(value: "Microsoft.Build", StringComparison.Ordinal);
+        bool shared = name is "NetAgents.BuildTasks" || name.StartsWith(value: "Microsoft.Build", StringComparison.Ordinal);
 
         if (shared)
         {

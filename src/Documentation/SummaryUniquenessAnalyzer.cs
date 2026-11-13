@@ -1,5 +1,3 @@
-using System;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -56,7 +54,7 @@ public sealed class SummaryUniquenessAnalyzer() : PolicyAnalyzer(Rule)
             _ => null,
         };
 
-        return name is not null && string.Equals(name.LocalName.ValueText, b: "summary", StringComparison.Ordinal);
+        return name is not null && name.LocalName.ValueText is "summary";
     }
 
     private static void ReportRepeatedSummaries(DocumentationCommentTriviaSyntax documentation, SyntaxTreeAnalysisContext context)

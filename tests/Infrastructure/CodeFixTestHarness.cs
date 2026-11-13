@@ -94,6 +94,11 @@ internal static class CodeFixTestHarness
         return await Fix(source, new ChainLayoutAnalyzer(), new ChainLayoutCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
+    public static async Task<string> FixDelegateCreations(string source, bool fixAll)
+    {
+        return await Fix(source, new DelegateCreationAnalyzer(), new DelegateCreationCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     public static async Task<string> FixDocumentationProse(string source)
     {
         return await Fix(source, new DocumentationProseAnalyzer(), new DocumentationProseCodeFixProvider(), fixAll: false)
@@ -127,6 +132,16 @@ internal static class CodeFixTestHarness
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 
+    public static async Task<string> FixLiteralComparisons(string source, bool fixAll)
+    {
+        return await Fix(source, new LiteralComparisonAnalyzer(), new LiteralComparisonCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixLiteralConcatenations(string source, bool fixAll)
+    {
+        return await Fix(source, new LiteralConcatenationAnalyzer(), new LiteralConcatenationCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     public static async Task<string> FixMemberOrdering(string source, bool fixAll)
     {
         return await Fix(source, new MemberOrderingAnalyzer(), new MemberOrderingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
@@ -135,6 +150,11 @@ internal static class CodeFixTestHarness
     public static async Task<string> FixMethodSpacing(string source, bool fixAll)
     {
         return await Fix(source, new MethodSpacingAnalyzer(), new MethodSpacingCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixNestedTries(string source, bool fixAll)
+    {
+        return await Fix(source, new NestedTryAnalyzer(), new NestedTryCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<string> FixNumericConversions(string source, bool fixAll)

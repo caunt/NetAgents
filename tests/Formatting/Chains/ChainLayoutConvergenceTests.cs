@@ -46,11 +46,17 @@ public sealed class ChainLayoutConvergenceTests
         "int depth = rows.Comparer\n    .GetType()\n    .Assembly\n    .FullName!\n    .Length;\n\nreturn depth;")]
     public async Task SettlesWithTheOtherLayoutRules(string written, string expected)
     {
-        DiagnosticAnalyzer[] analyzers = [new ChainLayoutAnalyzer(), new OneLineStatementAnalyzer(), new ArgumentLayoutAnalyzer(),
-            new StatementGroupingAnalyzer(), new StatementSpacingAnalyzer()];
+        DiagnosticAnalyzer[] analyzers = [new ChainLayoutAnalyzer(),
+            new OneLineStatementAnalyzer(),
+            new ArgumentLayoutAnalyzer(),
+            new StatementGroupingAnalyzer(),
+            new StatementSpacingAnalyzer()];
 
-        CodeFixProvider[] providers = [new ChainLayoutCodeFixProvider(), new OneLineStatementCodeFixProvider(), new ArgumentLayoutCodeFixProvider(),
-            new StatementGroupingCodeFixProvider(), new StatementSpacingCodeFixProvider()];
+        CodeFixProvider[] providers = [new ChainLayoutCodeFixProvider(),
+            new OneLineStatementCodeFixProvider(),
+            new ArgumentLayoutCodeFixProvider(),
+            new StatementGroupingCodeFixProvider(),
+            new StatementSpacingCodeFixProvider()];
 
         using AdhocWorkspace workspace = new();
 

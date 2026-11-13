@@ -253,7 +253,19 @@ public sealed class ExplicitLiteralArgumentNameCodeFixTests
     public async Task PreservesLayoutAndComments(string lineEnding)
     {
         string source = string.Join(lineEnding,
-            value: ["class ExampleType", "{", "    void Run()", "    {", "        Add(", "            // the first operand", "            1,", "            2", "        );", "    }", "", "    void Add(int left, int right) { }", "}"]);
+            value: ["class ExampleType",
+                "{",
+                "    void Run()",
+                "    {",
+                "        Add(",
+                "            // the first operand",
+                "            1,",
+                "            2",
+                "        );",
+                "    }",
+                "",
+                "    void Add(int left, int right) { }",
+                "}"]);
 
         string expected = source.Replace(oldValue: "            1,", newValue: "            left: 1,", StringComparison.Ordinal)
             .Replace(oldValue: "            2", newValue: "            right: 2", StringComparison.Ordinal);

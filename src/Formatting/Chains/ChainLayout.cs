@@ -7,6 +7,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
+using NetAgents.Analyzers.Formatting.Collections;
+
 namespace NetAgents.Analyzers.Formatting.Chains;
 
 /// <summary>
@@ -26,9 +28,9 @@ namespace NetAgents.Analyzers.Formatting.Chains;
 ///     .OrderByDescending(cells => cells[section.VersionColumnIndex], AppVersion.ValueComparer)];
 /// </code>
 /// <para>
-/// A single link has nothing to align and keeps its layout, and so does a chain in a condition,
-/// which NETAGENTS0019 keeps on one line, in an argument or parameter list that NETAGENTS0020 writes on one line, in
-/// an interpolation, beside a comment, or reached through <c>?.</c>.
+/// A single link has nothing to align and keeps its layout, and so does a chain in a condition, which NETAGENTS0019
+/// keeps on one line, in an argument or parameter list, collection expression, or initializer that NETAGENTS0020
+/// writes on one line, in an interpolation, beside a comment, or reached through <c>?.</c>.
 /// </para>
 /// </remarks>
 internal static class ChainLayout
@@ -296,10 +298,13 @@ internal static class ChainLayout
         return false;
     }
 
-    // An argument or parameter list NETAGENTS0020 writes on one line, with every chain inside it joined.
+    // An argument or parameter list, collection expression, or initializer NETAGENTS0020 writes on one line, with every
+    // chain inside it joined.
     private static bool IsJoinedList(SyntaxNode node)
     {
-        return ArgumentLayout.IsList(node) && !node.ContainsDiagnostics && !node.ContainsDirectives && !ArgumentLayout.RequiresMultipleLines(node);
+        return CollectionLayout.CanLayOut(node)
+            ? !ArgumentLayout.RequiresMultipleLines(node)
+            : ArgumentLayout.IsList(node) && !node.ContainsDiagnostics && !node.ContainsDirectives && !ArgumentLayout.RequiresMultipleLines(node);
     }
 
     // A namespace or type the chain is reached through, as Console is in System.Console.Error.WriteLine(…).
