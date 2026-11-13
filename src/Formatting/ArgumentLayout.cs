@@ -286,7 +286,9 @@ internal static class ArgumentLayout
             SwitchLabelSyntax { Parent: SwitchSectionSyntax section } => section.Statements.Count > 1,
             IfStatementSyntax or ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
                 or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax or TryStatementSyntax
-                or SwitchStatementSyntax or CheckedStatementSyntax or UnsafeStatementSyntax => token == token.Parent.GetFirstToken(),
+                or SwitchStatementSyntax or CheckedStatementSyntax or UnsafeStatementSyntax => token == token
+                    .Parent
+                    .GetFirstToken(),
             _ => false,
         };
     }

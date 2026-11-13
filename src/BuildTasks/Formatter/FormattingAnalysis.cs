@@ -137,7 +137,9 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
 
         try
         {
-            return suppressor.SupportedSuppressions.Any(static suppression => suppression.SuppressedDiagnosticId.StartsWith(value: "CS", StringComparison.Ordinal));
+            return suppressor
+                .SupportedSuppressions
+                .Any(static suppression => suppression.SuppressedDiagnosticId.StartsWith(value: "CS", StringComparison.Ordinal));
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

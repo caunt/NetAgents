@@ -110,8 +110,10 @@ internal static class ProjectFormatter
 
         if (languageVersion.Substituted)
         {
-            inputs.Log.LogMessage(MessageImportance.Normal,
-                $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}");
+            inputs
+                .Log
+                .LogMessage(MessageImportance.Normal,
+                    $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}");
         }
 
         CSharpParseOptions parseOptions = new(languageVersion.Version,
@@ -169,7 +171,11 @@ internal static class ProjectFormatter
         CompositionParts.CompositionSelection compositionParts = CompositionParts.Select(assemblies.Distinct());
 
         foreach (string part in compositionParts.Skipped)
-            inputs.Log.LogMessage(MessageImportance.Normal, $"NetAgents skips the {part} export because this build cannot load every type it declares");
+        {
+            inputs
+                .Log
+                .LogMessage(MessageImportance.Normal, $"NetAgents skips the {part} export because this build cannot load every type it declares");
+        }
 
         using CompositionHost composition = new ContainerConfiguration().WithParts(compositionParts.Types).CreateContainer();
 
@@ -255,7 +261,10 @@ internal static class ProjectFormatter
         Project original = workspace.CurrentSolution.GetProject(projectIdentifier)
             ?? throw new InvalidOperationException(message: "The formatting project is missing.");
 
-        ImmutableArray<DiagnosticAnalyzer> analyzers = [.. original.AnalyzerReferences.SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())];
+        ImmutableArray<DiagnosticAnalyzer> analyzers = [.. original
+            .AnalyzerReferences
+            .SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())];
+
         CodeFixProvider[] providers = [.. composition.GetExports<CodeFixProvider>()];
         bool analyzerFault = false;
 
@@ -330,12 +339,15 @@ internal static class ProjectFormatter
         if (!codeFixes.Introduced.IsEmpty)
         {
             string introduced = string.Join(separator: ", ",
-                codeFixes.Introduced
+                codeFixes
+                    .Introduced
                     .Select(static diagnostic => diagnostic.Id)
                     .Distinct(StringComparer.Ordinal)
                     .Order(StringComparer.Ordinal));
 
-            inputs.Log.LogMessage(MessageImportance.High, $"NetAgents made no change because formatting would have introduced {introduced}");
+            inputs
+                .Log
+                .LogMessage(MessageImportance.High, $"NetAgents made no change because formatting would have introduced {introduced}");
 
             // Each one is named where formatting would have put it, so it can be found without rebuilding
             // with the formatter off. A run that broke many lines at once names enough to show the pattern.
@@ -352,7 +364,11 @@ internal static class ProjectFormatter
                 inputs.Log.LogMessage(MessageImportance.High, DescribeIntroduced(projectDirectory, diagnostic));
 
             if (located.Count > IntroducedShown)
-                inputs.Log.LogMessage(MessageImportance.High, string.Create(CultureInfo.InvariantCulture, $"  and {located.Count - IntroducedShown} more"));
+            {
+                inputs
+                    .Log
+                    .LogMessage(MessageImportance.High, string.Create(CultureInfo.InvariantCulture, $"  and {located.Count - IntroducedShown} more"));
+            }
 
             if (codeFixes.IntroducedBy is not null)
                 inputs.Log.LogMessage(MessageImportance.High, "Attempted code action: " + codeFixes.IntroducedBy);
@@ -376,8 +392,10 @@ internal static class ProjectFormatter
         string rewriteCount = rewritten.Count.ToString(CultureInfo.InvariantCulture);
 
         // The identifiers are what this formatter could not repair; the compiler reports the full set.
-        inputs.Log.LogMessage(MessageImportance.High,
-            $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}");
+        inputs
+            .Log
+            .LogMessage(MessageImportance.High,
+                $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}");
 
         foreach (string path in rewritten)
             inputs.Log.LogMessage(MessageImportance.High, "  " + path);

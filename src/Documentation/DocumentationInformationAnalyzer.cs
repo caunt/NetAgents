@@ -100,7 +100,13 @@ public sealed class DocumentationInformationAnalyzer() : PolicyAnalyzer(Rule)
                 case ConstructorDeclarationSyntax declaration:
                     return declaration.Identifier.ValueText;
                 case BaseFieldDeclarationSyntax declaration:
-                    return declaration.Declaration.Variables.Count == 0 ? null : declaration.Declaration.Variables[index: 0].Identifier.ValueText;
+                    {
+                        return declaration.Declaration.Variables.Count == 0 ? null : declaration
+                            .Declaration
+                            .Variables[index: 0]
+                            .Identifier
+                            .ValueText;
+                    }
                 case MemberDeclarationSyntax:
                     return null;
                 default:

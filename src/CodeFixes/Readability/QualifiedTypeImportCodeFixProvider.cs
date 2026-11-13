@@ -39,11 +39,13 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        SyntaxNode? root = await context.Document
+        SyntaxNode? root = await context
+            .Document
             .GetSyntaxRootAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        SemanticModel? model = await context.Document
+        SemanticModel? model = await context
+            .Document
             .GetSemanticModelAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -155,9 +157,7 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
     private static async Task<Document> Import(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document
-            .GetSyntaxRootAsync(cancellationToken)
-            .ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         SemanticModel? model = await document
             .GetSemanticModelAsync(cancellationToken)
@@ -181,9 +181,7 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
     private static async Task<Document> ImportAll(Document document, ImmutableArray<Diagnostic> diagnostics, CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document
-            .GetSyntaxRootAsync(cancellationToken)
-            .ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         SemanticModel? model = await document
             .GetSemanticModelAsync(cancellationToken)

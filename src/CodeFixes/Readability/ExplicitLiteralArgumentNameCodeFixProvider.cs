@@ -35,11 +35,13 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        SyntaxNode? root = await context.Document
+        SyntaxNode? root = await context
+            .Document
             .GetSyntaxRootAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
-        SemanticModel? model = await context.Document
+        SemanticModel? model = await context
+            .Document
             .GetSemanticModelAsync(context.CancellationToken)
             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -95,9 +97,7 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
 
             document = document.WithSyntaxRoot(ReplaceLists(root, selected));
 
-            SourceText changed = await document
-                .GetTextAsync(cancellationToken)
-                .ConfigureAwait(continueOnCapturedContext: false);
+            SourceText changed = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
             hasChanges = fixAll && !source.ContentEquals(changed);
             requestedSpans = null;

@@ -17,7 +17,9 @@ internal static class LambdaParameterLayout
 
         ParameterSyntax parameter = lambda.ParameterList.Parameters[index: 0];
 
-        return parameter.Type is null && parameter.Default is null && parameter.AttributeLists.Count == 0 && parameter.Modifiers.Count == 0;
+        return parameter.Type is null && parameter.Default is null && parameter.AttributeLists.Count == 0 && parameter
+            .Modifiers
+            .Count == 0;
     }
 
     // Padding inside the parentheses only existed to space them, so it goes with them, while the

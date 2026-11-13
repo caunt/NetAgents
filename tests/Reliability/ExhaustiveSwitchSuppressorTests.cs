@@ -83,13 +83,16 @@ public sealed class ExhaustiveSwitchSuppressorTests
             .AddProject(name: "Switches", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, generalDiagnosticOption: ReportDiagnostic.Error))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(name: "Switches.cs", SourceText.From(Enumeration + "class Switches { " + body + " }\n"), filePath: "Switches.cs").Project;
+            .AddDocument(name: "Switches.cs", SourceText.From(Enumeration + "class Switches { " + body + " }\n"), filePath: "Switches.cs")
+            .Project;
 
         if (severity is not null)
         {
-            project = project.AddAnalyzerConfigDocument(name: ".globalconfig",
-                SourceText.From($"is_global = true\ndotnet_diagnostic.{diagnosticIdentifier}.severity = {severity}\n"),
-                filePath: "/.globalconfig").Project;
+            project = project
+                .AddAnalyzerConfigDocument(name: ".globalconfig",
+                    SourceText.From($"is_global = true\ndotnet_diagnostic.{diagnosticIdentifier}.severity = {severity}\n"),
+                    filePath: "/.globalconfig")
+                .Project;
         }
 
         Compilation compilation = await project.GetCompilationAsync().ConfigureAwait(continueOnCapturedContext: false)

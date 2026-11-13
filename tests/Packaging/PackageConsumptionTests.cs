@@ -535,7 +535,9 @@ public sealed class PackageConsumptionTests
                 withoutShell: true);
 
             Assert.Equal(expected: 2,
-                Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories).Length);
+                Directory
+                    .GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories)
+                    .Length);
 
             await File.WriteAllTextAsync(sourcePath,
                 ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",

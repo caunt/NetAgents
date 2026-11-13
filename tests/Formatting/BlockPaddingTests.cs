@@ -47,7 +47,8 @@ public sealed class BlockPaddingTests
             .AddProject(name: "Convergence", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(name: "ExampleType.cs", SourceText.From(source)).Project;
+            .AddDocument(name: "ExampleType.cs", SourceText.From(source))
+            .Project;
 
         CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
             analyzers: [new BlockPaddingAnalyzer(), new MethodSpacingAnalyzer(), new MemberOrderingAnalyzer()],

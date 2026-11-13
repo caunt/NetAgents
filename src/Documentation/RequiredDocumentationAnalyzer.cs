@@ -248,8 +248,14 @@ public sealed class RequiredDocumentationAnalyzer() : PolicyAnalyzer(Rule)
             {
                 INamedTypeSymbol? thrown = node switch
                 {
-                    ThrowStatementSyntax { Expression: ExpressionSyntax expression } => context.SemanticModel.GetTypeInfo(expression, context.CancellationToken).Type as INamedTypeSymbol,
-                    ThrowExpressionSyntax expression => context.SemanticModel.GetTypeInfo(expression.Expression, context.CancellationToken).Type as INamedTypeSymbol,
+                    ThrowStatementSyntax { Expression: ExpressionSyntax expression } => context
+                        .SemanticModel
+                        .GetTypeInfo(expression, context.CancellationToken)
+                        .Type as INamedTypeSymbol,
+                    ThrowExpressionSyntax expression => context
+                        .SemanticModel
+                        .GetTypeInfo(expression.Expression, context.CancellationToken)
+                        .Type as INamedTypeSymbol,
                     InvocationExpressionSyntax invocation => GetThrowHelperException(invocation, context.SemanticModel),
                     _ => null,
                 };

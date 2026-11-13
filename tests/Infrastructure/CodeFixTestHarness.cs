@@ -182,9 +182,7 @@ internal static class CodeFixTestHarness
 
     public static async Task<ImmutableArray<Diagnostic>> GetDiagnostics(Document document, DiagnosticAnalyzer analyzer)
     {
-        Compilation? compilation = await document.Project
-            .GetCompilationAsync()
-            .ConfigureAwait(continueOnCapturedContext: false);
+        Compilation? compilation = await document.Project.GetCompilationAsync().ConfigureAwait(continueOnCapturedContext: false);
 
         Assert.NotNull(compilation);
         Assert.Empty(compilation.GetDiagnostics().Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));

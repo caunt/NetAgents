@@ -71,7 +71,10 @@ public sealed class FormattingFingerprintTests
                 }
             case "source-renamed":
                 {
-                    fixture.Inputs.SourceFiles = fixture.Item(relativePath: "Renamed.cs") + "\n" + fixture.Inputs.SourceFiles.Split(separator: '\n')[1];
+                    fixture.Inputs.SourceFiles = fixture.Item(relativePath: "Renamed.cs") + "\n" + fixture
+                        .Inputs
+                        .SourceFiles
+                        .Split(separator: '\n')[1];
 
                     break;
                 }

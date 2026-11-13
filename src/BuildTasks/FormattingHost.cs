@@ -41,7 +41,11 @@ internal sealed class FormattingHost : AssemblyLoadContext
             || name.StartsWith(value: "Microsoft.Build", StringComparison.Ordinal);
 
         if (shared)
-            return _taskContext.Assemblies.FirstOrDefault(assembly => string.Equals(assembly.GetName().Name, name, StringComparison.Ordinal));
+        {
+            return _taskContext
+                .Assemblies
+                .FirstOrDefault(assembly => string.Equals(assembly.GetName().Name, name, StringComparison.Ordinal));
+        }
 
         foreach (string directory in _directories)
         {

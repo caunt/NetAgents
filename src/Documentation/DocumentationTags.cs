@@ -254,7 +254,10 @@ internal static class DocumentationTags
             PropertyDeclarationSyntax property => property.Identifier,
             IndexerDeclarationSyntax indexer => indexer.ThisKeyword,
             EventDeclarationSyntax member => member.Identifier,
-            BaseFieldDeclarationSyntax field when field.Declaration.Variables.Count > 0 => field.Declaration.Variables[index: 0].Identifier,
+            BaseFieldDeclarationSyntax field when field.Declaration.Variables.Count > 0 => field
+                .Declaration
+                .Variables[index: 0]
+                .Identifier,
             _ => default,
         };
 

@@ -56,7 +56,8 @@ public sealed class SummaryOpeningAnalyzer() : PolicyAnalyzer(Rule)
 
         string cref = type.TypeParameters.Length == 0 ? type.Name : type.Name + "{" + string.Join(separator: ",", type.TypeParameters.Select(static parameter => parameter.Name)) + "}";
 
-        ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>.Empty
+        ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>
+            .Empty
             .Add(DocumentationTags.CrefProperty, cref)
             .Add(DocumentationTags.KindProperty, kind);
 
@@ -143,6 +144,8 @@ public sealed class SummaryOpeningAnalyzer() : PolicyAnalyzer(Rule)
             }
         }
 
-        return cref is not null && model.GetSymbolInfo(cref).Symbol is INamedTypeSymbol named && SymbolEqualityComparer.Default.Equals(named.OriginalDefinition, type.OriginalDefinition);
+        return cref is not null && model.GetSymbolInfo(cref).Symbol is INamedTypeSymbol named && SymbolEqualityComparer
+            .Default
+            .Equals(named.OriginalDefinition, type.OriginalDefinition);
     }
 }

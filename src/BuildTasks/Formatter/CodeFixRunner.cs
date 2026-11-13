@@ -521,7 +521,10 @@ internal static class CodeFixRunner
                 .GetSyntaxTreeAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
-            AnalyzerConfigOptions options = project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GetOptions(tree ?? throw new InvalidOperationException(message: "A syntax tree is missing."));
+            AnalyzerConfigOptions options = project
+                .AnalyzerOptions
+                .AnalyzerConfigOptionsProvider
+                .GetOptions(tree ?? throw new InvalidOperationException(message: "A syntax tree is missing."));
 
             bool needsFinalNewline = text.Length > 0 && text.Lines.GetLineFromPosition(text.Length).Span.Length > 0
                 && options.TryGetValue(key: "insert_final_newline", out string? finalNewline) && finalNewline == "true";

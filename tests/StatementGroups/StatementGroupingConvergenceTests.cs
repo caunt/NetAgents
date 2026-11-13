@@ -48,7 +48,8 @@ public sealed class StatementGroupingConvergenceTests
             .AddProject(name: "Suggestions", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(name: "Example.cs", SourceText.From(source), filePath: "Example.cs").Project;
+            .AddDocument(name: "Example.cs", SourceText.From(source), filePath: "Example.cs")
+            .Project;
 
         CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
             analyzers: [new StatementGroupingAnalyzer(), new StatementSpacingAnalyzer(), new UnwrapAnalyzer()],
@@ -90,7 +91,8 @@ public sealed class StatementGroupingConvergenceTests
             .AddProject(name: "Groups", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(name: "Example.cs", SourceText.From(Wrap(written)), filePath: "Example.cs").Project;
+            .AddDocument(name: "Example.cs", SourceText.From(Wrap(written)), filePath: "Example.cs")
+            .Project;
 
         CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [.. analyzers], providers: [.. providers], static fault => Assert.Fail(fault), CancellationToken.None);
         string formatted = await DocumentText.Read(run.Project.Documents.Single());
@@ -143,7 +145,8 @@ public sealed class StatementGroupingConvergenceTests
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            SyntaxNode? root = await context.Document
+            SyntaxNode? root = await context
+                .Document
                 .GetSyntaxRootAsync(context.CancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 

@@ -48,9 +48,7 @@ public sealed class StatementGroupingCodeFixProvider : CodeFixProvider
 
     private static async Task<Document> Regroup(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document
-            .GetSyntaxRootAsync(cancellationToken)
-            .ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         SemanticModel? model = await document
             .GetSemanticModelAsync(cancellationToken)

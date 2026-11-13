@@ -14,19 +14,20 @@ namespace NetAgents.Analyzers.Formatting.Chains;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A chain's links are the property, field, and event accesses and the calls reached through dots after its
-/// receiver; namespace and type qualifiers belong to the receiver, and an element access belongs to the link before
-/// it. A chain of up to four links stays on one line when that line fits within 128 characters. A longer chain, or
-/// one that does not fit, puts each call on a line of its own, the first call included, one level deeper than the
-/// line it starts on, while property and field accesses stay on the line of the receiver or call they follow:
+/// A chain's links are the members reached through dots after its receiver, fields, properties, events, and methods
+/// alike; namespace and type qualifiers belong to the receiver, and an element access belongs to the link before it.
+/// A chain of up to four links stays on one line when that line fits within 128 characters. A longer chain, or one
+/// that does not fit, puts every link on a line of its own, the first included, one level deeper than the line it
+/// starts on:
 /// </para>
 /// <code>
-/// string[][] rows = [.. rowsByVersion.Values
+/// string[][] rows = [.. rowsByVersion
+///     .Values
 ///     .Select(static value => value.Cells)
 ///     .OrderByDescending(cells => cells[section.VersionColumnIndex], AppVersion.ValueComparer)];
 /// </code>
 /// <para>
-/// A chain with fewer than two calls has nothing to align and keeps its layout, and so does a chain in a condition,
+/// A single link has nothing to align and keeps its layout, and so does a chain in a condition,
 /// which NETAGENTS0019 keeps on one line, in an argument or parameter list that NETAGENTS0020 writes on one line, in
 /// an interpolation, beside a comment, or reached through <c>?.</c>.
 /// </para>
@@ -39,18 +40,18 @@ internal static class ChainLayout
 
     // The links of the chain that ends at this expression, or nothing when it is no chain the rule lays out. Leading
     // namespace and type qualifiers are bound only when they could change the count.
-    public static List<ChainLink>? GetLinks(ExpressionSyntax top, SemanticModel model, CancellationToken cancellationToken)
+    public static List<ChainLink>? GetLinks(ExpressionSyntax top, SemanticModel model, SourceText text, CancellationToken cancellationToken)
     {
         List<ChainLink> links = [];
         ExpressionSyntax node = top;
 
-        while (node is InvocationExpressionSyntax or MemberAccessExpressionSyntax or ElementAccessExpressionSyntax)
+        while (ContinuesChain(node))
         {
             switch (node)
             {
                 case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax called } when called.IsKind(SyntaxKind.SimpleMemberAccessExpression):
                     {
-                        links.Add(new ChainLink(called, call: true));
+                        links.Add(new ChainLink(called, qualifier: false));
 
                         node = called.Expression;
 
@@ -59,10 +60,10 @@ internal static class ChainLayout
                 case InvocationExpressionSyntax { Expression: MemberBindingExpressionSyntax }:
                     return null;
                 case InvocationExpressionSyntax:
-                    return Finish(links, model, cancellationToken);
+                    return Finish(top, links, model, text, cancellationToken);
                 case MemberAccessExpressionSyntax access when access.IsKind(SyntaxKind.SimpleMemberAccessExpression):
                     {
-                        links.Add(new ChainLink(access, call: false));
+                        links.Add(new ChainLink(access, qualifier: false));
 
                         node = access.Expression;
 
@@ -74,27 +75,33 @@ internal static class ChainLayout
 
                         break;
                     }
+                case PostfixUnaryExpressionSyntax suppressed when suppressed.IsKind(SyntaxKind.SuppressNullableWarningExpression):
+                    {
+                        node = suppressed.Operand;
+
+                        break;
+                    }
                 default:
                     return null;
             }
         }
 
-        return node is ConditionalAccessExpressionSyntax ? null : Finish(links, model, cancellationToken);
+        return node is ConditionalAccessExpressionSyntax ? null : Finish(top, links, model, text, cancellationToken);
     }
 
     // The layout the chain must take, or nothing where the rule leaves it as written.
     public static bool? GetRequiredSplit(ExpressionSyntax top, List<ChainLink> links, SourceText text)
     {
-        return links.Count(static link => link.IsCall) < 2 || IsExempt(top, links)
-            ? null
-            : links.Count > MaximumLinks || !Fits(top, links, text);
+        int members = links.Count(static link => !link.IsQualifier);
+
+        return members < 2 || IsExempt(top, links) ? null : members > MaximumLinks || !Fits(top, links, text);
     }
 
     public static bool IsSettled(List<ChainLink> links, bool split, SourceText text)
     {
         foreach (ChainLink link in links)
         {
-            if (StartsLine(link.Dot, text) != (split && link.IsCall))
+            if (StartsLine(link.Dot, text) != (split && !link.IsQualifier))
                 return false;
         }
 
@@ -102,15 +109,23 @@ internal static class ChainLayout
     }
 
     // A chain ends at a call, member access, or element access that nothing continues: no member, call, or element
-    // access is applied to it.
+    // access is applied to it, directly or through a null-forgiving operator, as in Assembly.FullName!.Length.
     public static bool IsTop(ExpressionSyntax node)
     {
-        return node is InvocationExpressionSyntax or MemberAccessExpressionSyntax or ElementAccessExpressionSyntax && node.Parent switch
+        if (node is not (InvocationExpressionSyntax or MemberAccessExpressionSyntax or ElementAccessExpressionSyntax))
+            return false;
+
+        ExpressionSyntax end = node;
+
+        if (node.Parent is PostfixUnaryExpressionSyntax suppressed && suppressed.IsKind(SyntaxKind.SuppressNullableWarningExpression))
+            end = suppressed;
+
+        return end.Parent switch
         {
-            MemberAccessExpressionSyntax access => access.Expression != node,
-            InvocationExpressionSyntax invocation => invocation.Expression != node,
-            ElementAccessExpressionSyntax element => element.Expression != node,
-            ConditionalAccessExpressionSyntax conditional => conditional.Expression != node,
+            MemberAccessExpressionSyntax access => access.Expression != end,
+            InvocationExpressionSyntax invocation => invocation.Expression != end,
+            ElementAccessExpressionSyntax element => element.Expression != end,
+            ConditionalAccessExpressionSyntax conditional => conditional.Expression != end,
             _ => true,
         };
     }
@@ -124,7 +139,7 @@ internal static class ChainLayout
             if (!IsTop(expression))
                 continue;
 
-            List<ChainLink>? links = GetLinks(expression, model, cancellationToken);
+            List<ChainLink>? links = GetLinks(expression, model, text, cancellationToken);
 
             if (links is not null && GetRequiredSplit(expression, links, text) == true)
                 return true;
@@ -147,14 +162,24 @@ internal static class ChainLayout
 
         foreach (ChainLink link in links)
         {
-            bool breaks = split && link.IsCall;
+            bool breaks = split && !link.IsQualifier;
             SyntaxToken previous = link.Dot.GetPreviousToken();
 
             replacements[previous] = previous.WithTrailingTrivia(breaks ? lineBreak : SyntaxTriviaList.Empty);
-            replacements[link.Dot] = link.Dot.WithLeadingTrivia(breaks ? SyntaxFactory.TriviaList(SyntaxFactory.Whitespace(deeper)) : SyntaxTriviaList.Empty);
+
+            replacements[link.Dot] = link
+                .Dot
+                .WithLeadingTrivia(breaks ? SyntaxFactory.TriviaList(SyntaxFactory.Whitespace(deeper)) : SyntaxTriviaList.Empty);
         }
 
         return root.ReplaceTokens(replacements.Keys, (original, rewritten) => replacements[original]);
+    }
+
+    // The expressions a chain is built from: calls, member and element accesses, and null-forgiving operators.
+    private static bool ContinuesChain(ExpressionSyntax node)
+    {
+        return node is InvocationExpressionSyntax or MemberAccessExpressionSyntax or ElementAccessExpressionSyntax
+            or PostfixUnaryExpressionSyntax;
     }
 
     private static int CountIndentation(SourceText text, TextLine line)
@@ -168,24 +193,24 @@ internal static class ChainLayout
     }
 
     // The leading accesses that name a namespace or a type are part of the receiver, as Console is in
-    // Console.Error.WriteLine(…).
-    private static List<ChainLink> Finish(List<ChainLink> links, SemanticModel model, CancellationToken cancellationToken)
+    // System.Console.Error.WriteLine(…), and stay joined when the chain splits. They are bound only for a chain that
+    // could split, since one that stays on one line joins every dot anyway.
+    private static List<ChainLink> Finish(ExpressionSyntax top, List<ChainLink> links, SemanticModel model, SourceText text, CancellationToken cancellationToken)
     {
         links.Reverse();
 
-        if (links.Count <= MaximumLinks)
+        if (links.Count <= MaximumLinks && Fits(top, links, text))
             return links;
 
-        int qualifiers = 0;
+        for (int index = 0; index < links.Count && IsQualifier(links[index], model, cancellationToken); index++)
+            links[index] = new ChainLink(links[index].Access, qualifier: true);
 
-        while (qualifiers < links.Count && IsQualifier(links[qualifiers], model, cancellationToken))
-            qualifiers++;
-
-        return qualifiers == 0 ? links : links.GetRange(qualifiers, links.Count - qualifiers);
+        return links;
     }
 
     // The chain on one line, with no space around a dot and one wherever the tokens had whitespace between them,
-    // measured from its column to the end of what follows it on its last line.
+    // measured from its column. What follows it on the line is left out, since another chain there would make each
+    // chain's layout decide the other's.
     private static bool Fits(ExpressionSyntax top, List<ChainLink> links, SourceText text)
     {
         foreach (SyntaxNode node in top.DescendantNodes())
@@ -194,9 +219,7 @@ internal static class ChainLayout
                 return false;
         }
 
-        TextLine start = text.Lines.GetLineFromPosition(top.SpanStart);
-        TextLine end = text.Lines.GetLineFromPosition(top.Span.End);
-        int width = top.SpanStart - start.Start + text.ToString(TextSpan.FromBounds(top.Span.End, end.End)).TrimEnd().Length;
+        int width = top.SpanStart - text.Lines.GetLineFromPosition(top.SpanStart).Start;
 
         // A dot joins its neighbours with no space, and every other gap that holds whitespace keeps one.
         HashSet<SyntaxToken> dots = [.. links.Select(static link => link.Dot)];
@@ -280,10 +303,10 @@ internal static class ChainLayout
         return ArgumentLayout.IsList(node) && !node.ContainsDiagnostics && !node.ContainsDirectives && !ArgumentLayout.RequiresMultipleLines(node);
     }
 
-    // A namespace or type the chain is reached through, as Console is in Console.Error.WriteLine(…).
+    // A namespace or type the chain is reached through, as Console is in System.Console.Error.WriteLine(…).
     private static bool IsQualifier(ChainLink link, SemanticModel model, CancellationToken cancellationToken)
     {
-        return !link.IsCall && model.GetSymbolInfo(link.Access, cancellationToken).Symbol is INamespaceOrTypeSymbol;
+        return model.GetSymbolInfo(link.Access, cancellationToken).Symbol is INamespaceOrTypeSymbol;
     }
 
     private static bool IsWhitespace(SyntaxTriviaList trivia)
@@ -299,6 +322,9 @@ internal static class ChainLayout
 
     private static bool StartsLine(SyntaxToken dot, SourceText text)
     {
-        return text.Lines.GetLineFromPosition(dot.GetPreviousToken().Span.End).LineNumber != text.Lines.GetLineFromPosition(dot.SpanStart).LineNumber;
+        return text.Lines.GetLineFromPosition(dot.GetPreviousToken().Span.End).LineNumber != text
+            .Lines
+            .GetLineFromPosition(dot.SpanStart)
+            .LineNumber;
     }
 }

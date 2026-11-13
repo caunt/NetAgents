@@ -40,8 +40,10 @@ public sealed class ChainLayoutConvergenceTests
         "int total = values.Where(static value => value > 0).Sum();\n\nreturn total;")]
     [InlineData("Console.WriteLine(values\n    .Where(static value => value > 0)\n    .Select(static value => value * 2)\n    .Distinct()\n    .Order()\n    .Sum());\n\nreturn 0;",
         "Console.WriteLine(values.Where(static value => value > 0).Select(static value => value * 2).Distinct().Order().Sum());\n\nreturn 0;")]
-    [InlineData("int[] lengths = [.. rows.Values.SelectMany(static cells => cells\n    .Where(static cell => cell > 0)\n    .Select(static cell => cell * 2)\n    .ToArray())];\n\nreturn lengths.Length;",
-        "int[] lengths = [.. rows.Values.SelectMany(static cells => cells.Where(static cell => cell > 0).Select(static cell => cell * 2).ToArray())];\n\nreturn lengths.Length;")]
+    [InlineData("Console.WriteLine(rows.Values\n    .Where(static cells => cells.Length > 1)\n    .Select(static cells => cells.Length * 2)\n    .Sum() + values.Length);\n\nreturn 0;",
+        "Console.WriteLine(rows.Values.Where(static cells => cells.Length > 1).Select(static cells => cells.Length * 2).Sum() + values.Length);\n\nreturn 0;")]
+    [InlineData("int depth = rows.Comparer.GetType().Assembly.FullName!.Length;\n\nreturn depth;",
+        "int depth = rows\n    .Comparer\n    .GetType()\n    .Assembly\n    .FullName!\n    .Length;\n\nreturn depth;")]
     public async Task SettlesWithTheOtherLayoutRules(string written, string expected)
     {
         DiagnosticAnalyzer[] analyzers = [new ChainLayoutAnalyzer(), new OneLineStatementAnalyzer(), new ArgumentLayoutAnalyzer(),
@@ -56,7 +58,8 @@ public sealed class ChainLayoutConvergenceTests
             .AddProject(name: "Chains", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(name: "Example.cs", SourceText.From(Wrap(written)), filePath: "Example.cs").Project;
+            .AddDocument(name: "Example.cs", SourceText.From(Wrap(written)), filePath: "Example.cs")
+            .Project;
 
         CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [.. analyzers], providers: [.. providers], static fault => Assert.Fail(fault), CancellationToken.None);
         string formatted = await DocumentText.Read(run.Project.Documents.Single());

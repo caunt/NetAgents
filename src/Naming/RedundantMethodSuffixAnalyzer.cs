@@ -108,10 +108,7 @@ public sealed class RedundantMethodSuffixAnalyzer() : PolicyAnalyzer(Rule, analy
 
     private static List<string> GetWords(string name)
     {
-        return [.. WordPattern
-            .Matches(name.TrimStart(trimChars: ['_', '@']))
-            .Cast<Match>()
-            .Select(static match => match.Value)];
+        return [.. WordPattern.Matches(name.TrimStart(trimChars: ['_', '@'])).Cast<Match>().Select(static match => match.Value)];
     }
 
     // A method whose name comes from somewhere else is not renamed where it is implemented: an override

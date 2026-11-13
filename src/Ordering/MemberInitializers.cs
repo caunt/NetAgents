@@ -169,7 +169,10 @@ internal static class MemberInitializers
     private static bool KeepsStorageOrder(TypeDeclarationSyntax declaration)
     {
         bool valueType = declaration is StructDeclarationSyntax || declaration.Keyword.IsKind(SyntaxKind.StructKeyword);
-        bool recordStruct = declaration is RecordDeclarationSyntax record && record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword);
+
+        bool recordStruct = declaration is RecordDeclarationSyntax record && record
+            .ClassOrStructKeyword
+            .IsKind(SyntaxKind.StructKeyword);
 
         if (valueType || recordStruct)
             return true;

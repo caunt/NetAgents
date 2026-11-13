@@ -127,7 +127,8 @@ public sealed class CodeFixPerformanceTests
             .AddProject(name: "Malformed", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(fileName, SourceText.From(source), filePath: fileName).Project;
+            .AddDocument(fileName, SourceText.From(source), filePath: fileName)
+            .Project;
 
         CountingAnalyzer analyzer = new(includeSuggestion: true);
         List<string> actions = [];
@@ -184,10 +185,12 @@ public sealed class CodeFixPerformanceTests
             .AddProject(name: "Drifting", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(name: "Step.cs", SourceText.From(text: "internal static class Step { internal static int Read() => 0; }\n"), filePath: "Step.cs").Project
+            .AddDocument(name: "Step.cs", SourceText.From(text: "internal static class Step { internal static int Read() => 0; }\n"), filePath: "Step.cs")
+            .Project
             .AddDocument(name: "Drift.cs",
                 SourceText.From(text: "internal static class Drift { internal static int Read() => 7; }\n"),
-                filePath: "Drift.cs").Project;
+                filePath: "Drift.cs")
+            .Project;
     }
 
     private static Project CreateProject(AdhocWorkspace workspace)
@@ -196,10 +199,12 @@ public sealed class CodeFixPerformanceTests
             .AddProject(name: "Performance", LanguageNames.CSharp)
             .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddMetadataReferences(AnalyzerTestHarness.References)
-            .AddDocument(name: "Step.cs", SourceText.From(text: "internal static class Step { internal static int Read() => 0; }\n"), filePath: "Step.cs").Project
+            .AddDocument(name: "Step.cs", SourceText.From(text: "internal static class Step { internal static int Read() => 0; }\n"), filePath: "Step.cs")
+            .Project
             .AddDocument(name: "Suggestion.cs",
                 SourceText.From(text: "internal static class Suggestion { internal static int Read() => 1; }\n"),
-                filePath: "Suggestion.cs").Project;
+                filePath: "Suggestion.cs")
+            .Project;
     }
 
     private sealed class AdvanceFix : CodeFixProvider
@@ -211,7 +216,8 @@ public sealed class CodeFixPerformanceTests
             context.RegisterCodeFix(CodeAction.Create(title: "Advance the step",
                     async cancellationToken =>
                     {
-                        SourceText text = await context.Document
+                        SourceText text = await context
+                            .Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -306,11 +312,14 @@ public sealed class CodeFixPerformanceTests
             context.RegisterCodeFix(CodeAction.Create(title: "Break the drift file",
                     async cancellationToken =>
                     {
-                        SourceText text = await context.Document
+                        SourceText text = await context
+                            .Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
-                        return context.Document.WithText(SourceText.From(text.ToString().Replace(oldValue: "=> 7;", newValue: "=> 8;", StringComparison.Ordinal)));
+                        return context
+                            .Document
+                            .WithText(SourceText.From(text.ToString().Replace(oldValue: "=> 7;", newValue: "=> 8;", StringComparison.Ordinal)));
                     },
                     equivalenceKey: "BreakDrift"),
                 context.Diagnostics);
@@ -397,13 +406,19 @@ public sealed class CodeFixPerformanceTests
             context.RegisterCodeFix(CodeAction.Create(title: "Change compilation settings",
                     async cancellationToken =>
                     {
-                        SourceText text = await context.Document
+                        SourceText text = await context
+                            .Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
-                        Document changed = context.Document.WithText(text.WithChanges(new TextChange(context.Span, newText: "3")));
+                        Document changed = context
+                            .Document
+                            .WithText(text.WithChanges(new TextChange(context.Span, newText: "3")));
 
-                        return changed.Project.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.ConsoleApplication)).Solution;
+                        return changed
+                            .Project
+                            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.ConsoleApplication))
+                            .Solution;
                     }),
                 context.Diagnostics);
 
@@ -422,14 +437,17 @@ public sealed class CodeFixPerformanceTests
                     {
                         actions.Add(item: "required");
 
-                        SourceText text = await context.Document
+                        SourceText text = await context
+                            .Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
                         string next = text.ToString(context.Span) switch { "0" => "1", "1" => "2", _ => "3" };
                         string changed = text.WithChanges(new TextChange(context.Span, next)).ToString();
 
-                        return context.Document.WithText(SourceText.From(changed.Replace(oldValue: "static int", newValue: "static  int", StringComparison.Ordinal)));
+                        return context
+                            .Document
+                            .WithText(SourceText.From(changed.Replace(oldValue: "static int", newValue: "static  int", StringComparison.Ordinal)));
                     }),
                 context.Diagnostics);
 
@@ -453,11 +471,14 @@ public sealed class CodeFixPerformanceTests
                     {
                         actions.Add(item: "optional");
 
-                        SourceText text = await context.Document
+                        SourceText text = await context
+                            .Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
-                        return context.Document.WithText(SourceText.From(text.ToString().Replace(oldValue: "=> 1;", newValue: "=> \"text\";", StringComparison.Ordinal)));
+                        return context
+                            .Document
+                            .WithText(SourceText.From(text.ToString().Replace(oldValue: "=> 1;", newValue: "=> \"text\";", StringComparison.Ordinal)));
                     },
                     equivalenceKey: "BreakOptionalReturn"),
                 context.Diagnostics);

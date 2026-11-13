@@ -99,7 +99,9 @@ public sealed class CompositionPartsTests
 
             Compile(partsPath,
                 LanguagePartsSource,
-                references: [typeof(ExportAttribute).Assembly.Location, typeof(CodeFixProvider).Assembly.Location, typeof(Diagnostic).Assembly.Location]);
+                references: [typeof(ExportAttribute).Assembly.Location, typeof(CodeFixProvider).Assembly.Location, typeof(Diagnostic)
+                    .Assembly
+                    .Location]);
 
             using DependencyLoader loader = new(workspace.FullName);
 

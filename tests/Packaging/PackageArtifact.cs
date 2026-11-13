@@ -33,7 +33,9 @@ internal static class PackageArtifact
 
         Assert.NotEmpty(templateOptions.AnalyzerOptions);
 
-        using Stream embeddedStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
+        using Stream embeddedStream = typeof(ConfigurationPolicyAnalyzer)
+            .Assembly
+            .GetManifestResourceStream(name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
             ?? throw new InvalidOperationException(message: "The embedded configuration is missing.");
 
         using StreamReader embeddedReader = new(embeddedStream);
@@ -115,7 +117,9 @@ internal static class PackageArtifact
             Assert.NotNull(package.GetEntry(requiredFile));
 
         Assert.Equal(expected: 2,
-            package.Entries.Count(static entry => entry.FullName.StartsWith(value: "analyzers/", StringComparison.Ordinal)
+            package
+                .Entries
+                .Count(static entry => entry.FullName.StartsWith(value: "analyzers/", StringComparison.Ordinal)
             && entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal)));
 
         Assert.NotNull(package.GetEntry(entryName: "tools/net10.0/NetAgents.BuildTasks.dll"));

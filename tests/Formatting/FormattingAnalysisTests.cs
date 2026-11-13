@@ -192,10 +192,12 @@ public sealed class FormattingAnalysisTests
             .AddMetadataReferences(AnalyzerTestHarness.References)
             .AddDocument(name: "Reader.cs",
                 SourceText.From(text: "internal static class Reader { internal static int Read() => 1; }\n"),
-                filePath: "Reader.cs").Project
+                filePath: "Reader.cs")
+            .Project
             .AddDocument(name: "Dependency.cs",
                 SourceText.From(text: "internal static class Dependency { internal const int Value = 0; }\n"),
-                filePath: "Dependency.cs").Project;
+                filePath: "Dependency.cs")
+            .Project;
     }
 
     private static async Task<List<string>> ValidateBrokenCandidate(string suppressedDiagnosticIdentifier)
@@ -239,7 +241,8 @@ public sealed class FormattingAnalysisTests
             context.RegisterCodeFix(CodeAction.Create(title: "Change optional candidate",
                     async cancellationToken =>
                     {
-                        SourceText text = await context.Document
+                        SourceText text = await context
+                            .Document
                             .GetTextAsync(cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -315,7 +318,12 @@ public sealed class FormattingAnalysisTests
                 Runs++;
 
                 SyntaxTree reader = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Reader.cs");
-                SyntaxTree dependency = compilation.Compilation.SyntaxTrees.Single(static tree => tree.FilePath == "Dependency.cs");
+
+                SyntaxTree dependency = compilation
+                    .Compilation
+                    .SyntaxTrees
+                    .Single(static tree => tree.FilePath == "Dependency.cs");
+
                 string source = reader.GetText().ToString();
                 string dependencySource = dependency.GetText().ToString();
 

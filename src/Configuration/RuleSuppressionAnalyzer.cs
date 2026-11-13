@@ -110,9 +110,17 @@ public sealed class RuleSuppressionAnalyzer() : PolicyAnalyzer(Rule)
         string target = list.Target?.Identifier.ValueText ?? string.Empty;
 
         if (target is "assembly" or "module")
-            return target == "assembly" ? model.Compilation.Assembly.GetAttributes() : model.Compilation.SourceModule.GetAttributes();
+        {
+            return target == "assembly" ? model.Compilation.Assembly.GetAttributes() : model
+                .Compilation
+                .SourceModule
+                .GetAttributes();
+        }
 
-        SyntaxNode? owner = list.Parent is BaseFieldDeclarationSyntax { Declaration.Variables.Count: > 0 } field ? field.Declaration.Variables[index: 0] : list.Parent;
+        SyntaxNode? owner = list.Parent is BaseFieldDeclarationSyntax { Declaration.Variables.Count: > 0 } field ? field
+            .Declaration
+            .Variables[index: 0] : list.Parent;
+
         ISymbol? symbol = owner is null ? null : model.GetDeclaredSymbol(owner, cancellationToken);
 
         return symbol is IMethodSymbol method && target == "return" ? method.GetReturnTypeAttributes() : symbol?.GetAttributes() ?? [];

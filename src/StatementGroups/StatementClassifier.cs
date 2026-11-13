@@ -18,7 +18,9 @@ namespace NetAgents.Analyzers.StatementGroups;
 /// <param name="cancellationToken">The token that cancels binding.</param>
 internal sealed class StatementClassifier(SemanticModel model, SourceText source, CancellationToken cancellationToken)
 {
-    private readonly INamedTypeSymbol? _argumentException = model.Compilation.GetTypeByMetadataName(fullyQualifiedMetadataName: "System.ArgumentException");
+    private readonly INamedTypeSymbol? _argumentException = model
+        .Compilation
+        .GetTypeByMetadataName(fullyQualifiedMetadataName: "System.ArgumentException");
 
     public StatementKind Classify(StatementSyntax statement)
     {
@@ -86,11 +88,16 @@ internal sealed class StatementClassifier(SemanticModel model, SourceText source
 
     private bool IsEventSubscription(AssignmentExpressionSyntax assignment)
     {
-        return (assignment.IsKind(SyntaxKind.AddAssignmentExpression) || assignment.IsKind(SyntaxKind.SubtractAssignmentExpression)) && model.GetSymbolInfo(assignment.Left, cancellationToken).Symbol is IEventSymbol;
+        return (assignment.IsKind(SyntaxKind.AddAssignmentExpression) || assignment.IsKind(SyntaxKind.SubtractAssignmentExpression)) && model
+            .GetSymbolInfo(assignment.Left, cancellationToken)
+            .Symbol is IEventSymbol;
     }
 
     private bool SpansLines(StatementSyntax statement)
     {
-        return source.Lines.GetLineFromPosition(statement.SpanStart).LineNumber != source.Lines.GetLineFromPosition(statement.Span.End).LineNumber;
+        return source.Lines.GetLineFromPosition(statement.SpanStart).LineNumber != source
+            .Lines
+            .GetLineFromPosition(statement.Span.End)
+            .LineNumber;
     }
 }

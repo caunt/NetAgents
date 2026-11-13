@@ -47,7 +47,9 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
         {
             bool matches;
 
-            bool isDiagnosticSeverity = requiredOption.Key.StartsWith(value: "dotnet_diagnostic.", StringComparison.OrdinalIgnoreCase)
+            bool isDiagnosticSeverity = requiredOption
+                .Key
+                .StartsWith(value: "dotnet_diagnostic.", StringComparison.OrdinalIgnoreCase)
                 && requiredOption.Key.EndsWith(value: ".severity", StringComparison.OrdinalIgnoreCase);
 
             if (isDiagnosticSeverity)
@@ -89,7 +91,9 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
 
     private static ImmutableDictionary<string, string> ReadRequiredOptions()
     {
-        using Stream configurationStream = typeof(ConfigurationPolicyAnalyzer).Assembly.GetManifestResourceStream(name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
+        using Stream configurationStream = typeof(ConfigurationPolicyAnalyzer)
+            .Assembly
+            .GetManifestResourceStream(name: "NetAgents.Analyzers.Configuration.NetAgents.globalconfig")
             ?? throw new InvalidOperationException(message: "The embedded analyzer policy is missing.");
 
         using StreamReader reader = new(configurationStream);

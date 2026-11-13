@@ -361,7 +361,9 @@ internal static class ExplicitLiteralArgumentName
 
         SymbolInfo rebinding = speculative.GetSymbolInfo(rebound, cancellationToken);
 
-        return rebinding.CandidateReason is CandidateReason.None && SymbolEqualityComparer.Default.Equals(rebinding.Symbol, original);
+        return rebinding.CandidateReason is CandidateReason.None && SymbolEqualityComparer
+            .Default
+            .Equals(rebinding.Symbol, original);
     }
 
     private static BaseArgumentListSyntax? Replace(BaseArgumentListSyntax list, List<ArgumentSyntax> rewritten)

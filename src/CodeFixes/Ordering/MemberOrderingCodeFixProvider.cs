@@ -46,9 +46,7 @@ public sealed class MemberOrderingCodeFixProvider : CodeFixProvider
 
     private static async Task<Document?> Sort(Document document, CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document
-            .GetSyntaxRootAsync(cancellationToken)
-            .ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         if (root is null)
             return document;
@@ -61,9 +59,7 @@ public sealed class MemberOrderingCodeFixProvider : CodeFixProvider
 
     private static async Task<Document> SortMembers(Document document, TextSpan span, CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document
-            .GetSyntaxRootAsync(cancellationToken)
-            .ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         TypeDeclarationSyntax? declaration = root?.FindToken(span.Start).Parent?.AncestorsAndSelf()
             .OfType<TypeDeclarationSyntax>()

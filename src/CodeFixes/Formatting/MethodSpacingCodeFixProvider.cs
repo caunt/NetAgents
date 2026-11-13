@@ -44,9 +44,7 @@ public sealed class MethodSpacingCodeFixProvider : CodeFixProvider
 
     private static async Task<Document> InsertBlankLine(Document document, TextSpan diagnosticSpan, CancellationToken cancellationToken)
     {
-        SyntaxNode? root = await document
-            .GetSyntaxRootAsync(cancellationToken)
-            .ConfigureAwait(continueOnCapturedContext: false);
+        SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
         if (root is null)
             return document;

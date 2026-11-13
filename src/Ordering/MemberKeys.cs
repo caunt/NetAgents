@@ -46,7 +46,10 @@ internal static class MemberKeys
     // The type a constant is declared with, as written; every other member has none.
     public static string GetConstantType(MemberDeclarationSyntax member)
     {
-        return member is FieldDeclarationSyntax field && field.Modifiers.Any(SyntaxKind.ConstKeyword) ? field.Declaration.Type.ToString() : string.Empty;
+        return member is FieldDeclarationSyntax field && field.Modifiers.Any(SyntaxKind.ConstKeyword) ? field
+            .Declaration
+            .Type
+            .ToString() : string.Empty;
     }
 
     public static int GetKind(MemberDeclarationSyntax member)
@@ -87,7 +90,11 @@ internal static class MemberKeys
     {
         return member switch
         {
-            BaseFieldDeclarationSyntax field => field.Declaration.Variables.Count > 0 ? field.Declaration.Variables[index: 0].Identifier.ValueText : string.Empty,
+            BaseFieldDeclarationSyntax field => field.Declaration.Variables.Count > 0 ? field
+                .Declaration
+                .Variables[index: 0]
+                .Identifier
+                .ValueText : string.Empty,
             BaseTypeDeclarationSyntax type => type.Identifier.ValueText,
             MethodDeclarationSyntax method => method.Identifier.ValueText,
             ConstructorDeclarationSyntax constructor => constructor.Identifier.ValueText,
