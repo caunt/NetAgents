@@ -225,7 +225,9 @@ public sealed class ControlFlowBracesCodeFixTests
     public async Task PreservesCommentsAndLineEndings(string lineEnding)
     {
         string source = string.Join(lineEnding,
-            value: ["public static class ExampleType",
+            value:
+            [
+                "public static class ExampleType",
                 "{",
                 "    public static void Execute(int count)",
                 "    {",
@@ -240,7 +242,8 @@ public sealed class ControlFlowBracesCodeFixTests
                 "            count = System.Math.Abs(",
                 "                count); // result",
                 "    }",
-                "}"]);
+                "}",
+            ]);
 
         string fixedSource = await CodeFixTestHarness.FixBraces(source, fixAll: true);
 

@@ -111,8 +111,11 @@ public sealed class CodeFixRunnerTests
 
         const string source = "class Example { private static int Value; }";
 
-        CodeFixProvider[] providers = [new ModifierFix(CascadeAnalyzer.PrivateIdentifier, replaced: "private", replacement: "public"),
-            new ModifierFix(CascadeAnalyzer.PublicIdentifier, replaced: "public", replacement: "internal")];
+        CodeFixProvider[] providers =
+        [
+            new ModifierFix(CascadeAnalyzer.PrivateIdentifier, replaced: "private", replacement: "public"),
+            new ModifierFix(CascadeAnalyzer.PublicIdentifier, replaced: "public", replacement: "internal"),
+        ];
 
         CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(CreateFieldProject(workspace, source),
             analyzers: [new CascadeAnalyzer()],

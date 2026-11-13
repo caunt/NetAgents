@@ -9,25 +9,31 @@ using Microsoft.CodeAnalysis.Text;
 namespace NetAgents.Analyzers.Formatting.Collections;
 
 /// <summary>
-/// Lays out collection expressions and initializers of two or more elements the way NETAGENTS0020 lays out argument
-/// lists: on one line when their contents fit within 128 characters, otherwise one element per line.
+/// Lays out collection expressions and initializers of two or more elements: on one line when their contents fit within
+/// 128 characters, otherwise one element per line.
 /// </summary>
 /// <remarks>
 /// <para>
-/// A collection expression that does not fit keeps its first element beside <c>[</c>, puts each later element on a line
-/// of its own one level deeper, and closes right after the last element, without a trailing comma:
+/// A collection expression that does not fit opens its bracket on a line of its own, puts every element on a line of
+/// its own one level deeper with a comma after each, the last included, and closes its bracket on a line of its own:
 /// </para>
 /// <code>
-/// string[] lines = ["Download IPAs and extract or update Supercell server public keys.",
+/// string[] lines =
+/// [
+///     "Download IPAs and extract or update Supercell server public keys.",
 ///     string.Empty,
-///     "Usage:"];
+///     "Usage:",
+/// ];
 /// </code>
 /// <para>
-/// An initializer that does not fit puts every element on a line of its own and its closing brace after them, and the
-/// formatter gives the opening brace a line of its own, as it does for every multiline initializer. Where the
-/// collection is a value written after <c>=</c>, <c>=&gt;</c>, <c>return</c>, or a parameter name, or the initializer
-/// of a creation, its opening delimiter joins the token before it. A collection holding a comment or a directive keeps
-/// the layout its author gave it.
+/// The bracket opens on a line of its own where the collection is a value written after <c>=</c>, <c>=&gt;</c>,
+/// <c>return</c>, or a parameter name; as a positional argument or an element, it stays where the list holding it puts
+/// it. An initializer that does not fit puts every element on a line of its own and its closing brace after them, and
+/// the formatter gives the opening brace a line of its own, as it does for every multiline initializer.
+/// </para>
+/// <para>
+/// A collection that fits joins the token before it where it is such a value, or the initializer of a creation, and
+/// drops a trailing comma. A collection holding a comment or a directive keeps the layout its author gave it.
 /// </para>
 /// </remarks>
 internal static class CollectionLayout
@@ -55,39 +61,34 @@ internal static class CollectionLayout
         SyntaxToken opening = collection.GetFirstToken();
         SyntaxToken closing = collection.GetLastToken();
 
-        // Where the collection is a value after =, =>, return, or a name, its opening delimiter joins the token before.
+        // A value after =, =>, return, or a name joins the token before it on one line, and opens below it otherwise.
         SyntaxToken previous = opening.GetPreviousToken();
-        bool attaches = Attaches(collection, source);
+        bool value = IsValue(collection, source);
 
-        // The contents on one line, without the trailing comma a multiline layout may have left.
+        // The contents on one line, without the trailing comma a multiline layout leaves.
         if (!ArgumentLayout.RequiresMultipleLines(collection))
         {
             string compact = WithoutTrailingSeparator(collection).WithoutTrivia()
                 .NormalizeWhitespace(indentation: "", eol: " ")
                 .ToFullString();
 
-            return [new TextChange(TextSpan.FromBounds(attaches ? previous.Span.End : opening.SpanStart, closing.Span.End), (attaches ? " " : "") + compact)];
+            return [new TextChange(TextSpan.FromBounds(value ? previous.Span.End : opening.SpanStart, closing.Span.End), (value ? " " : "") + compact)];
         }
 
-        // New lines reuse the file's line break, and elements sit one level deeper than the line the collection opens on.
+        // New lines reuse the file's line break, and elements sit one level deeper than the delimiters around them.
         TextLine firstLine = source.Lines[index: 0];
         string newline = firstLine.EndIncludingLineBreak > firstLine.End ? source.ToString(TextSpan.FromBounds(firstLine.End, firstLine.EndIncludingLineBreak)) : "\n";
-        string indentation = ArgumentLayout.GetIndentation(source, attaches ? previous.SpanStart : opening.SpanStart);
-        string itemIndentation = indentation + "    ";
+        bool opensBelow = value && collection is CollectionExpressionSyntax;
+        string indentation = ArgumentLayout.GetIndentation(source, opensBelow ? previous.SpanStart : opening.SpanStart);
 
-        // The line breaks before and after every element, in the order they appear.
+        // The line breaks around the delimiters and between the elements, in the order they appear.
+        string itemIndentation = indentation + "    ";
         List<TextChange> changes = [];
 
-        if (attaches)
-            changes.Add(new TextChange(TextSpan.FromBounds(previous.Span.End, opening.SpanStart), newText: " "));
+        if (opensBelow)
+            changes.Add(new TextChange(TextSpan.FromBounds(previous.Span.End, opening.SpanStart), newline + indentation));
 
-        // An initializer opens its elements on lines of their own; a collection expression keeps the first beside its
-        // bracket, as an argument list does.
-        bool initializer = collection is InitializerExpressionSyntax;
-
-        changes.Add(initializer
-            ? ArgumentLayout.SeparateItems(source, opening.Span.End, items[0].SpanStart, newline, itemIndentation)
-            : new TextChange(TextSpan.FromBounds(opening.Span.End, items[0].SpanStart), string.Empty));
+        changes.Add(ArgumentLayout.SeparateItems(source, opening.Span.End, items[0].SpanStart, newline, itemIndentation));
 
         for (int index = 1; index < items.Length; index++)
         {
@@ -96,11 +97,7 @@ internal static class CollectionLayout
             changes.Add(ArgumentLayout.SeparateItems(source, separator, items[index].SpanStart, newline, itemIndentation));
         }
 
-        SyntaxNode last = items[items.Length - 1];
-
-        changes.Add(initializer
-            ? ArgumentLayout.SeparateItems(source, closing.GetPreviousToken().Span.End, closing.SpanStart, newline, indentation)
-            : new TextChange(TextSpan.FromBounds(last.Span.End, closing.SpanStart), string.Empty));
+        changes.Add(Close(collection, source, newline, indentation));
 
         return [.. changes.OrderBy(static change => change.Span.Start)];
     }
@@ -111,13 +108,13 @@ internal static class CollectionLayout
         SyntaxToken opening = collection.GetFirstToken();
         SyntaxToken closing = collection.GetLastToken();
 
-        // A comma after the last element is left over from a layout with the closing delimiter on a line of its own.
+        // A one-line collection has no comma after its last element; a multiline collection expression has one.
         SyntaxNode last = items[items.Length - 1];
         bool trailing = last.GetLastToken().GetNextToken().IsKind(SyntaxKind.CommaToken);
 
         if (!ArgumentLayout.RequiresMultipleLines(collection))
         {
-            int start = Attaches(collection, source) ? opening.GetPreviousToken().Span.End : opening.SpanStart;
+            int start = IsValue(collection, source) ? opening.GetPreviousToken().Span.End : opening.SpanStart;
 
             return !trailing && !ArgumentLayout.Breaks(source, start, closing.SpanStart);
         }
@@ -128,18 +125,33 @@ internal static class CollectionLayout
                 return false;
         }
 
-        if (collection is InitializerExpressionSyntax)
-            return ArgumentLayout.Breaks(source, opening.Span.End, items[0].SpanStart) && ArgumentLayout.Breaks(source, last.Span.End, closing.SpanStart);
+        // The first element starts a line below the opening delimiter, and the closing delimiter a line below the last.
+        bool enclosed = ArgumentLayout.Breaks(source, opening.Span.End, items[0].SpanStart) && ArgumentLayout.Breaks(source, last.Span.End, closing.SpanStart);
 
-        bool attached = !Attaches(collection, source) || !ArgumentLayout.Breaks(source, opening.GetPreviousToken().Span.End, opening.SpanStart);
+        // A collection expression written as a value opens below the token before it, and ends with a comma.
+        bool initializer = collection is InitializerExpressionSyntax;
+        int previousEnd = opening.GetPreviousToken().Span.End;
+        bool opensBelow = initializer || !IsValue(collection, source) || ArgumentLayout.Breaks(source, previousEnd, opening.SpanStart);
 
-        return attached && !trailing && !ArgumentLayout.Breaks(source, opening.Span.End, items[0].SpanStart) && !ArgumentLayout.Breaks(source, last.Span.End, closing.SpanStart);
+        return enclosed && opensBelow && (initializer || trailing);
     }
 
-    // The opening delimiter joins the token before it where the collection is a value written after =, =>, return, or
-    // a parameter name, or the initializer of a creation; as an element or a positional argument, the list holding it
-    // decides where it starts.
-    private static bool Attaches(SyntaxNode collection, SourceText source)
+    // The closing delimiter starts a line of its own; a collection expression gets a comma after its last element first,
+    // while an initializer keeps whatever its author wrote there.
+    private static TextChange Close(SyntaxNode collection, SourceText source, string newline, string indentation)
+    {
+        SyntaxToken closing = collection.GetLastToken();
+        SyntaxToken previous = closing.GetPreviousToken();
+
+        return collection is InitializerExpressionSyntax || previous.IsKind(SyntaxKind.CommaToken)
+            ? ArgumentLayout.SeparateItems(source, previous.Span.End, closing.SpanStart, newline, indentation)
+            : new TextChange(TextSpan.FromBounds(previous.Span.End, closing.SpanStart), "," + newline + indentation);
+    }
+
+    // A value written after =, =>, return, or a parameter name, or the initializer of a creation, which joins the token
+    // before it when it fits on one line; as an element or a positional argument, the list holding it decides where it
+    // starts.
+    private static bool IsValue(SyntaxNode collection, SourceText source)
     {
         SyntaxToken opening = collection.GetFirstToken();
 
@@ -154,8 +166,7 @@ internal static class CollectionLayout
             _ => false,
         };
 
-        // A multiline initializer's brace goes where the formatter puts it.
-        return (collection is not InitializerExpressionSyntax || !ArgumentLayout.RequiresMultipleLines(collection)) && value && !ArgumentLayout.HasComment(source, opening.GetPreviousToken().Span.End, opening.SpanStart);
+        return value && !ArgumentLayout.HasComment(source, opening.GetPreviousToken().Span.End, opening.SpanStart);
     }
 
     private static List<SyntaxToken> TakeLeading(IEnumerable<SyntaxToken> separators, int count)

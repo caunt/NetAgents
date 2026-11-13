@@ -24,7 +24,7 @@ public sealed class ArgumentLayoutAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Argument and parameter lists must match their length",
-        messageFormat: "Keep argument and parameter lists, collection expressions, and initializers on one line when their contents fit within {0} characters; otherwise put each item on its own line: in a list or collection expression every item after the first, closing right after the last, and in an initializer every element, with the braces on lines of their own",
+        messageFormat: "Keep argument and parameter lists, collection expressions, and initializers on one line when their contents fit within {0} characters; otherwise put each item on its own line: in an argument or parameter list every item after the first, closing right after the last; in a collection expression or initializer every element, with the brackets or braces on lines of their own and a comma after the last element of a collection expression",
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

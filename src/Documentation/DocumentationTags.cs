@@ -38,7 +38,9 @@ internal static class DocumentationTags
     public const string TagFitRuleIdentifier = "NETAGENTS0034";
 
     // The declarations a documentation comment can describe, which are the ones CS1591 asks about.
-    public static readonly ImmutableArray<SyntaxKind> DeclarationKinds = [SyntaxKind.ClassDeclaration,
+    public static readonly ImmutableArray<SyntaxKind> DeclarationKinds =
+    [
+        SyntaxKind.ClassDeclaration,
         SyntaxKind.StructDeclaration,
         SyntaxKind.RecordDeclaration,
         SyntaxKind.RecordStructDeclaration,
@@ -54,7 +56,8 @@ internal static class DocumentationTags
         SyntaxKind.IndexerDeclaration,
         SyntaxKind.EventDeclaration,
         SyntaxKind.EventFieldDeclaration,
-        SyntaxKind.FieldDeclaration];
+        SyntaxKind.FieldDeclaration,
+    ];
 
     // The elements whose text describes the declaration, as opposed to the markup used inside that text.
     public static readonly ImmutableHashSet<string> Descriptions = ImmutableHashSet.Create(StringComparer.Ordinal, items: ["summary", "param", "typeparam", "returns", "value", "exception", "remarks"]);

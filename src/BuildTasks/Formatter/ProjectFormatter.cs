@@ -148,8 +148,11 @@ internal static class ProjectFormatter
             ? Directory.GetFiles(inputs.CodeFixDirectory, searchPattern: "*Fixes.dll")
             : [];
 
-        string[] featurePaths = [Path.Combine(inputs.SdkAssemblyDirectory, path2: "Microsoft.CodeAnalysis.Features.dll"),
-            Path.Combine(inputs.SdkAssemblyDirectory, path2: "Microsoft.CodeAnalysis.CSharp.Features.dll")];
+        string[] featurePaths =
+        [
+            Path.Combine(inputs.SdkAssemblyDirectory, path2: "Microsoft.CodeAnalysis.Features.dll"),
+            Path.Combine(inputs.SdkAssemblyDirectory, path2: "Microsoft.CodeAnalysis.CSharp.Features.dll"),
+        ];
 
         // The SDK's feature assemblies belong to the Roslyn already hosting this engine. Loading them
         // beside it instead of inside the analyzer loader keeps one copy of each: a second copy composes
@@ -157,10 +160,13 @@ internal static class ProjectFormatter
         AssemblyLoadContext host = AssemblyLoadContext.GetLoadContext(typeof(ProjectFormatter).Assembly)
             ?? throw new InvalidOperationException(message: "The formatting engine's assembly context is unavailable.");
 
-        Assembly[] assemblies = [.. MefHostServices.DefaultAssemblies,
+        Assembly[] assemblies =
+        [
+            .. MefHostServices.DefaultAssemblies,
             typeof(CSharpFormattingOptions).Assembly,
             .. analyzerPaths.Concat(styleFixes).Select(loader.LoadFromPath),
-            .. featurePaths.Where(File.Exists).Select(host.LoadFromAssemblyPath)];
+            .. featurePaths.Where(File.Exists).Select(host.LoadFromAssemblyPath),
+        ];
 
         CompositionParts.CompositionSelection compositionParts = CompositionParts.Select(assemblies.Distinct());
 

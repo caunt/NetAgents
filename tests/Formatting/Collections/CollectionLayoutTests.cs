@@ -22,7 +22,7 @@ public sealed class CollectionLayoutTests
     [InlineData("int[] values = [1];\n\nConsole.WriteLine(values.Length);")]
     [InlineData("int[] values = [1, // The first value.\n    2];\n\nConsole.WriteLine(values.Length);")]
     [InlineData("List<int> values = new() { 1, 2 };\n\nConsole.WriteLine(values.Count);")]
-    [InlineData("string[] lines = [\"First line of the help text that is long enough\",\n    \"Second line of the help text that is long enough\",\n    \"Third line of the help text\"];\n\nConsole.WriteLine(lines.Length);")]
+    [InlineData("string[] lines =\n[\n    \"First line of the help text that is long enough\",\n    \"Second line of the help text that is long enough\",\n    \"Third line of the help text\",\n];\n\nConsole.WriteLine(lines.Length);")]
     public async Task KeepsSettledCollections(string statements)
     {
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), Wrap(statements)));
@@ -41,7 +41,7 @@ public sealed class CollectionLayoutTests
     [InlineData("ExampleType example = new()\n{\n    First = 1,\n    Second = 2,\n};\n\nConsole.WriteLine(example.First);",
         "ExampleType example = new() { First = 1, Second = 2 };\n\nConsole.WriteLine(example.First);")]
     [InlineData("string[] lines =\n[\n    \"First line of the help text that is long enough\",\n    \"Second line of the help text that is long enough\",\n    \"Third line of the help text\",\n];\n\nConsole.WriteLine(lines.Length);",
-        "string[] lines = [\"First line of the help text that is long enough\",\n    \"Second line of the help text that is long enough\",\n    \"Third line of the help text\"];\n\nConsole.WriteLine(lines.Length);")]
+        "string[] lines =\n[\n    \"First line of the help text that is long enough\",\n    \"Second line of the help text that is long enough\",\n    \"Third line of the help text\",\n];\n\nConsole.WriteLine(lines.Length);")]
     public async Task LaysOutCollections(string written, string expected)
     {
         Assert.Equal(Wrap(expected), await CodeFixTestHarness.FixArguments(Wrap(written), fixAll: true));

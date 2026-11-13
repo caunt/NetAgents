@@ -34,7 +34,9 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
     private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+", RegexOptions.CultureInvariant);
 
     private static readonly ImmutableHashSet<string> AbbreviatedWords = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase,
-        items: ["args",
+        items:
+        [
+            "args",
             "auth",
             "cfg",
             "config",
@@ -66,7 +68,8 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
             "temp",
             "tmp",
             "ui",
-            "utils"]);
+            "utils",
+        ]);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

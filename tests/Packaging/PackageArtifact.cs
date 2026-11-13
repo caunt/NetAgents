@@ -99,13 +99,16 @@ internal static class PackageArtifact
     {
         using ZipArchive package = ZipFile.OpenRead(packagePath);
 
-        string[] requiredFiles = ["analyzers/dotnet/cs/NetAgents.Analyzers.dll",
+        string[] requiredFiles =
+        [
+            "analyzers/dotnet/cs/NetAgents.Analyzers.dll",
             "analyzers/dotnet/cs/NetAgents.CodeFixes.dll",
             "buildTransitive/NetAgents.Analyzers.props",
             "buildTransitive/NetAgents.Analyzers.targets",
             "buildTransitive/NetAgents.globalconfig",
             "README.md",
-            "LICENSE"];
+            "LICENSE",
+        ];
 
         foreach (string requiredFile in requiredFiles)
             Assert.NotNull(package.GetEntry(requiredFile));

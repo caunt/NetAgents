@@ -68,8 +68,11 @@ internal static class CompositionParts
             MemberInfo[] members = [.. constructors, .. type.GetProperties(Declared), .. type.GetMethods(Declared)];
             ParameterInfo[] parameters = [.. constructors.SelectMany(static constructor => constructor.GetParameters())];
 
-            Attribute[] declared = [.. members.SelectMany(static member => Attribute.GetCustomAttributes(member, inherit: false)),
-                .. parameters.SelectMany(static parameter => Attribute.GetCustomAttributes(parameter, inherit: false))];
+            Attribute[] declared =
+            [
+                .. members.SelectMany(static member => Attribute.GetCustomAttributes(member, inherit: false)),
+                .. parameters.SelectMany(static parameter => Attribute.GetCustomAttributes(parameter, inherit: false)),
+            ];
 
             // Materializing them is the point: an attribute this runtime cannot build throws instead.
             return declared.All(static attribute => attribute is not null);
