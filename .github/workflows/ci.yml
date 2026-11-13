@@ -27,6 +27,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install .NET
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        env:
+          # The runner image ships newer SDKs, and dotnet picks the newest it can see. Installing into a
+          # directory of its own leaves this SDK the only one on the path.
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
         with:
           dotnet-version: 10.0.x
       - name: Freeze timestamp version
