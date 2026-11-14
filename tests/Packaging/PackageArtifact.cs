@@ -118,9 +118,9 @@ internal static class PackageArtifact
                 .Count(static entry => entry.FullName.StartsWith(value: "analyzers/", StringComparison.Ordinal)
             && entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal)));
 
-        Assert.NotNull(package.GetEntry(entryName: "tools/net10.0/NetAgents.BuildTasks.dll"));
-        Assert.NotNull(package.GetEntry(entryName: "tools/net10.0/NetAgents.Formatter.dll"));
-        Assert.NotNull(package.GetEntry(entryName: "tools/net10.0/Microsoft.CodeAnalysis.Workspaces.dll"));
+        Assert.NotNull(package.GetEntry(entryName: "tools/tasks/NetAgents.BuildTasks.dll"));
+        Assert.NotNull(package.GetEntry(entryName: "tools/tasks/NetAgents.Formatter.dll"));
+        Assert.NotNull(package.GetEntry(entryName: "tools/tasks/Microsoft.CodeAnalysis.Workspaces.dll"));
 
         ZipArchiveEntry manifestEntry = package.GetEntry(entryName: "NetAgents.Analyzers.nuspec")
             ?? throw new InvalidOperationException(message: "The package manifest is missing.");

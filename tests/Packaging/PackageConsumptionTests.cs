@@ -98,7 +98,7 @@ public sealed class PackageConsumptionTests
             string projectContent = $$"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
+                    <TargetFramework>{{ConsumerBuild.Framework}}</TargetFramework>
                     <RootNamespace>CustomerApp</RootNamespace>
                     <ImplicitUsings>enable</ImplicitUsings>
                   </PropertyGroup>
@@ -503,8 +503,8 @@ public sealed class PackageConsumptionTests
 
             Assert.Equal(source, await File.ReadAllTextAsync(sourcePath));
 
-            string multiTargetProject = projectContent.Replace(oldValue: "<TargetFramework>net10.0</TargetFramework>",
-                newValue: "<TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>",
+            string multiTargetProject = projectContent.Replace($"<TargetFramework>{ConsumerBuild.Framework}</TargetFramework>",
+                $"<TargetFrameworks>{ConsumerBuild.Framework};{ConsumerBuild.Framework}-windows</TargetFrameworks>",
                 StringComparison.Ordinal);
 
             string conditionalSource = ValidSource.Replace(oldValue: "return recipientName;",
@@ -519,8 +519,8 @@ public sealed class PackageConsumptionTests
             string multiTargetSource = await File.ReadAllTextAsync(sourcePath);
 
             Assert.Equal(expected: 3, multiTargetSource.Split(separator: "string.Concat(recipientName, string.Empty)", StringSplitOptions.None).Length);
-            Assert.True(File.Exists(Path.Combine(workspace.FullName, path2: "bin/Debug/net10.0/Consumer.dll")));
-            Assert.True(File.Exists(Path.Combine(workspace.FullName, path2: "bin/Debug/net10.0-windows/Consumer.dll")));
+            Assert.True(File.Exists(Path.Combine(workspace.FullName, $"bin/Debug/{ConsumerBuild.Framework}/Consumer.dll")));
+            Assert.True(File.Exists(Path.Combine(workspace.FullName, $"bin/Debug/{ConsumerBuild.Framework}-windows/Consumer.dll")));
 
             // The first target must observe the shared-source rewrite made by the second target.
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, withoutShell: true);
@@ -574,7 +574,7 @@ public sealed class PackageConsumptionTests
             string projectContent = $$"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
+                    <TargetFramework>{{ConsumerBuild.Framework}}</TargetFramework>
                     <ImplicitUsings>enable</ImplicitUsings>
                   </PropertyGroup>
                   <ItemGroup>
@@ -795,9 +795,10 @@ public sealed class PackageConsumptionTests
                 await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: [.. buildArguments, conflictingArgument], expectedDiagnosticIdentifier: "NETAGENTS0014");
 
             // A newer SDK asks for a language version this package's Roslyn cannot parse, and the
-            // compiler, not the formatter, owns whether that version exists.
+            // compiler, not the formatter, owns whether that version exists. No compiler knows this one,
+            // whichever SDK runs the tests.
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
-                arguments: [.. buildArguments, "-p:LangVersion=15.0"],
+                arguments: [.. buildArguments, "-p:LangVersion=99.0"],
                 expectedDiagnosticIdentifier: "CS1617",
                 forbiddenOutput: ["NetAgents automatic formatting failed"]);
 
@@ -831,7 +832,7 @@ public sealed class PackageConsumptionTests
             string projectContent = $$"""
                 <Project Sdk="Microsoft.NET.Sdk.Web">
                   <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
+                    <TargetFramework>{{ConsumerBuild.Framework}}</TargetFramework>
                     <ImplicitUsings>enable</ImplicitUsings>
                   </PropertyGroup>
                   <ItemGroup>

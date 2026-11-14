@@ -49,7 +49,7 @@ public sealed class UnrepairableDiagnosticCacheTests
             string projectContent = $$"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
+                    <TargetFramework>{{ConsumerBuild.Framework}}</TargetFramework>
                     <RootNamespace>Consumer</RootNamespace>
                   </PropertyGroup>
                   <ItemGroup>

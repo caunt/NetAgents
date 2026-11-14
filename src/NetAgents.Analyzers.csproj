@@ -32,8 +32,8 @@
   <Target Name="IncludeNetAgentsBuildTasks" BeforeTargets="_GetPackageFiles">
     <ItemGroup>
       <!-- The engine's output carries the task, the engine, and the Roslyn both fall back to. -->
-      <None Include="BuildTasks/Formatter/bin/$(Configuration)/net10.0/*.dll;BuildTasks/Formatter/bin/$(Configuration)/net10.0/*.deps.json"
-            Pack="true" PackagePath="tools/net10.0" />
+      <None Include="BuildTasks/Formatter/bin/$(Configuration)/$(NetAgentsRepositoryFramework)/*.dll;BuildTasks/Formatter/bin/$(Configuration)/$(NetAgentsRepositoryFramework)/*.deps.json"
+            Pack="true" PackagePath="tools/tasks" />
     </ItemGroup>
   </Target>
 </Project>

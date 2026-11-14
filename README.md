@@ -12,7 +12,7 @@ Keep formatting, naming, and code quality consistent across your .NET projects. 
 dotnet add package NetAgents.Analyzers
 ```
 
-Requires the **.NET 10 SDK or newer**. Your projects can target older .NET versions.
+Requires the **latest major .NET SDK**: every release is built with the newest SDK, and its build task runs on that SDK's runtime. Your projects can target older .NET versions.
 
 Set `PrivateAssets="all"` on the package reference to keep the dependency private to your project. Shared rules apply automatically.
 

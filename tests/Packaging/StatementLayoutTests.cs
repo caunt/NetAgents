@@ -114,7 +114,7 @@ public sealed class StatementLayoutTests
             string projectContent = $$"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
+                    <TargetFramework>{{ConsumerBuild.Framework}}</TargetFramework>
                     <ImplicitUsings>enable</ImplicitUsings>
                   </PropertyGroup>
                   <ItemGroup>

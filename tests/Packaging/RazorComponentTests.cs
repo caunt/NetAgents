@@ -104,7 +104,7 @@ public sealed class RazorComponentTests
             string projectContent = $$"""
                 <Project Sdk="Microsoft.NET.Sdk.Razor">
                   <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
+                    <TargetFramework>{{ConsumerBuild.Framework}}</TargetFramework>
                     <ImplicitUsings>enable</ImplicitUsings>
                   </PropertyGroup>
                   <ItemGroup>

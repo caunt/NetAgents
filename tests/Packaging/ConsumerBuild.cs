@@ -8,6 +8,10 @@ namespace NetAgents.Analyzers.Tests.Packaging;
 /// </summary>
 internal static class ConsumerBuild
 {
+    // Consumer projects target the framework of the SDK running these tests, whose packs are the only ones the SDK
+    // carries; the tests themselves are built for that framework, so their runtime names it.
+    internal static string Framework { get; } = $"net{Environment.Version.Major}.0";
+
     internal static async Task<string> PackAnalyzer(string workspacePath)
     {
         DirectoryInfo? repositoryDirectory = new(AppContext.BaseDirectory);

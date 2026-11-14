@@ -1,7 +1,9 @@
 <Project>
   <Import Project="$(MSBuildThisFileDirectory)src/Packaging/NetAgents.Analyzers.props" />
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- Every project here targets the framework of the SDK building it, so a new .NET needs nothing but a newer SDK. -->
+    <NetAgentsRepositoryFramework>net$([System.Environment]::Version.Major).0</NetAgentsRepositoryFramework>
+    <TargetFramework>$(NetAgentsRepositoryFramework)</TargetFramework>
     <LangVersion>14.0</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Deterministic>true</Deterministic>

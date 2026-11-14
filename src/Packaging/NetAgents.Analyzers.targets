@@ -1,5 +1,5 @@
 <Project>
-  <UsingTask TaskName="NetAgents.BuildTasks.FormatProject" AssemblyFile="$(MSBuildThisFileDirectory)../tools/net10.0/NetAgents.BuildTasks.dll" />
+  <UsingTask TaskName="NetAgents.BuildTasks.FormatProject" AssemblyFile="$(MSBuildThisFileDirectory)../tools/tasks/NetAgents.BuildTasks.dll" />
   <Target Name="FormatNetAgentsConsumerSource" BeforeTargets="CoreCompile"
           DependsOnTargets="ValidateNetAgentsConsumerPolicy;_FormatNetAgentsSource"
           Condition="'$(DesignTimeBuild)' != 'true'" />
