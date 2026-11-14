@@ -368,8 +368,7 @@ internal static class CodeFixRunner
 
         // ponytail: handles case-only collisions; extend the comparison if other naming transformations need repair.
         bool collision = model.LookupSymbols(diagnosticSpan.Start)
-            .Any(symbol =>
-            symbol is ILocalSymbol or IParameterSymbol && !SymbolEqualityComparer.Default.Equals(symbol, local)
+            .Any(symbol => symbol is ILocalSymbol or IParameterSymbol && !SymbolEqualityComparer.Default.Equals(symbol, local)
                 && string.Equals(symbol.Name, local.Name, StringComparison.OrdinalIgnoreCase));
 
         if (!collision)

@@ -27,6 +27,7 @@
     <Compile Include="../Formatting/ControlFlowBraces.cs" Link="Formatting/ControlFlowBraces.cs" />
     <Compile Include="../Formatting/LambdaParameterLayout.cs" Link="Formatting/LambdaParameterLayout.cs" />
     <Compile Include="../Formatting/Clauses/WhenClausePlacement.cs" Link="Formatting/Clauses/WhenClausePlacement.cs" />
+    <Compile Include="../Formatting/Clauses/LambdaBodyPlacement.cs" Link="Formatting/Clauses/LambdaBodyPlacement.cs" />
     <Compile Include="../Formatting/Members/WrappedMember.cs" Link="Formatting/Members/WrappedMember.cs" />
     <Compile Include="../Formatting/Statements/OneLineStatement.cs" Link="Formatting/Statements/OneLineStatement.cs" />
     <Compile Include="../Formatting/Chains/ChainLayout.cs" Link="Formatting/Chains/ChainLayout.cs" />

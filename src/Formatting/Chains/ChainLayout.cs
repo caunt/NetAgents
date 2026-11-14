@@ -102,9 +102,19 @@ internal static class ChainLayout
 
     public static bool IsSettled(List<ChainLink> links, bool split, SourceText text)
     {
+        string deeper = GetLinkIndentation(links, text);
+
         for (int index = 0; index < links.Count; index++)
         {
-            if (StartsLine(links[index].Dot, text) != StartsOwnLine(links, index, split))
+            bool starts = StartsOwnLine(links, index, split);
+            SyntaxToken dot = links[index].Dot;
+
+            if (StartsLine(dot, text) != starts)
+                return false;
+
+            // A link on a line of its own sits exactly one level deeper than the line its chain starts on, wherever
+            // that line has moved to; nothing else decides how deep a line that starts with a dot goes.
+            if (starts && text.ToString(TextSpan.FromBounds(text.Lines.GetLineFromPosition(dot.SpanStart).Start, dot.SpanStart)) != deeper)
                 return false;
         }
 
@@ -157,11 +167,7 @@ internal static class ChainLayout
     {
         SyntaxTriviaList lineBreak = SyntaxFactory.TriviaList(GetLineBreak(root));
         Dictionary<SyntaxToken, SyntaxToken> replacements = [];
-
-        // A link moved to a line of its own goes one level deeper than the line the chain starts on.
-        TextLine start = text.Lines.GetLineFromPosition(links[index: 0].Access.SpanStart);
-        string indentation = text.ToString(TextSpan.FromBounds(start.Start, start.Start + CountIndentation(text, start)));
-        string deeper = indentation + (indentation.IndexOf(value: '\t') >= 0 ? "\t" : "    ");
+        string deeper = GetLinkIndentation(links, text);
 
         for (int index = 0; index < links.Count; index++)
         {
@@ -254,6 +260,15 @@ internal static class ChainLayout
         }
 
         return SyntaxFactory.LineFeed;
+    }
+
+    // A link on a line of its own goes one level deeper than the line the chain starts on.
+    private static string GetLinkIndentation(List<ChainLink> links, SourceText text)
+    {
+        TextLine start = text.Lines.GetLineFromPosition(links[index: 0].Access.SpanStart);
+        string indentation = text.ToString(TextSpan.FromBounds(start.Start, start.Start + CountIndentation(text, start)));
+
+        return indentation + (indentation.IndexOf(value: '\t') >= 0 ? "\t" : "    ");
     }
 
     private static bool IsCondition(SyntaxNode node)

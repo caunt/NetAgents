@@ -54,3 +54,4 @@ NETAGENTS0049 | Readability | Error | A try that only adds a finally merged with
 NETAGENTS0050 | Readability | Error | Strings joined with + on one line written as one string
 NETAGENTS0051 | Readability | Error | Comparisons with a string literal written as a constant pattern
 NETAGENTS0052 | Readability | Error | Lambdas and method groups assigned directly instead of wrapped in a delegate constructor
+NETAGENTS0053 | Formatting | Error | A lambda's expression body on the line of its arrow

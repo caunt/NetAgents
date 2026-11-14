@@ -29,7 +29,8 @@ public sealed class ChainLayoutConvergenceTests
     /// <summary>
     /// Verifies a chain of more than four links stays split although its statement would fit on one line, a chain
     /// that fits is joined, and a chain inside an argument list that fits on one line is joined with the list, even
-    /// when the line holding the list passes 128 characters.
+    /// when the line holding the list passes 128 characters. A first link carrying a lambda's block goes below its
+    /// receiver, and NETAGENTS0020 moves the block under it.
     /// </summary>
     /// <param name="written">The statements as written.</param>
     /// <param name="expected">The statements after the run.</param>
@@ -44,6 +45,8 @@ public sealed class ChainLayoutConvergenceTests
         "Console.WriteLine(rows.Values.Where(static cells => cells.Length > 1).Select(static cells => cells.Length * 2).Sum() + values.Length);\n\nreturn 0;")]
     [InlineData("int depth = rows.Comparer.GetType().Assembly.FullName!.Length;\n\nreturn depth;",
         "int depth = rows.Comparer\n    .GetType()\n    .Assembly\n    .FullName!\n    .Length;\n\nreturn depth;")]
+    [InlineData("return values.Select(value =>\n{\n    int doubled = value * 2;\n\n    return doubled;\n})\n    .Where(static value => value > 0)\n    .Sum();",
+        "return values\n    .Select(value =>\n    {\n        int doubled = value * 2;\n\n        return doubled;\n    })\n    .Where(static value => value > 0)\n    .Sum();")]
     public async Task SettlesWithTheOtherLayoutRules(string written, string expected)
     {
         DiagnosticAnalyzer[] analyzers =

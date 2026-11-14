@@ -128,8 +128,7 @@ public sealed class DirectoryFileCountAnalyzerTests
     public async Task RejectsSuppression()
     {
         SyntaxTree[] files = [.. Enumerable.Range(start: 0, count: 17)
-            .Select(static index =>
-            CSharpSyntaxTree.ParseText(text: "#pragma warning disable NETAGENTS0018\n",
+            .Select(static index => CSharpSyntaxTree.ParseText(text: "#pragma warning disable NETAGENTS0018\n",
                 path: "Features/Source" + index.ToString(format: "D2", CultureInfo.InvariantCulture) + ".cs"))];
 
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new DirectoryFileCountAnalyzer(), files));

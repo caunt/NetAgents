@@ -237,8 +237,7 @@ internal static class ExplicitLiteralArgumentName
     private static bool HasComments(BaseArgumentListSyntax list, TextSpan range)
     {
         return list.DescendantTrivia()
-            .Any(trivia =>
-            range.Contains(trivia.SpanStart)
+            .Any(trivia => range.Contains(trivia.SpanStart)
                 && trivia.Kind() is SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia);
     }
 
