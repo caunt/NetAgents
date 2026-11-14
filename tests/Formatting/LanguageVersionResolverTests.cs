@@ -68,8 +68,12 @@ public sealed class LanguageVersionResolverTests
     [Fact]
     public void SubstitutesPreviewForNewerVersion()
     {
-        // The .NET 11 SDK fills LangVersion with 15.0, which this package's Roslyn cannot parse.
-        foreach (string configured in (string[])["15.0", "15", "16.0", "99.9"])
+        // A newer SDK fills LangVersion with the version after the newest one this package's Roslyn can parse,
+        // whichever Roslyn that is.
+        Version newest = Version.Parse(LanguageVersion.LatestMajor.MapSpecifiedToEffectiveVersion().ToDisplayString());
+        int next = newest.Major + 1;
+
+        foreach (string configured in (string[])[$"{next}.0", $"{next}", $"{next + 1}.0", "99.9"])
         {
             LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(configured, ProjectPath);
 

@@ -77,9 +77,12 @@
     <NetAgentsRepositoryTaskSource>$(MSBuildThisFileDirectory)src/BuildTasks/Formatter/bin/$(Configuration)/$(NetAgentsRepositoryFramework)/NetAgents.Formatter.dll</NetAgentsRepositoryTaskSource>
     <NetAgentsFormatterStamp>$([System.IO.File]::GetLastWriteTime('$(NetAgentsRepositoryTaskSource)').Ticks)</NetAgentsFormatterStamp>
     <NetAgentsFormatterDirectory>$(MSBuildThisFileDirectory)artifacts/formatter/$(Configuration)/$(NetAgentsFormatterStamp)/</NetAgentsFormatterDirectory>
+    <!-- Decided once, when the project is read: a formatter built later in the same build has no stamp yet, and
+         the copy cached under the stamp of a missing file would be whatever an earlier bootstrap left there. -->
+    <NetAgentsRepositoryFormatterReady Condition="Exists('$(NetAgentsRepositoryTaskSource)')">true</NetAgentsRepositoryFormatterReady>
   </PropertyGroup>
   <Target Name="PrepareNetAgentsRepositoryFormatter" BeforeTargets="_FormatNetAgentsSource"
-          Condition="'$(DesignTimeBuild)' != 'true' and Exists('$(NetAgentsRepositoryTaskSource)')">
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(NetAgentsRepositoryFormatterReady)' == 'true'">
     <ItemGroup>
       <NetAgentsFormatterFiles Include="$(MSBuildThisFileDirectory)src/BuildTasks/Formatter/bin/$(Configuration)/$(NetAgentsRepositoryFramework)/*.dll;$(MSBuildThisFileDirectory)src/BuildTasks/Formatter/bin/$(Configuration)/$(NetAgentsRepositoryFramework)/*.deps.json" />
       <NetAgentsFormattingAnalyzers Include="$(NetAgentsCodeFixAssemblyPath)" Condition="Exists('$(NetAgentsCodeFixAssemblyPath)')" />
@@ -97,5 +100,5 @@
   <!-- Only repository builds bootstrap without formatting until the local formatter exists. -->
   <Target Name="FormatNetAgentsConsumerSource" BeforeTargets="CoreCompile"
           DependsOnTargets="ValidateNetAgentsConsumerPolicy;_FormatNetAgentsSource"
-          Condition="'$(DesignTimeBuild)' != 'true' and Exists('$(NetAgentsRepositoryTaskSource)')" />
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(NetAgentsRepositoryFormatterReady)' == 'true'" />
 </Project>
