@@ -87,9 +87,10 @@ public sealed class ExhaustiveSwitchSuppressorTests
 
         if (severity is not null)
         {
-            project = project.AddAnalyzerConfigDocument(name: ".globalconfig",
-                SourceText.From($"is_global = true\ndotnet_diagnostic.{diagnosticIdentifier}.severity = {severity}\n"),
-                filePath: "/.globalconfig")
+            project = project
+                .AddAnalyzerConfigDocument(name: ".globalconfig",
+                    SourceText.From($"is_global = true\ndotnet_diagnostic.{diagnosticIdentifier}.severity = {severity}\n"),
+                    filePath: "/.globalconfig")
                 .Project;
         }
 

@@ -90,9 +90,10 @@ public sealed class EditableDocumentsTests
 
         using AdhocWorkspace workspace = new();
 
-        Project project = CreateProject(workspace, name, source).AddAnalyzerConfigDocument(name: ".editorconfig",
-            SourceText.From($"root = true\n\n[*.cs]\ngenerated_code = {generated}\n"),
-            filePath: "/workspace/.editorconfig")
+        Project project = CreateProject(workspace, name, source)
+            .AddAnalyzerConfigDocument(name: ".editorconfig",
+                SourceText.From($"root = true\n\n[*.cs]\ngenerated_code = {generated}\n"),
+                filePath: "/workspace/.editorconfig")
             .Project;
 
         CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [], providers: [], static fault => Assert.Fail(fault), CancellationToken.None);

@@ -177,9 +177,10 @@ public sealed class PackageConsumptionTests
 
             Assert.Equal(formatted, await File.ReadAllTextAsync(sourcePath));
 
-            string conditionalAssignments = ValidSource.Replace(oldValue: "<param name=\"recipientName\">The name shown in the greeting.</param>",
-                newValue: "<param name=\"builder\">The optional builder.</param>\n    /// <param name=\"length\">The required length.</param>",
-                StringComparison.Ordinal)
+            string conditionalAssignments = ValidSource
+                .Replace(oldValue: "<param name=\"recipientName\">The name shown in the greeting.</param>",
+                    newValue: "<param name=\"builder\">The optional builder.</param>\n    /// <param name=\"length\">The required length.</param>",
+                    StringComparison.Ordinal)
                 .Replace(oldValue: "    /// <returns>The supplied name.</returns>\n", string.Empty, StringComparison.Ordinal)
                 .Replace(oldValue: "string CreateGreeting(string recipientName)",
                     newValue: "void UpdateLength(System.Text.StringBuilder? builder, int length)",
@@ -238,9 +239,10 @@ public sealed class PackageConsumptionTests
 
                 """;
 
-            string tupleSource = ValidSource.Replace(oldValue: "    /// <summary>Returns the supplied recipient name.</summary>",
-                tupleLocals + "    /// <summary>Returns the supplied recipient name.</summary>",
-                StringComparison.Ordinal)
+            string tupleSource = ValidSource
+                .Replace(oldValue: "    /// <summary>Returns the supplied recipient name.</summary>",
+                    tupleLocals + "    /// <summary>Returns the supplied recipient name.</summary>",
+                    StringComparison.Ordinal)
                 .Replace(oldValue: "    /// <returns>The supplied name.</returns>",
                     newValue: "    /// <returns>The supplied name.</returns>\n    /// <exception cref=\"ArgumentNullException\">Thrown when no recipient name is given.</exception>",
                     StringComparison.Ordinal)
@@ -324,9 +326,10 @@ public sealed class PackageConsumptionTests
             Assert.Equal(expectedUnresolved, await File.ReadAllTextAsync(sourcePath));
 
             // An argument the compiler rejects stays a compiler error too: no generated overload (#31).
-            string mismatchSource = ValidSource.Replace(oldValue: "return recipientName;",
-                newValue: "System.ReadOnlyMemory<byte>? document = null;\n\n        Validate(document);\n\n        return recipientName;",
-                StringComparison.Ordinal)
+            string mismatchSource = ValidSource
+                .Replace(oldValue: "return recipientName;",
+                    newValue: "System.ReadOnlyMemory<byte>? document = null;\n\n        Validate(document);\n\n        return recipientName;",
+                    StringComparison.Ordinal)
                 .Replace(oldValue: "    }\n}\n",
                     newValue: "    }\n\n    private static void Validate(System.Memory<byte>? data)\n    {\n        System.Console.WriteLine(data.HasValue);\n    }\n}\n",
                     StringComparison.Ordinal);
@@ -644,9 +647,10 @@ public sealed class PackageConsumptionTests
             await File.WriteAllTextAsync(sourcePath, "#pragma warning disable NETAGENTS0001\n" + boxingSource);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedDiagnosticIdentifier: "NETAGENTS0001");
 
-            string tupleResultSource = ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
-                newValue: "System.Threading.Tasks.Task<(string Greeting, bool Created)> CreateGreeting(string recipientName)",
-                StringComparison.Ordinal)
+            string tupleResultSource = ValidSource
+                .Replace(oldValue: "string CreateGreeting(string recipientName)",
+                    newValue: "System.Threading.Tasks.Task<(string Greeting, bool Created)> CreateGreeting(string recipientName)",
+                    StringComparison.Ordinal)
                 .Replace(oldValue: "return recipientName;",
                     newValue: "return System.Threading.Tasks.Task.FromResult((recipientName, true));",
                     StringComparison.Ordinal);
@@ -989,11 +993,12 @@ public sealed class PackageConsumptionTests
 
         await File.WriteAllTextAsync(brokenPath, malformed).ConfigureAwait(continueOnCapturedContext: false);
 
-        await ConsumerBuild.RunDevelopmentKit(workspacePath,
-            arguments: ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "normal"],
-            expectedDiagnosticIdentifier: "CS1513",
-            expectedOutput: ["checking source syntax", "source contains syntax errors"],
-            forbiddenOutput: ["loading analyzers and code-fix providers", "NetAgents rewrote"])
+        await ConsumerBuild
+            .RunDevelopmentKit(workspacePath,
+                arguments: ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "normal"],
+                expectedDiagnosticIdentifier: "CS1513",
+                expectedOutput: ["checking source syntax", "source contains syntax errors"],
+                forbiddenOutput: ["loading analyzers and code-fix providers", "NetAgents rewrote"])
             .ConfigureAwait(continueOnCapturedContext: false);
 
         Assert.Equal(original, await File.ReadAllTextAsync(sourcePath).ConfigureAwait(continueOnCapturedContext: false));

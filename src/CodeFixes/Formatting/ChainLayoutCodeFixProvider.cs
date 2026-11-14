@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Composition;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 
 using NetAgents.Analyzers.Formatting.Chains;
@@ -64,9 +66,29 @@ public sealed class ChainLayoutCodeFixProvider : CodeFixProvider
                 continue;
 
             context.RegisterCodeFix(CodeAction.Create(title: "Lay out the chain",
-                    cancellationToken => Task.FromResult(context.Document.WithSyntaxRoot(ChainLayout.Rewrite(root, links, required, text))),
+                    cancellationToken => LayOut(context.Document, root, top, new ChainRewrite(links, required, text), cancellationToken),
                     nameof(ChainLayoutCodeFixProvider)),
                 diagnostic);
         }
+    }
+
+    // A link that moves takes along whatever its call spreads over the lines below it, such as an initializer's braces,
+    // which the formatter indents under the line the call is now on.
+    private static async Task<Document> LayOut(Document document, SyntaxNode root, ExpressionSyntax top, ChainRewrite rewrite, CancellationToken cancellationToken)
+    {
+        SyntaxNode rewritten = ChainLayout.Rewrite(root, rewrite.Links, rewrite.Split, rewrite.Text);
+        SyntaxNode? statement = top.FirstAncestorOrSelf<StatementSyntax>();
+        SyntaxNode scope = statement ?? top.FirstAncestorOrSelf<MemberDeclarationSyntax>() ?? (SyntaxNode)top;
+        TextSpan span = TextSpan.FromBounds(scope.SpanStart, scope.Span.End + rewritten.FullSpan.Length - root.FullSpan.Length);
+
+        return await Formatter.FormatAsync(document.WithSyntaxRoot(rewritten), span, cancellationToken: cancellationToken)
+            .ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    private sealed class ChainRewrite(List<ChainLink> links, bool split, SourceText text)
+    {
+        public List<ChainLink> Links { get; } = links;
+        public bool Split { get; } = split;
+        public SourceText Text { get; } = text;
     }
 }

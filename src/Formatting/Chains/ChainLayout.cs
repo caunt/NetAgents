@@ -20,7 +20,9 @@ namespace NetAgents.Analyzers.Formatting.Chains;
 /// alike; namespace and type qualifiers belong to the receiver, and an element access belongs to the link before it.
 /// A chain of up to four links stays on one line when that line fits within 128 characters. A longer chain, or one
 /// that does not fit, keeps its first link on the receiver's line and puts every later link on a line of its own,
-/// one level deeper than the line it starts on:
+/// one level deeper than the line it starts on. A first link whose call spreads over lines, as with a wrapped
+/// argument list, a lambda with statements, or an object initializer, goes on a line of its own as well, so what it
+/// spreads lines up with the links after it:
 /// </para>
 /// <code>
 /// string[][] rows = [.. rowsByVersion.Values
@@ -324,6 +326,13 @@ internal static class ChainLayout
         return true;
     }
 
+    // The first link is a call whose arguments must spread over lines: a wrapped list, a lambda with statements, or an
+    // initializer that always expands. Whether they must is settled by their contents, not by how they are written.
+    private static bool SpreadsOverLines(ChainLink link)
+    {
+        return link.Access.Parent is InvocationExpressionSyntax call && call.Expression == link.Access && ArgumentLayout.RequiresMultipleLines(call.ArgumentList);
+    }
+
     private static bool StartsLine(SyntaxToken dot, SourceText text)
     {
         return text.Lines.GetLineFromPosition(dot.GetPreviousToken().Span.End).LineNumber != text.Lines
@@ -331,10 +340,14 @@ internal static class ChainLayout
             .LineNumber;
     }
 
-    // When a chain splits, every link after the first starts a line of its own, while the first link and the
-    // namespace and type qualifiers before it stay on the receiver's line.
+    // When a chain splits, every link after the first starts a line of its own, while the namespace and type
+    // qualifiers stay on the receiver's line. The first link stays there too, unless its call spreads over lines: what
+    // it spreads is indented under the line the call is on, so beside the receiver it would sit shallower than the
+    // links that follow it.
     private static bool StartsOwnLine(List<ChainLink> links, int index, bool split)
     {
-        return split && index > links.FindIndex(static link => !link.IsQualifier);
+        int first = links.FindIndex(static link => !link.IsQualifier);
+
+        return split && (index > first || (index == first && SpreadsOverLines(links[index])));
     }
 }

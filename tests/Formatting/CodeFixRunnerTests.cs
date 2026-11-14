@@ -603,9 +603,10 @@ public sealed class CodeFixRunnerTests
 
         return !internalsShared
             ? project
-            : project.AddDocument(name: "Visibility.cs",
-                SourceText.From(text: "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"Friend\")]\n"),
-                filePath: "Visibility.cs")
+            : project
+                .AddDocument(name: "Visibility.cs",
+                    SourceText.From(text: "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"Friend\")]\n"),
+                    filePath: "Visibility.cs")
                 .Project;
     }
 

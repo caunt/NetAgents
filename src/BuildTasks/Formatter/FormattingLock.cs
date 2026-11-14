@@ -11,7 +11,8 @@ internal sealed class FormattingLock(List<FileStream> streams) : IAsyncDisposabl
 
         try
         {
-            string[] directories = [.. sourcePaths.Select(static path => Normalize(Path.GetDirectoryName(Path.GetFullPath(path)) ?? throw new InvalidOperationException(message: "A source directory is missing.")))
+            string[] directories = [.. sourcePaths
+                .Select(static path => Normalize(Path.GetDirectoryName(Path.GetFullPath(path)) ?? throw new InvalidOperationException(message: "A source directory is missing.")))
                 .Distinct(StringComparer.Ordinal)
                 .OrderBy(static path => path, StringComparer.Ordinal)];
 

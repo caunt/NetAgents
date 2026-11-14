@@ -11,7 +11,7 @@ namespace NetAgents.Analyzers.Tests.Formatting.Chains;
 public sealed class ChainLayoutTests
 {
     private const string Method = "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing System.Threading.Tasks;\n\n"
-        + "public sealed class Node\n{\n    public Node Next = null!;\n\n    public int Depth;\n}\n\n"
+        + "public sealed class Node\n{\n    public Node Next = null!;\n\n    public int Depth;\n\n    public Node[] Pack(Node other)\n    {\n        return [other];\n    }\n}\n\n"
         + "public sealed class ExampleType\n{\n    public async Task<int> Run(int[] values, Dictionary<string, int[]> rows, Node node)\n    {\nBODY\n    }\n}\n";
 
     /// <summary>
@@ -24,6 +24,7 @@ public sealed class ChainLayoutTests
     [Theory]
     [InlineData("return values.Where(static value => value > 0).Select(static value => value * 2).Sum();")]
     [InlineData("return node.Next.Next.Next.Depth;")]
+    [InlineData("return node\n    .Pack(new Node\n    {\n        Depth = 1\n    })\n    .Select(static item => item.Depth)\n    .Sum();")]
     [InlineData("int total = values\n    .Sum();\n\nreturn total;")]
     [InlineData("int count = values\n    .Length;\n\nreturn count;")]
     [InlineData("return System.Linq.Enumerable.Range(start: 0, count: 3).Select(static value => value * 2).Sum();")]
@@ -41,7 +42,8 @@ public sealed class ChainLayoutTests
     /// <summary>
     /// Verifies the fix joins a short chain and splits one that does not fit or holds more than four links before
     /// every link after the first, whether it is a field, a property, or a call, while the first link and namespace
-    /// and type qualifiers stay with the receiver.
+    /// and type qualifiers stay with the receiver, and a first link whose call spreads over lines, with an initializer
+    /// or a lambda's block, goes below the receiver with what it spreads indented under it.
     /// </summary>
     /// <param name="written">The statements as written.</param>
     /// <param name="expected">The statements after the fix.</param>
@@ -57,6 +59,10 @@ public sealed class ChainLayoutTests
     [InlineData("int count = rows\n    .Values\n    .Where(static cells => cells.Length > 0)\n    .Select(static cells => cells.Length)\n    .Distinct()\n    .Count();\n\nreturn count;",
         "int count = rows.Values\n    .Where(static cells => cells.Length > 0)\n    .Select(static cells => cells.Length)\n    .Distinct()\n    .Count();\n\nreturn count;")]
     [InlineData("return node.Next.Next.Next.Next.Depth;", "return node.Next\n    .Next\n    .Next\n    .Next\n    .Depth;")]
+    [InlineData("return node.Pack(new Node\n{\n    Depth = 1\n})\n    .Select(static item => item.Depth)\n    .Sum();",
+        "return node\n    .Pack(new Node\n    {\n        Depth = 1\n    })\n    .Select(static item => item.Depth)\n    .Sum();")]
+    [InlineData("return values.Select(value =>\n{\n    int doubled = value * 2;\n\n    return doubled;\n})\n    .Where(static value => value > 0)\n    .Sum();",
+        "return values\n    .Select(value =>\n    {\n        int doubled = value * 2;\n\n        return doubled;\n    })\n    .Where(static value => value > 0)\n    .Sum();")]
     [InlineData("int length = Console\n    .Out\n    .Encoding\n    .EncodingName\n    .Length;\n\nreturn length;",
         "int length = Console.Out.Encoding.EncodingName.Length;\n\nreturn length;")]
     [InlineData("int length = System.Console.Out.Encoding.EncodingName.Trim().Length;\n\nreturn length;",

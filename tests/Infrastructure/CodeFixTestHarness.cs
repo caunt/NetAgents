@@ -237,7 +237,8 @@ internal static class CodeFixTestHarness
 
         List<CodeAction> actions = [];
 
-        await provider.RegisterCodeFixesAsync(new CodeFixContext(document, diagnostics[index: 0], (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
+        await provider
+            .RegisterCodeFixesAsync(new CodeFixContext(document, diagnostics[index: 0], (action, associatedDiagnostics) => actions.Add(action), CancellationToken.None))
             .ConfigureAwait(continueOnCapturedContext: false);
 
         CodeAction action = Assert.Single(actions);
