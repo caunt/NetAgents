@@ -62,8 +62,7 @@ public sealed class OneLineStatementCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Write the statement on one line",
                     cancellationToken => Join(context.Document, root, statement, cancellationToken),
-                    nameof(OneLineStatementCodeFixProvider)),
-                diagnostic);
+                    nameof(OneLineStatementCodeFixProvider)), diagnostic);
         }
     }
 

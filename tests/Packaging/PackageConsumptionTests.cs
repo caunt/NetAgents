@@ -127,9 +127,7 @@ public sealed class PackageConsumptionTests
                 StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, source);
-
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
-                arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
 
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
 
@@ -145,10 +143,7 @@ public sealed class PackageConsumptionTests
 
             // Each rule's fix reached the authored source: names, member order, and spacing.
             Assert.Contains(expectedSubstring: "CreateGreeting(string recipientName)", formatted, StringComparison.Ordinal);
-
-            Assert.True(formatted.IndexOf(value: "AlphaAction", StringComparison.Ordinal) < formatted.IndexOf(value: "ZebraAction",
-                StringComparison.Ordinal));
-
+            Assert.True(formatted.IndexOf(value: "AlphaAction", StringComparison.Ordinal) < formatted.IndexOf(value: "ZebraAction", StringComparison.Ordinal));
             Assert.Contains(expectedSubstring: "}\n\n    /// <summary>Returns", formatted, StringComparison.Ordinal);
 
             Assert.Contains(expectedSubstring: "string.Concat(recipientName, string.Empty)",
@@ -169,8 +164,7 @@ public sealed class PackageConsumptionTests
             // Former path overrides must not redirect the task, policy, or Roslyn host.
             string ignoredHost = Directory.CreateDirectory(Path.Combine(workspace.FullName, path2: "ignored-host")).FullName;
 
-            await File.WriteAllTextAsync(Path.Combine(ignoredHost, path2: "Microsoft.CodeAnalysis.dll"),
-                contents: "Not an assembly.");
+            await File.WriteAllTextAsync(Path.Combine(ignoredHost, path2: "Microsoft.CodeAnalysis.dll"), contents: "Not an assembly.");
 
             string[] pathOverrideArguments =
             [
@@ -508,8 +502,9 @@ public sealed class PackageConsumptionTests
 
             string currentSource = await File.ReadAllTextAsync(sourcePath);
 
-            await File.WriteAllTextAsync(sourcePath,
-                currentSource.Replace(oldValue: "return greeting;", newValue: "return  greeting;", StringComparison.Ordinal));
+            await File.WriteAllTextAsync(sourcePath, currentSource.Replace(oldValue: "return greeting;",
+                    newValue: "return  greeting;",
+                    StringComparison.Ordinal));
 
             File.SetLastWriteTimeUtc(sourcePath, formattedTime);
 
@@ -567,21 +562,16 @@ public sealed class PackageConsumptionTests
 
             await File.WriteAllTextAsync(projectPath, multiTargetProject);
             await File.WriteAllTextAsync(sourcePath, conditionalSource);
-
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
-                arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
-
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, withoutShell: true);
 
             string multiTargetSource = await File.ReadAllTextAsync(sourcePath);
 
-            Assert.Equal(expected: 3,
-                multiTargetSource.Split(separator: "string.Concat(recipientName, string.Empty)", StringSplitOptions.None).Length);
+            Assert.Equal(expected: 3, multiTargetSource.Split(separator: "string.Concat(recipientName, string.Empty)", StringSplitOptions.None)
+                .Length);
 
             Assert.True(File.Exists(Path.Combine(workspace.FullName, $"bin/Debug/{ConsumerBuild.Framework}/Consumer.dll")));
-
-            Assert.True(File.Exists(Path.Combine(workspace.FullName,
-                $"bin/Debug/{ConsumerBuild.Framework}-windows/Consumer.dll")));
+            Assert.True(File.Exists(Path.Combine(workspace.FullName, $"bin/Debug/{ConsumerBuild.Framework}-windows/Consumer.dll")));
 
             // The first target must observe the shared-source rewrite made by the second target.
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, withoutShell: true);
@@ -592,12 +582,10 @@ public sealed class PackageConsumptionTests
                 forbiddenOutput: ["analyzing project"],
                 withoutShell: true);
 
-            Assert.Equal(expected: 2,
-                Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories)
-                    .Length);
+            Assert.Equal(expected: 2, Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories)
+                .Length);
 
-            await File.WriteAllTextAsync(sourcePath,
-                ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
+            await File.WriteAllTextAsync(sourcePath, ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
                     newValue: "System.IComparable CreateGreeting(int recipientName)",
                     StringComparison.Ordinal));
 
@@ -663,9 +651,7 @@ public sealed class PackageConsumptionTests
                 """;
 
             await File.WriteAllTextAsync(Path.Combine(paths: [workspace.FullName, "NuGet.Config"]), sourceConfiguration);
-
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
-                arguments: ["restore", projectPath, "--packages", Path.Combine(paths: [workspace.FullName, "packages"])]);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(paths: [workspace.FullName, "packages"])]);
 
             // Formatting always runs, so these cases cover the violations no code fix can repair.
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
@@ -675,8 +661,7 @@ public sealed class PackageConsumptionTests
 
             // Repairable violations are covered by the automatic formatting test; this one keeps the
             // cases that survive every available fix, so a clean build proves nothing was left unenforced.
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
-                arguments: ["format", projectPath, "--no-restore", "--verify-no-changes"]);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["format", projectPath, "--no-restore", "--verify-no-changes"]);
 
             string lookupSource = ValidSource.Replace(oldValue: "return recipientName;",
                 "System.Collections.Generic.Dictionary<string, string> values = [];\n\n"
@@ -764,8 +749,7 @@ public sealed class PackageConsumptionTests
                 expectedDiagnosticIdentifier: "NETAGENTS0025");
 
             // Without any summary, the compiler's own CS1591 fails the build instead.
-            await File.WriteAllTextAsync(sourcePath,
-                ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n",
+            await File.WriteAllTextAsync(sourcePath, ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n",
                     string.Empty,
                     StringComparison.Ordinal));
 
@@ -874,8 +858,7 @@ public sealed class PackageConsumptionTests
 
             foreach (string conflictingSetting in conflictingProjectSettings)
             {
-                await File.WriteAllTextAsync(projectPath,
-                    projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
+                await File.WriteAllTextAsync(projectPath, projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
                         $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}",
                         StringComparison.Ordinal));
 
@@ -966,13 +949,10 @@ public sealed class PackageConsumptionTests
 
             await File.WriteAllTextAsync(projectPath, projectContent);
             await File.WriteAllTextAsync(Path.Combine(workspace.FullName, path2: "NuGet.Config"), sourceConfiguration);
-
-            await File.WriteAllTextAsync(sourcePath,
-                contents: "var builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\napp.Run();\n");
+            await File.WriteAllTextAsync(sourcePath, contents: "var builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\napp.Run();\n");
 
             // A packages folder of its own keeps the restore from reusing a cached copy of the analyzer package.
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
-                arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
 
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                 arguments: ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"],

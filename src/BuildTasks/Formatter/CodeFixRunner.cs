@@ -538,10 +538,7 @@ internal static class CodeFixRunner
                 && options.TryGetValue(key: "insert_final_newline", out string? finalNewline) && finalNewline == "true";
 
             if (needsFinalNewline)
-            {
-                formatted = formatted.WithText(text.WithChanges(new TextChange(new TextSpan(text.Length, length: 0),
-                    GetLineEnding(text, options))));
-            }
+                formatted = formatted.WithText(text.WithChanges(new TextChange(new TextSpan(text.Length, length: 0), GetLineEnding(text, options))));
 
             project = formatted.Project;
         }

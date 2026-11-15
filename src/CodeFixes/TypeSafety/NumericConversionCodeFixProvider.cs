@@ -41,8 +41,7 @@ public sealed class NumericConversionCodeFixProvider : CodeFixProvider
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Convert with a numeric factory method",
                     cancellationToken => Convert(context.Document, diagnostics: [diagnostic], cancellationToken),
-                    nameof(NumericConversionCodeFixProvider)),
-                diagnostic);
+                    nameof(NumericConversionCodeFixProvider)), diagnostic);
         }
 
         return Task.CompletedTask;
@@ -78,8 +77,7 @@ public sealed class NumericConversionCodeFixProvider : CodeFixProvider
             return document;
 
         // Nested casts are rewritten inside out, so an outer one wraps the call its operand became.
-        SyntaxNode rewritten = root.ReplaceNodes(replacements.Keys,
-            (original, current) => Rewrite(current, replacements[original]));
+        SyntaxNode rewritten = root.ReplaceNodes(replacements.Keys, (original, current) => Rewrite(current, replacements[original]));
 
         return document.WithSyntaxRoot(rewritten);
     }

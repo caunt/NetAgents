@@ -58,8 +58,7 @@ public sealed class ValuePlacementCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Start the value on the line of its =",
                     cancellationToken => Join(context.Document, root, reported, cancellationToken),
-                    nameof(ValuePlacementCodeFixProvider)),
-                diagnostic);
+                    nameof(ValuePlacementCodeFixProvider)), diagnostic);
         }
     }
 

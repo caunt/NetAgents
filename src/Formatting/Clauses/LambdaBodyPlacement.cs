@@ -51,8 +51,7 @@ internal static class LambdaBodyPlacement
         SyntaxToken arrow = lambda.ArrowToken;
         SyntaxToken first = lambda.Body.GetFirstToken();
 
-        return root.ReplaceTokens(tokens: [arrow, first],
-            (original, rewritten) => original == arrow ? rewritten.WithTrailingTrivia(SyntaxFactory.Space) : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
+        return root.ReplaceTokens(tokens: [arrow, first], (original, rewritten) => original == arrow ? rewritten.WithTrailingTrivia(SyntaxFactory.Space) : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
     }
 
     private static bool IsWhitespace(SyntaxTriviaList trivia)

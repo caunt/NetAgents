@@ -24,8 +24,7 @@ public sealed class SummaryOpeningCodeFixProvider : CodeFixProvider
 {
     // An opening already written the old way, with another article, a plain type name, or another kind
     // word, is replaced rather than kept beside the new one.
-    private static readonly Regex WrittenOpening = new(pattern: @"^Initializes a new instance of (?:the|a|an) (?:<see\b[^>]*/>|\w+)(?: (?:class|struct|structure|record|type|object)(?![\w-]))?",
-        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private static readonly Regex WrittenOpening = new(pattern: @"^Initializes a new instance of (?:the|a|an) (?:<see\b[^>]*/>|\w+)(?: (?:class|struct|structure|record|type|object)(?![\w-]))?", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     /// <inheritdoc />
     public override ImmutableArray<string> FixableDiagnosticIds => [DocumentationTags.SummaryOpeningRuleIdentifier];
@@ -52,8 +51,7 @@ public sealed class SummaryOpeningCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Open the summary as the .NET documentation does",
                     cancellationToken => Open(context.Document, diagnostic.Location.SourceSpan, opening, cancellationToken),
-                    nameof(SummaryOpeningCodeFixProvider)),
-                diagnostic);
+                    nameof(SummaryOpeningCodeFixProvider)), diagnostic);
         }
 
         return Task.CompletedTask;
@@ -90,10 +88,7 @@ public sealed class SummaryOpeningCodeFixProvider : CodeFixProvider
         int? start = FindStart(summary);
 
         if (start is not int position)
-        {
-            return document.WithText(source.WithChanges(new TextChange(new TextSpan(summary.StartTag.Span.End, length: 0),
-                opening + ".")));
-        }
+            return document.WithText(source.WithChanges(new TextChange(new TextSpan(summary.StartTag.Span.End, length: 0), opening + ".")));
 
         Match written = WrittenOpening.Match(source.ToString(TextSpan.FromBounds(position, summary.EndTag.SpanStart)));
 

@@ -67,9 +67,7 @@ public sealed class UnrepairableDiagnosticCacheTests
             await File.WriteAllTextAsync(projectPath, projectContent);
             await File.WriteAllTextAsync(Path.Combine(workspace.FullName, path2: "NuGet.Config"), sourceConfiguration);
             await File.WriteAllTextAsync(sourcePath, UnrepairableSource);
-
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
-                arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
 
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "minimal"];
 
@@ -102,8 +100,7 @@ public sealed class UnrepairableDiagnosticCacheTests
             Assert.True(File.Exists(cachePath));
 
             // Repairing the reported diagnostic is a source edit, so the next build formats again.
-            await File.WriteAllTextAsync(sourcePath,
-                formatted.Replace(oldValue: "    /// <summary>Describes the same declaration a second time.</summary>\n",
+            await File.WriteAllTextAsync(sourcePath, formatted.Replace(oldValue: "    /// <summary>Describes the same declaration a second time.</summary>\n",
                     newValue: "    /// <remarks>Describes the same declaration a second time.</remarks>\n",
                     StringComparison.Ordinal));
 

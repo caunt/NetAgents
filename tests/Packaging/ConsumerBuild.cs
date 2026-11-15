@@ -27,8 +27,7 @@ internal static class ConsumerBuild
 
         string packageDirectory = Path.Combine(paths: [workspacePath, "artifacts"]);
 
-        await RunDevelopmentKit(repositoryDirectory.FullName,
-            arguments:
+        await RunDevelopmentKit(repositoryDirectory.FullName, arguments:
             [
                 "pack",
                 "src/NetAgents.Analyzers.csproj",

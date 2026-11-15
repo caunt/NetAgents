@@ -66,8 +66,7 @@ internal static class ValuePlacement
         SyntaxToken assigned = GetOperator(node);
         SyntaxToken first = assigned.GetNextToken();
 
-        return root.ReplaceTokens(tokens: [assigned, first],
-            (original, rewritten) => original == assigned ? rewritten.WithTrailingTrivia(SyntaxFactory.Space) : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
+        return root.ReplaceTokens(tokens: [assigned, first], (original, rewritten) => original == assigned ? rewritten.WithTrailingTrivia(SyntaxFactory.Space) : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
     }
 
     private static ExpressionSyntax? GetValue(SyntaxNode node)

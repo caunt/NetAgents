@@ -41,8 +41,7 @@ internal static class MemberOrdering
 
         for (int index = 0; index < sorted.Count; index++)
         {
-            MemberDeclarationSyntax member = index == 0 ? MemberSpacing.WithOpeningSpace(sorted[index],
-                declaration.Members[index: 0]) : sorted[index];
+            MemberDeclarationSyntax member = index == 0 ? MemberSpacing.WithOpeningSpace(sorted[index], declaration.Members[index: 0]) : sorted[index];
 
             spaced.Add(MemberSpacing.WithSpacing(member, index == 0 ? null : sorted[index - 1]));
         }

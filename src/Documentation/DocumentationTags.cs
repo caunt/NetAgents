@@ -60,8 +60,7 @@ internal static class DocumentationTags
     ];
 
     // The elements whose text describes the declaration, as opposed to the markup used inside that text.
-    public static readonly ImmutableHashSet<string> Descriptions = ImmutableHashSet.Create(StringComparer.Ordinal,
-        items: ["summary", "param", "typeparam", "returns", "value", "exception", "remarks"]);
+    public static readonly ImmutableHashSet<string> Descriptions = ImmutableHashSet.Create(StringComparer.Ordinal, items: ["summary", "param", "typeparam", "returns", "value", "exception", "remarks"]);
 
     private static readonly Regex ExteriorPattern = new(pattern: @"\r?\n[ \t]*///", RegexOptions.CultureInvariant);
     private static readonly Regex WhitespacePattern = new(pattern: @"\s+", RegexOptions.CultureInvariant);

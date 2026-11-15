@@ -31,11 +31,9 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
         isEnabledByDefault: true,
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
-    private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+",
-        RegexOptions.CultureInvariant);
+    private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+", RegexOptions.CultureInvariant);
 
-    private static readonly ImmutableHashSet<string> AbbreviatedWords = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase,
-        items:
+    private static readonly ImmutableHashSet<string> AbbreviatedWords = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, items:
         [
             "args",
             "auth",
@@ -131,8 +129,7 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
 
         string name = identifier.ValueText.TrimStart(trimChars: ['_']);
 
-        bool hasTypePrefix = (context.Node is InterfaceDeclarationSyntax && name.StartsWith(value: "I",
-            StringComparison.Ordinal))
+        bool hasTypePrefix = (context.Node is InterfaceDeclarationSyntax && name.StartsWith(value: "I", StringComparison.Ordinal))
             || (context.Node is TypeParameterSyntax && name.StartsWith(value: "T", StringComparison.Ordinal));
 
         if (hasTypePrefix)

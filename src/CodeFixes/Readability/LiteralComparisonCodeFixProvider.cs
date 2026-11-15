@@ -59,8 +59,7 @@ public sealed class LiteralComparisonCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Compare through a pattern",
                     cancellationToken => Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceNode(replaced, pattern))),
-                    nameof(LiteralComparisonCodeFixProvider)),
-                diagnostic);
+                    nameof(LiteralComparisonCodeFixProvider)), diagnostic);
         }
     }
 }

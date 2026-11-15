@@ -36,8 +36,7 @@ public sealed class LambdaParameterLayoutCodeFixProvider : CodeFixProvider
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Drop the lambda parameter parentheses",
                     cancellationToken => DropParentheses(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(LambdaParameterLayoutCodeFixProvider)),
-                diagnostic);
+                    nameof(LambdaParameterLayoutCodeFixProvider)), diagnostic);
         }
 
         return Task.CompletedTask;

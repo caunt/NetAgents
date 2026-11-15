@@ -38,8 +38,7 @@ public sealed class RedundantMethodSuffixAnalyzer() : PolicyAnalyzer(Rule, analy
         isEnabledByDefault: true,
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
-    private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+",
-        RegexOptions.CultureInvariant);
+    private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+", RegexOptions.CultureInvariant);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

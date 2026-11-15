@@ -63,8 +63,7 @@ internal static class RazorSource
 
     private static bool IsRazorFile(string path)
     {
-        return path.EndsWith(value: ".razor", StringComparison.OrdinalIgnoreCase) || path.EndsWith(value: ".cshtml",
-            StringComparison.OrdinalIgnoreCase);
+        return path.EndsWith(value: ".razor", StringComparison.OrdinalIgnoreCase) || path.EndsWith(value: ".cshtml", StringComparison.OrdinalIgnoreCase);
     }
 
     private static ImmutableArray<TextSpan> Read(SyntaxTree tree)

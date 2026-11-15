@@ -52,8 +52,7 @@ public sealed class NestedTryCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Merge the try statements",
                     cancellationToken => Merge(context.Document, root, outer, cancellationToken),
-                    nameof(NestedTryCodeFixProvider)),
-                diagnostic);
+                    nameof(NestedTryCodeFixProvider)), diagnostic);
         }
     }
 

@@ -47,8 +47,7 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
                         diagnostics: [diagnostic],
                         fixAll: false,
                         cancellationToken),
-                    nameof(ControlFlowBracesCodeFixProvider)),
-                diagnostic);
+                    nameof(ControlFlowBracesCodeFixProvider)), diagnostic);
         }
 
         return Task.CompletedTask;
@@ -97,8 +96,7 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
 
         IEnumerable<TextSpan> formattingSpans = affectedSpans.Select(span => TextSpan.FromBounds(Translate(span.Start,
                 orderedChanges,
-                includeInsertions: false),
-            Translate(span.End, orderedChanges, includeInsertions: true)));
+                includeInsertions: false), Translate(span.End, orderedChanges, includeInsertions: true)));
 
         OptionSet options = await document.GetOptionsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 

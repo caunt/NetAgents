@@ -151,10 +151,7 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
     private void Remember(string actionKey, string? fingerprint, ImmutableArray<Diagnostic> diagnostics)
     {
         if (fingerprint is not null)
-        {
-            _rejected[actionKey] = new(fingerprint,
-                Errors: [.. diagnostics.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)]);
-        }
+            _rejected[actionKey] = new(fingerprint, Errors: [.. diagnostics.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)]);
     }
 
     private readonly record struct DiagnosticIdentity(string Identifier, string Message, string Path);

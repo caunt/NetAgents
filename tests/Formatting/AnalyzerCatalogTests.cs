@@ -16,8 +16,7 @@ public sealed class AnalyzerCatalogTests
         .GetCustomAttributes<AssemblyMetadataAttribute>()
         .Single(static attribute => attribute.Key is "CodeStyleDirectory")
         .Value
-            ?? throw new InvalidOperationException(message: "The building SDK's code-style directory is unknown."),
-        path2: "Microsoft.CodeAnalysis.CSharp.CodeStyle.dll");
+            ?? throw new InvalidOperationException(message: "The building SDK's code-style directory is unknown."), path2: "Microsoft.CodeAnalysis.CSharp.CodeStyle.dll");
 
     /// <summary>Hosts a suppressor, which describes suppressions where an analyzer describes rules.</summary>
     [Fact]
@@ -32,8 +31,7 @@ public sealed class AnalyzerCatalogTests
         Assert.Empty(hosting.Unavailable);
 
         // The hosted copy comes from a separate load context, so only the name identifies it.
-        Assert.Contains(collection: [.. hosting.Analyzers],
-            static analyzer => analyzer.GetType().FullName == typeof(ExhaustiveSwitchSuppressor).FullName);
+        Assert.Contains(collection: [.. hosting.Analyzers], static analyzer => analyzer.GetType().FullName == typeof(ExhaustiveSwitchSuppressor).FullName);
     }
 
     /// <summary>Constructs the same analyzers the compiler's loader does, without its version gate.</summary>

@@ -42,7 +42,7 @@ internal static class ArgumentLayout
         SyntaxNode[] items = [.. list.ChildNodes()];
 
         if (items.Length == 0 || !Wraps(list, model, source, cancellationToken))
-            return [new TextChange(list.Span, GetCompactText(list))];
+            return KeepsTogether(list, model, source, cancellationToken) ? JoinItems(list, items, source) : [new TextChange(list.Span, GetCompactText(list))];
 
         string indentation = GetIndentation(source, list.SpanStart);
         string itemIndentation = GetItemIndentation(list, source);
@@ -148,6 +148,11 @@ internal static class ArgumentLayout
         if (items.Length == 0 && multiple)
             return true;
 
+        // A short call too long for its line keeps its arguments together and lets what they hold break; any other
+        // list that does not wrap sits on one line whole.
+        if (!multiple && KeepsTogether(list, model, source, cancellationToken))
+            return !SeparatesItems(list, items, source);
+
         if (!multiple)
             return GetLine(source, list.SpanStart) == GetLine(source, list.Span.End);
 
@@ -189,32 +194,27 @@ internal static class ArgumentLayout
             or SyntaxKind.AttributeArgumentList or SyntaxKind.ParameterList or SyntaxKind.BracketedParameterList;
     }
 
-    // Whether the list's own contents keep it off one line: their width, a comment, a statement that spreads, or a line
-    // break inside a token. Where the list stands on its line plays no part.
+    // A call with one or two arguments that are too long for their line, by their contents or by where the list stands,
+    // keeps them together all the same: nothing separates them from each other or from the parentheses, while a chain,
+    // a longer call, or a collection inside an argument still breaks by its own rule.
+    internal static bool KeepsTogether(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
+    {
+        LineFitMeasurement measurement = Measure(list);
+
+        return IsShortCall(list) && !measurement.HasInlineComment && !measurement.HasTokenLineBreak && !measurement.HasSpreadStatement && (IsTooLong(list, measurement) || (EndsPastLimit(list,
+            measurement,
+            source) && !ChainLayout.BreaksLineOf(list, model, source, cancellationToken)));
+    }
+
+    // Whether the list's own contents keep it off one line: a comment, a statement that spreads, a line break inside a
+    // token, or, for anything but a call with one or two arguments, their width. Where the list stands on its line
+    // plays no part.
     internal static bool RequiresMultipleLines(SyntaxNode list)
     {
         LineFitMeasurement measurement = Measure(list);
 
         // Only trivia the compact text reproduces matters; trivia outside the delimiters stays where it is.
-        if (measurement.HasInlineComment || measurement.HasTokenLineBreak || measurement.HasSpreadStatement)
-            return true;
-
-        // Normalizing keeps every token and puts at most one space between neighbours, so the token
-        // widths bracket the compact length and usually settle the comparison without building it.
-        // A block comment is the exception: WithoutTrivia only strips the list's own outer trivia,
-        // so a comment on an inner token survives into that text and outruns the upper bound.
-        if (!measurement.HasBlockComment)
-        {
-            if (measurement.Width - 2 > LayoutLimits.MaximumInlineLength)
-                return true;
-
-            if (measurement.Width + measurement.Tokens - 2 <= LayoutLimits.MaximumInlineLength)
-                return false;
-        }
-
-        string compact = GetCompactText(list);
-
-        return compact.Length - 2 > LayoutLimits.MaximumInlineLength || compact.IndexOfAny(LineBreaks) >= 0;
+        return measurement.HasInlineComment || measurement.HasTokenLineBreak || measurement.HasSpreadStatement || (!IsShortCall(list) && IsTooLong(list, measurement));
     }
 
     internal static TextChange SeparateItems(SourceText source, int start, int end, string newline, string indentation)
@@ -252,8 +252,15 @@ internal static class ArgumentLayout
     {
         BlockSyntax body = GetBody(function);
 
-        return (body.Statements.Count > 0 && SharesLine(source, body.Statements[index: 0].GetFirstToken())) || SharesLine(source,
-            body.CloseBraceToken);
+        return (body.Statements.Count > 0 && SharesLine(source, body.Statements[index: 0].GetFirstToken())) || SharesLine(source, body.CloseBraceToken);
+    }
+
+    // The token widths bracket the compact length, as they do for the contents, so most lists never build it.
+    private static bool EndsPastLimit(SyntaxNode list, LineFitMeasurement measurement, SourceText source)
+    {
+        int column = list.SpanStart - source.Lines.GetLineFromPosition(list.SpanStart).Start;
+
+        return !list.ContainsDirectives && column + measurement.Width + measurement.Tokens > LayoutLimits.MaximumInlineLength && (column + measurement.Width > LayoutLimits.MaximumInlineLength || column + GetCompactText(list).Length > LayoutLimits.MaximumInlineLength);
     }
 
     private static BlockSyntax GetBody(AnonymousFunctionExpressionSyntax function)
@@ -335,10 +342,63 @@ internal static class ArgumentLayout
         };
     }
 
+    // A call's argument list holding one or two arguments, which no length ever puts on lines of their own.
+    private static bool IsShortCall(SyntaxNode list)
+    {
+        bool call = list.Kind() is SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList;
+
+        return call && list.ChildNodes().Any() && !list.ChildNodes().Skip(count: 2).Any();
+    }
+
+    // The contents written on one line pass the limit, or cannot be written on one line at all.
+    private static bool IsTooLong(SyntaxNode list, LineFitMeasurement measurement)
+    {
+        // Normalizing keeps every token and puts at most one space between neighbours, so the token
+        // widths bracket the compact length and usually settle the comparison without building it.
+        // A block comment is the exception: WithoutTrivia only strips the list's own outer trivia,
+        // so a comment on an inner token survives into that text and outruns the upper bound.
+        if (!measurement.HasBlockComment)
+        {
+            if (measurement.Width - 2 > LayoutLimits.MaximumInlineLength)
+                return true;
+
+            if (measurement.Width + measurement.Tokens - 2 <= LayoutLimits.MaximumInlineLength)
+                return false;
+        }
+
+        string compact = GetCompactText(list);
+
+        return compact.Length - 2 > LayoutLimits.MaximumInlineLength || compact.IndexOfAny(LineBreaks) >= 0;
+    }
+
     private static bool IsWhitespaceOrComment(SyntaxTrivia trivia)
     {
         return trivia.Kind() is SyntaxKind.WhitespaceTrivia or SyntaxKind.EndOfLineTrivia
             or SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia;
+    }
+
+    // The line breaks between a short call's parentheses and arguments go, except where a comment stands in one.
+    private static TextChange[] JoinItems(SyntaxNode list, SyntaxNode[] items, SourceText source)
+    {
+        List<TextChange> changes = [];
+        int opening = list.GetFirstToken().Span.End;
+        int closing = list.GetLastToken().SpanStart;
+
+        if (!HasComment(source, opening, items[0].SpanStart))
+            changes.Add(new TextChange(TextSpan.FromBounds(opening, items[0].SpanStart), string.Empty));
+
+        for (int index = 1; index < items.Length; index++)
+        {
+            int separator = items[index].GetFirstToken().GetPreviousToken().Span.End;
+
+            if (!HasComment(source, separator, items[index].SpanStart))
+                changes.Add(new TextChange(TextSpan.FromBounds(separator, items[index].SpanStart), newText: " "));
+        }
+
+        if (!HasComment(source, items[items.Length - 1].Span.End, closing))
+            changes.Add(new TextChange(TextSpan.FromBounds(items[items.Length - 1].Span.End, closing), string.Empty));
+
+        return [.. changes];
     }
 
     // One walk over the tokens answers everything the bracket needs: their combined width, how many
@@ -385,22 +445,40 @@ internal static class ArgumentLayout
     }
 
     // A call's arguments written on one line end past the limit, measured from where the list opens, so what follows
-    // the list never decides. The line is the list's to break only where nothing else breaks it: a chain that splits
-    // breaks at its links, and a condition, an interpolation, an attribute, and a one-line collection stay whole.
+    // the list never decides. The line is the list's to break only where it holds three arguments or more and nothing
+    // else breaks the line: a chain that splits breaks at its links, and a condition, an interpolation, an attribute,
+    // and a one-line collection stay whole.
     private static bool PassesLine(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
     {
-        if (list.Kind() is not (SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList) || list.ContainsDirectives)
-            return false;
+        bool call = list.Kind() is SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList;
 
-        // The token widths bracket the compact length, as they do for the contents, so most lists never build it.
-        int column = list.SpanStart - source.Lines.GetLineFromPosition(list.SpanStart).Start;
-        LineFitMeasurement measurement = Measure(list);
-        bool fits = column + measurement.Width + measurement.Tokens <= LayoutLimits.MaximumInlineLength;
-
-        return !fits && (column + measurement.Width > LayoutLimits.MaximumInlineLength || column + GetCompactText(list).Length > LayoutLimits.MaximumInlineLength) && !ChainLayout.BreaksLineOf(list,
+        return call && !IsShortCall(list) && EndsPastLimit(list, Measure(list), source) && !ChainLayout.BreaksLineOf(list,
             model,
             source,
             cancellationToken);
+    }
+
+    // A line break stands between a short call's parentheses and arguments, outside any comment.
+    private static bool SeparatesItems(SyntaxNode list, SyntaxNode[] items, SourceText source)
+    {
+        // Each gap runs from the parenthesis or the comma before an argument to the argument itself.
+        int opening = list.GetFirstToken().Span.End;
+
+        if (Breaks(source, opening, items[0].SpanStart) && !HasComment(source, opening, items[0].SpanStart))
+            return true;
+
+        for (int index = 1; index < items.Length; index++)
+        {
+            int separator = items[index].GetFirstToken().GetPreviousToken().Span.End;
+
+            if (Breaks(source, separator, items[index].SpanStart) && !HasComment(source, separator, items[index].SpanStart))
+                return true;
+        }
+
+        int last = items[items.Length - 1].Span.End;
+        int closing = list.GetLastToken().SpanStart;
+
+        return Breaks(source, last, closing) && !HasComment(source, last, closing);
     }
 
     private static bool SharesLine(SourceText source, SyntaxToken token)

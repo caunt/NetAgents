@@ -8,10 +8,8 @@ namespace NetAgents.Analyzers.Tests.Infrastructure;
 
 internal static class AnalyzerTestHarness
 {
-    internal static readonly MetadataReference[] References = [.. Directory
-        .EnumerateFiles(Path.GetDirectoryName(typeof(string).Assembly.Location)
-            ?? throw new InvalidOperationException(message: "The runtime assembly directory is unavailable."),
-            searchPattern: "*.dll")
+    internal static readonly MetadataReference[] References = [.. Directory.EnumerateFiles(Path.GetDirectoryName(typeof(string).Assembly.Location)
+            ?? throw new InvalidOperationException(message: "The runtime assembly directory is unavailable."), searchPattern: "*.dll")
         .Select(static assemblyPath => MetadataReference.CreateFromFile(assemblyPath))];
 
     public static Task<Diagnostic[]> Analyze(DiagnosticAnalyzer analyzer, string source, string fileName = "ExampleType.cs", bool allowUnsafeCode = false)

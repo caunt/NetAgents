@@ -57,8 +57,7 @@ public sealed class WrappedMemberCodeFixProvider : CodeFixProvider
             context.RegisterCodeFix(CodeAction.Create(title: "Join the member onto one line",
                     cancellationToken => Task.FromResult(context.Document
                         .WithSyntaxRoot(WrappedMember.Join(root, operatorToken))),
-                    nameof(WrappedMemberCodeFixProvider)),
-                diagnostic);
+                    nameof(WrappedMemberCodeFixProvider)), diagnostic);
         }
     }
 }

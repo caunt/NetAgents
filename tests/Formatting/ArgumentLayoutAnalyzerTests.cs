@@ -66,8 +66,9 @@ public sealed class ArgumentLayoutAnalyzerTests
     }
 
     /// <summary>
-    /// Wraps a call's arguments when, written on one line, they end past column 128 where the list stands, although
-    /// their own contents fit, and keeps them together inside a chain that splits, which breaks the line instead.
+    /// Wraps a call's three arguments when, written on one line, they end past column 128 where the list stands,
+    /// although their own contents fit, and keeps them together inside a chain that splits, which breaks the line
+    /// instead.
     /// </summary>
     /// <param name="endText">The column the argument list ends at when written on one line.</param>
     [Theory]
@@ -79,8 +80,8 @@ public sealed class ArgumentLayoutAnalyzerTests
         int end = int.Parse(endText, CultureInfo.InvariantCulture);
 
         // The list opens at column 21, after the indentation and the call's name, and closes two characters after
-        // its seven-character frame of quotes and separator.
-        string arguments = "\"" + new string(c: 'x', end - 30) + "\", \"y\"";
+        // its twelve-character frame of quotes and separators.
+        string arguments = "\"" + new string(c: 'x', end - 35) + "\", \"y\", \"z\"";
         string source = $"public class ExampleType\n{{\n    public void Execute()\n    {{\n        string.Concat({arguments});\n    }}\n}}\n";
 
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source);
@@ -127,10 +128,36 @@ public sealed class ArgumentLayoutAnalyzerTests
         string compact = $"public class ExampleType {{ public void Execute(string value = {literal}, int count = 0) {{ }} }}";
         string expanded = $"public class ExampleType {{ public void Execute(string value = {literal},\n    int count = 0) {{ }} }}";
 
-        Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier,
-            Assert.Single(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), compact)).Id);
+        Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), compact))
+            .Id);
 
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), expanded));
+    }
+
+    /// <summary>
+    /// Keeps a call's one or two arguments together however long the line or the arguments are, and reports them
+    /// once a line break separates them.
+    /// </summary>
+    /// <param name="arguments">The arguments of the call, written on one line.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a data row supplies no <paramref name="arguments"/> to place in the call.</exception>
+    [Theory]
+    [InlineData("\"an argument long enough that this call ends well past the one hundred and twenty-eight character limit of its line\"")]
+    [InlineData("\"a first argument long enough to push the call past the limit of its line\", \"and a second one that finishes the job\"")]
+    [InlineData("\"a first argument that alone is long enough to pass the limit on the contents of a list\", \"and a second one so long that the two together pass one hundred and twenty-eight characters\"")]
+    public async Task KeepsShortCallsTogether(string arguments)
+    {
+        ArgumentNullException.ThrowIfNull(arguments);
+
+        string together = $"public class ExampleType\n{{\n    public void Execute()\n    {{\n        string.Concat({arguments});\n    }}\n}}\n";
+
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), together));
+
+        string separated = together.Replace(oldValue: "string.Concat(\"",
+            newValue: "string.Concat(\n            \"",
+            StringComparison.Ordinal);
+
+        Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), separated))
+            .Id);
     }
 
     /// <summary>
@@ -216,8 +243,7 @@ public sealed class ArgumentLayoutAnalyzerTests
         string parameters = layout.Replace(oldValue: "FIRST", "string " + new string(c: 'a', count: 70), StringComparison.Ordinal)
             .Replace(oldValue: "SECOND", "string " + new string(c: 'b', count: 70), StringComparison.Ordinal);
 
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(),
-            $"public record ExampleType({parameters});");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), $"public record ExampleType({parameters});");
 
         Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

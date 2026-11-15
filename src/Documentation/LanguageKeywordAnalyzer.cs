@@ -26,18 +26,12 @@ public sealed class LanguageKeywordAnalyzer() : PolicyAnalyzer(Rule)
     public const string RuleIdentifier = DocumentationTags.KeywordRuleIdentifier;
 
     // A hyphenated word such as "non-null" is prose about the keyword rather than the keyword itself.
-    private static readonly Regex KeywordPattern = new(pattern: @"(?<![\w-])(null|true|false)(?![\w-])",
-        RegexOptions.CultureInvariant);
+    private static readonly Regex KeywordPattern = new(pattern: @"(?<![\w-])(null|true|false)(?![\w-])", RegexOptions.CultureInvariant);
 
     // The same words outside an attribute: a keyword already quoted inside a reference is not wrapped again.
-    private static readonly Regex PlainBooleanPattern = new(pattern: @"(?<![\w""-])(true|false)(?![\w""-])",
-        RegexOptions.CultureInvariant);
-
-    private static readonly Regex LanguageWordPattern = new(pattern: @"<see\s+langword\s*=\s*""(\w+)""\s*/>|<c>\s*(null|true|false)\s*</c>",
-        RegexOptions.CultureInvariant);
-
-    private static readonly Regex BooleanPattern = new(pattern: @"^<see langword=""true""/> if .+; otherwise, <see langword=""false""/>\.?$",
-        RegexOptions.CultureInvariant);
+    private static readonly Regex PlainBooleanPattern = new(pattern: @"(?<![\w""-])(true|false)(?![\w""-])", RegexOptions.CultureInvariant);
+    private static readonly Regex LanguageWordPattern = new(pattern: @"<see\s+langword\s*=\s*""(\w+)""\s*/>|<c>\s*(null|true|false)\s*</c>", RegexOptions.CultureInvariant);
+    private static readonly Regex BooleanPattern = new(pattern: @"^<see langword=""true""/> if .+; otherwise, <see langword=""false""/>\.?$", RegexOptions.CultureInvariant);
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Documentation writes language keywords as langword references",
@@ -94,9 +88,8 @@ public sealed class LanguageKeywordAnalyzer() : PolicyAnalyzer(Rule)
     {
         string text = DocumentationTags.Flatten(element.Content.ToString());
 
-        text = LanguageWordPattern.Replace(text,
-            static match => "<see langword=\"" + (match.Groups[groupnum: 1].Success ? match.Groups[groupnum: 1].Value : match.Groups[groupnum: 2]
-                .Value) + "\"/>");
+        text = LanguageWordPattern.Replace(text, static match => "<see langword=\"" + (match.Groups[groupnum: 1].Success ? match.Groups[groupnum: 1]
+            .Value : match.Groups[groupnum: 2].Value) + "\"/>");
 
         text = PlainBooleanPattern.Replace(text, static match => "<see langword=\"" + match.Value + "\"/>");
 

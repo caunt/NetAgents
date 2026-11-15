@@ -31,8 +31,7 @@ public sealed class StatementSpacingCodeFixTests
     [InlineData("\r\n")]
     public async Task PreservesCommentsAndLineEndings(string lineEnding)
     {
-        string source = string.Join(lineEnding,
-            value:
+        string source = string.Join(lineEnding, value:
             [
                 "public static class ExampleType",
                 "{",

@@ -35,8 +35,7 @@ public sealed class DocumentationSentenceCodeFixProvider : CodeFixProvider
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Add a full stop",
                     cancellationToken => Punctuate(context.Document, diagnostic.Location.SourceSpan.Start, cancellationToken),
-                    nameof(DocumentationSentenceCodeFixProvider)),
-                diagnostic);
+                    nameof(DocumentationSentenceCodeFixProvider)), diagnostic);
         }
 
         return Task.CompletedTask;

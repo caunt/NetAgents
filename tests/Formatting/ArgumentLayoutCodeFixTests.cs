@@ -49,8 +49,7 @@ public sealed class ArgumentLayoutCodeFixTests
         const string method = "public class ExampleType\n{\n    public void Execute()\n    {\n        STATEMENT\n    }\n}";
         string source = method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal);
 
-        Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal),
-            await CodeFixTestHarness.FixArguments(source, fixAll: true));
+        Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal), await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
 
     /// <summary>
@@ -128,8 +127,7 @@ public sealed class ArgumentLayoutCodeFixTests
         const string method = "public class ExampleType\n{\n    public void Execute()\n    {\n        STATEMENT\n    }\n}";
         string source = method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal);
 
-        Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal),
-            await CodeFixTestHarness.FixArguments(source, fixAll: true));
+        Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal), await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
 
     /// <summary>

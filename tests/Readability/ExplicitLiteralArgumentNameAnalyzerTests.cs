@@ -27,8 +27,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     [Fact]
     public async Task AllowsNamedArguments()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
-            source: "public class ExampleType { public void Run() => Execute(count: 42); private void Execute(int count) { } }");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), source: "public class ExampleType { public void Run() => Execute(count: 42); private void Execute(int count) { } }");
 
         Assert.Empty(diagnostics);
     }
@@ -39,8 +38,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     [Fact]
     public async Task AllowsNamedCollectionArguments()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
-            source: "public class ExampleType { public void Run(int[] values) => Execute(counts: [.. values, 42]); private void Execute(int[] counts) { } }");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), source: "public class ExampleType { public void Run(int[] values) => Execute(counts: [.. values, 42]); private void Execute(int[] counts) { } }");
 
         Assert.Empty(diagnostics);
     }
@@ -108,9 +106,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), source);
 
         Assert.Equal(expected: 2, diagnostics.Length);
-
-        Assert.All(diagnostics,
-            static diagnostic => Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, diagnostic.Id));
+        Assert.All(diagnostics, static diagnostic => Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, diagnostic.Id));
     }
 
     /// <summary>
@@ -125,8 +121,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     [InlineData("Log([1, 2])")]
     public async Task ReportsUnnamedCollectionArguments(string invocation)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
-            $"public class ExampleType {{ public void Run(int[] values) => {invocation}; private void Execute(int[] counts) {{ }} private void Log(params int[] entries) {{ }} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), $"public class ExampleType {{ public void Run(int[] values) => {invocation}; private void Execute(int[] counts) {{ }} private void Log(params int[] entries) {{ }} }}");
 
         Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -143,8 +138,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     [InlineData("Execute((-42))")]
     public async Task ReportsUnnamedLiteralArguments(string invocation)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
-            $"public class ExampleType {{ public void Run() => {invocation}; private void Execute(int count) {{ }} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), $"public class ExampleType {{ public void Run() => {invocation}; private void Execute(int count) {{ }} }}");
 
         Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

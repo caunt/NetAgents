@@ -97,16 +97,12 @@ internal static class CollectionLayout
                 .NormalizeWhitespace(indentation: "", eol: " ")
                 .ToFullString();
 
-            return [new TextChange(TextSpan.FromBounds(value ? previous.Span.End : opening.SpanStart, closing.Span.End),
-                (value ? " " : "") + compact)];
+            return [new TextChange(TextSpan.FromBounds(value ? previous.Span.End : opening.SpanStart, closing.Span.End), (value ? " " : "") + compact)];
         }
 
         // New lines reuse the file's line break, and elements sit one level deeper than the delimiters around them.
         TextLine firstLine = source.Lines[index: 0];
-
-        string newline = firstLine.EndIncludingLineBreak > firstLine.End ? source.ToString(TextSpan.FromBounds(firstLine.End,
-            firstLine.EndIncludingLineBreak)) : "\n";
-
+        string newline = firstLine.EndIncludingLineBreak > firstLine.End ? source.ToString(TextSpan.FromBounds(firstLine.End, firstLine.EndIncludingLineBreak)) : "\n";
         bool opensBelow = IsBraced(collection) ? !ArgumentLayout.HasComment(source, previous.Span.End, opening.SpanStart) : value;
 
         // A delimiter moving below the token before it takes that line's indentation; one already on a line of its own,
@@ -167,10 +163,7 @@ internal static class CollectionLayout
         // comment stands between; a collection expression also ends with a comma.
         bool braced = IsBraced(collection);
         int previousEnd = opening.GetPreviousToken().Span.End;
-
-        bool required = braced ? !ArgumentLayout.HasComment(source, previousEnd, opening.SpanStart) : IsValue(collection,
-            source);
-
+        bool required = braced ? !ArgumentLayout.HasComment(source, previousEnd, opening.SpanStart) : IsValue(collection, source);
         bool opensBelow = !required || ArgumentLayout.Breaks(source, previousEnd, opening.SpanStart);
 
         return enclosed && opensBelow && (braced || trailing);
@@ -252,16 +245,14 @@ internal static class CollectionLayout
                     SeparatedSyntaxList<CollectionElementSyntax> elements = expression.Elements;
                     List<CollectionElementSyntax> nodes = [.. elements];
 
-                    return expression.WithElements(SyntaxFactory.SeparatedList(nodes,
-                        TakeLeading(elements.GetSeparators(), elements.Count - 1)));
+                    return expression.WithElements(SyntaxFactory.SeparatedList(nodes, TakeLeading(elements.GetSeparators(), elements.Count - 1)));
                 }
             case InitializerExpressionSyntax initializer when initializer.Expressions.SeparatorCount == initializer.Expressions.Count:
                 {
                     SeparatedSyntaxList<ExpressionSyntax> expressions = initializer.Expressions;
                     List<ExpressionSyntax> nodes = [.. expressions];
 
-                    return initializer.WithExpressions(SyntaxFactory.SeparatedList(nodes,
-                        TakeLeading(expressions.GetSeparators(), expressions.Count - 1)));
+                    return initializer.WithExpressions(SyntaxFactory.SeparatedList(nodes, TakeLeading(expressions.GetSeparators(), expressions.Count - 1)));
                 }
             default:
                 return collection;

@@ -39,8 +39,7 @@ public sealed class LanguageKeywordCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Write the keyword as a langword reference",
                     cancellationToken => Replace(context.Document, diagnostic.Location.SourceSpan, keyword, cancellationToken),
-                    nameof(LanguageKeywordCodeFixProvider)),
-                diagnostic);
+                    nameof(LanguageKeywordCodeFixProvider)), diagnostic);
         }
 
         return Task.CompletedTask;

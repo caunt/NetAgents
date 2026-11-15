@@ -27,8 +27,7 @@ public sealed class ControlFlowBracesAnalyzerTests
     [InlineData("public static void Execute(int count) { System.Action action = () => { if (count > 0) return; }; action(); }")]
     public async Task IgnoresOneLineFunctionBodies(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(),
-            $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }
@@ -46,8 +45,7 @@ public sealed class ControlFlowBracesAnalyzerTests
     [InlineData("if (count > 0) { count++; count--; } else return;", "2")]
     public async Task KeepsConditionalChainsConsistent(string statements, string expectedCount)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(),
-            $"public static class ExampleType {{ public static void Execute(int count) {{ {statements} }} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(), $"public static class ExampleType {{ public static void Execute(int count) {{ {statements} }} }}");
 
         Assert.Equal(int.Parse(expectedCount, CultureInfo.InvariantCulture), diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(ControlFlowBracesAnalyzer.RuleIdentifier, diagnostic.Id));

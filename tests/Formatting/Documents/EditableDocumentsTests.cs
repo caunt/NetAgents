@@ -203,8 +203,7 @@ public sealed class EditableDocumentsTests
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Make the field internal",
                     cancellationToken => MakeInternal(context.Document, cancellationToken),
-                    equivalenceKey: "internal"),
-                context.Diagnostics);
+                    equivalenceKey: "internal"), context.Diagnostics);
 
             return Task.CompletedTask;
         }

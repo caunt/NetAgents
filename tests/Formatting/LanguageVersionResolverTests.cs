@@ -15,8 +15,7 @@ public sealed class LanguageVersionResolverTests
     {
         foreach (LanguageVersion supported in Enum.GetValues<LanguageVersion>())
         {
-            LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(supported.ToDisplayString(),
-                ProjectPath);
+            LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(supported.ToDisplayString(), ProjectPath);
 
             Assert.Equal(supported, resolution.Version);
             Assert.False(resolution.Substituted);
@@ -32,8 +31,8 @@ public sealed class LanguageVersionResolverTests
         Assert.Equal(LanguageVersion.CSharp12, LanguageVersionResolver.Resolve(configured: "12", ProjectPath).Version);
         Assert.Equal(LanguageVersion.CSharp1, LanguageVersionResolver.Resolve(configured: "ISO-1", ProjectPath).Version);
 
-        Assert.Equal(LanguageVersion.LatestMajor,
-            LanguageVersionResolver.Resolve(configured: "latestMajor", ProjectPath).Version);
+        Assert.Equal(LanguageVersion.LatestMajor, LanguageVersionResolver.Resolve(configured: "latestMajor", ProjectPath)
+            .Version);
 
         // Whitespace around the value is ignored, and a supported value is never substituted.
         Assert.Equal(LanguageVersion.CSharp14, LanguageVersionResolver.Resolve(configured: " 14.0 ", ProjectPath).Version);
@@ -60,8 +59,7 @@ public sealed class LanguageVersionResolverTests
     {
         foreach (string configured in (string[])["", "   ", "\r\n "])
         {
-            LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(configured,
-                ProjectPath);
+            LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(configured, ProjectPath);
 
             Assert.Equal(LanguageVersion.Default, resolution.Version);
             Assert.False(resolution.Substituted);
@@ -79,8 +77,7 @@ public sealed class LanguageVersionResolverTests
 
         foreach (string configured in (string[])[$"{next}.0", $"{next}", $"{next + 1}.0", "99.9"])
         {
-            LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(configured,
-                ProjectPath);
+            LanguageVersionResolver.LanguageVersionResolution resolution = LanguageVersionResolver.Resolve(configured, ProjectPath);
 
             Assert.Equal(LanguageVersion.Preview, resolution.Version);
             Assert.True(resolution.Substituted);

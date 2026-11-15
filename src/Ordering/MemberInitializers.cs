@@ -86,8 +86,7 @@ internal static class MemberInitializers
             _ => attribute.Name.ToString(),
         };
 
-        return name.EndsWith(value: "Attribute", StringComparison.Ordinal) ? name.Substring(startIndex: 0,
-            name.Length - "Attribute".Length) : name;
+        return name.EndsWith(value: "Attribute", StringComparison.Ordinal) ? name.Substring(startIndex: 0, name.Length - "Attribute".Length) : name;
     }
 
     private static List<ExpressionSyntax> GetInitializers(MemberDeclarationSyntax member)
@@ -146,9 +145,7 @@ internal static class MemberInitializers
             foreach (AttributeSyntax attribute in list.Attributes)
             {
                 string name = GetAttributeName(attribute);
-
-                bool serializer = name.StartsWith(value: "Json", StringComparison.Ordinal) || name.StartsWith(value: "Xml",
-                    StringComparison.Ordinal);
+                bool serializer = name.StartsWith(value: "Json", StringComparison.Ordinal) || name.StartsWith(value: "Xml", StringComparison.Ordinal);
 
                 if (serializer || markers.Contains(name))
                     return true;

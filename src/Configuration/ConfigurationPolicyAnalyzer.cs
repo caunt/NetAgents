@@ -35,8 +35,7 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterCompilationStartAction(static compilationContext => compilationContext.RegisterSyntaxTreeAction(treeContext => AnalyzeConfiguration(treeContext,
-            compilationContext.Compilation)));
+        context.RegisterCompilationStartAction(static compilationContext => compilationContext.RegisterSyntaxTreeAction(treeContext => AnalyzeConfiguration(treeContext, compilationContext.Compilation)));
     }
 
     private static void AnalyzeConfiguration(SyntaxTreeAnalysisContext context, Compilation compilation)

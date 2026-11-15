@@ -36,8 +36,7 @@ public sealed class DocumentationProseCodeFixProvider : CodeFixProvider
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Wrap the description in a summary element",
                     cancellationToken => Wrap(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(DocumentationProseCodeFixProvider)),
-                diagnostic);
+                    nameof(DocumentationProseCodeFixProvider)), diagnostic);
         }
 
         return Task.CompletedTask;

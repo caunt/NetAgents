@@ -65,8 +65,10 @@ internal static class WrappedMember
         SyntaxToken before = operatorToken.GetPreviousToken();
         SyntaxToken after = operatorToken.GetNextToken();
 
-        return root.ReplaceTokens(tokens: [before, operatorToken, after],
-            (original, rewritten) => Respace(original, rewritten, before, after));
+        return root.ReplaceTokens(tokens: [before, operatorToken, after], (original, rewritten) => Respace(original,
+                rewritten,
+                before,
+                after));
     }
 
     private static SyntaxToken GetFieldOperator(BaseFieldDeclarationSyntax field)

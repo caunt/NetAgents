@@ -27,8 +27,8 @@ internal static class ProjectFormatter
 
         await using (projectLock.ConfigureAwait(continueOnCapturedContext: false))
         {
-            FormattingProgress progress = new(inputs.AssemblyName,
-                message => inputs.Log.LogMessage(MessageImportance.High, message));
+            FormattingProgress progress = new(inputs.AssemblyName, message => inputs.Log
+                .LogMessage(MessageImportance.High, message));
 
             progress.Report(activity: "checking formatting inputs");
 
@@ -77,8 +77,7 @@ internal static class ProjectFormatter
         string aliases = item.GetMetadata(metadataName: "Aliases");
         ImmutableArray<string> referenceAliases = string.IsNullOrEmpty(aliases) ? [] : [.. aliases.Split(separator: ',')];
 
-        MetadataReferenceProperties properties = new(aliases: referenceAliases,
-            embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"),
+        MetadataReferenceProperties properties = new(aliases: referenceAliases, embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"),
                 b: "true",
                 StringComparison.OrdinalIgnoreCase));
 
@@ -98,9 +97,7 @@ internal static class ProjectFormatter
 
         // Paths read relative to the project, as MSBuild prints its own errors.
         string path = span.Path.Length == 0 ? "(unknown file)" : GetDisplayPath(projectDirectory, span.Path);
-
-        string position = string.Create(CultureInfo.InvariantCulture,
-            $"{path}({line + 1},{span.StartLinePosition.Character + 1})");
+        string position = string.Create(CultureInfo.InvariantCulture, $"{path}({line + 1},{span.StartLinePosition.Character + 1})");
 
         return $"  {position}: {diagnostic.Id}: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}{Environment.NewLine}    as formatted: {written}";
     }
@@ -109,14 +106,12 @@ internal static class ProjectFormatter
     {
         progress.Report(activity: "checking source syntax");
 
-        LanguageVersionResolver.LanguageVersionResolution languageVersion = LanguageVersionResolver.Resolve(inputs.LanguageVersion,
-            inputs.ProjectPath);
+        LanguageVersionResolver.LanguageVersionResolution languageVersion = LanguageVersionResolver.Resolve(inputs.LanguageVersion, inputs.ProjectPath);
 
         if (languageVersion.Substituted)
         {
             inputs.Log
-                .LogMessage(MessageImportance.Normal,
-                    $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}");
+                .LogMessage(MessageImportance.Normal, $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}");
         }
 
         CSharpParseOptions parseOptions = new(languageVersion.Version,
@@ -353,11 +348,10 @@ internal static class ProjectFormatter
         // A withheld run rewrote nothing, so this has to be said before the guard below.
         if (!codeFixes.Introduced.IsEmpty)
         {
-            string introduced = string.Join(separator: ", ",
-                codeFixes.Introduced
-                    .Select(static diagnostic => diagnostic.Id)
-                    .Distinct(StringComparer.Ordinal)
-                    .Order(StringComparer.Ordinal));
+            string introduced = string.Join(separator: ", ", codeFixes.Introduced
+                .Select(static diagnostic => diagnostic.Id)
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.Ordinal));
 
             inputs.Log
                 .LogMessage(MessageImportance.High, $"NetAgents made no change because formatting would have introduced {introduced}");
@@ -404,8 +398,7 @@ internal static class ProjectFormatter
 
         // The identifiers are what this formatter could not repair; the compiler reports the full set.
         inputs.Log
-            .LogMessage(MessageImportance.High,
-                $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}");
+            .LogMessage(MessageImportance.High, $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}");
 
         foreach (string path in rewritten)
             inputs.Log.LogMessage(MessageImportance.High, "  " + path);

@@ -349,7 +349,11 @@ internal static class ChainLayout
 
         bool laidOut = ArgumentLayout.IsList(node) && !node.ContainsDiagnostics && !node.ContainsDirectives;
 
-        return laidOut && !ArgumentLayout.Wraps(node, model, text, cancellationToken);
+        // A short call kept together although it is too long joins nothing inside it.
+        return laidOut && !ArgumentLayout.Wraps(node, model, text, cancellationToken) && !ArgumentLayout.KeepsTogether(node,
+            model,
+            text,
+            cancellationToken);
     }
 
     // A namespace or type the chain is reached through, as Console is in System.Console.Error.WriteLine(…).

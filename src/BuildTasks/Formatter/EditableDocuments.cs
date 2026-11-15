@@ -67,9 +67,7 @@ internal static class EditableDocuments
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-
-            context.RegisterSyntaxTreeAction(static tree => tree.ReportDiagnostic(Diagnostic.Create(Mark,
-                Location.Create(tree.Tree, textSpan: default))));
+            context.RegisterSyntaxTreeAction(static tree => tree.ReportDiagnostic(Diagnostic.Create(Mark, Location.Create(tree.Tree, textSpan: default))));
         }
     }
 }

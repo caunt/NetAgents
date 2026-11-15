@@ -41,11 +41,8 @@ public sealed class FormattingAnalysisTests
         Assert.Equal(expected: 4, analyzer.Runs);
 
         // The rejected candidate is validated once, and the accepted one lands.
-        Assert.Equal(expected: 1,
-            messages.Count(static message => message.Contains(value: "rejected PERF0004", StringComparison.Ordinal)));
-
-        Assert.DoesNotContain(messages,
-            static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
+        Assert.Equal(expected: 1, messages.Count(static message => message.Contains(value: "rejected PERF0004", StringComparison.Ordinal)));
+        Assert.DoesNotContain(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
 
         Assert.Contains(expectedSubstring: "=> 4;",
             await DocumentText.Read(run.Project.Documents.First()),
@@ -84,8 +81,7 @@ public sealed class FormattingAnalysisTests
         using AdhocWorkspace workspace = new();
 
         Project before = CreateProject(workspace)
-            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                generalDiagnosticOption: ReportDiagnostic.Error));
+            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, generalDiagnosticOption: ReportDiagnostic.Error));
 
         FormattingAnalysis analysis = new(analyzers: [new UnusedValueSuppressor()],
             static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
@@ -104,9 +100,7 @@ public sealed class FormattingAnalysisTests
             CancellationToken.None);
 
         Assert.True(validation.IntroducedErrors.IsEmpty);
-
-        Assert.DoesNotContain(validation.Diagnostics.ToArray(),
-            static diagnostic => diagnostic.Id == "CS0219" && !diagnostic.IsSuppressed);
+        Assert.DoesNotContain(validation.Diagnostics.ToArray(), static diagnostic => diagnostic.Id == "CS0219" && !diagnostic.IsSuppressed);
     }
 
     /// <summary>An error already present in today's baseline no longer justifies rejecting the action.</summary>
@@ -186,9 +180,7 @@ public sealed class FormattingAnalysisTests
         Assert.Equal(expected: "PERF0003", Assert.Single(first.IntroducedErrors.ToArray()).Id);
         Assert.Equal(expected: "PERF0003", Assert.Single(repeated.IntroducedErrors.ToArray()).Id);
         Assert.Equal(expected: 2, analyzer.Runs);
-
-        Assert.Contains(messages,
-            static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
+        Assert.Contains(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
 
         Project changed = Change(before,
             name: "Dependency.cs",
@@ -215,8 +207,7 @@ public sealed class FormattingAnalysisTests
     {
         List<string> messages = await ValidateBrokenCandidate(suppressedDiagnosticIdentifier: "IDE0072");
 
-        Assert.Contains(messages,
-            static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
+        Assert.Contains(messages, static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
     }
 
     /// <summary>Runs the full analysis when a suppressor could change the effective compiler errors.</summary>
@@ -225,8 +216,7 @@ public sealed class FormattingAnalysisTests
     {
         List<string> messages = await ValidateBrokenCandidate(suppressedDiagnosticIdentifier: "CS0219");
 
-        Assert.DoesNotContain(messages,
-            static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
+        Assert.DoesNotContain(messages, static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
     }
 
     private static Project Change(Project project, string name, string source)
@@ -375,8 +365,7 @@ public sealed class FormattingAnalysisTests
                 string dependencySource = dependency.GetText().ToString();
 
                 // Reader.cs is wrong only while it reads 2 and the dependency still holds 0.
-                bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal) && dependencySource.Contains(value: "= 0;",
-                    StringComparison.Ordinal);
+                bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal) && dependencySource.Contains(value: "= 0;", StringComparison.Ordinal);
 
                 if (invalid)
                     compilation.ReportDiagnostic(Diagnostic.Create(Rule, reader.GetRoot().GetFirstToken().GetLocation()));

@@ -33,8 +33,7 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
         isEnabledByDefault: true,
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
-    private static readonly ImmutableHashSet<string> ForbiddenTypes = ImmutableHashSet.Create(StringComparer.Ordinal,
-        items:
+    private static readonly ImmutableHashSet<string> ForbiddenTypes = ImmutableHashSet.Create(StringComparer.Ordinal, items:
         [
             "Lock",
             "Monitor",
@@ -91,9 +90,7 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
             return;
 
         INamespaceSymbol containingNamespace = containingType.ContainingNamespace;
-
-        bool isThreadSleep = containingType.Name == "Thread" && member.Name == "Sleep" && IsNamespace(containingNamespace,
-            Threading);
+        bool isThreadSleep = containingType.Name == "Thread" && member.Name == "Sleep" && IsNamespace(containingNamespace, Threading);
 
         bool isBlockingTask = containingType.Name is "Task" or "ValueTask"
             && member.Name is "Result" or "Wait" or "WaitAll" or "WaitAny"

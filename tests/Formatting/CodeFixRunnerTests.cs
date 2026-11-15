@@ -68,8 +68,9 @@ public sealed class CodeFixRunnerTests
 
         using AdhocWorkspace workspace = new();
 
-        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(CreateFieldProject(workspace,
-                method.Replace(oldValue: "STATEMENTS", statements, StringComparison.Ordinal)),
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(CreateFieldProject(workspace, method.Replace(oldValue: "STATEMENTS",
+                    statements,
+                    StringComparison.Ordinal)),
             analyzers: [new ControlFlowBracesAnalyzer(), new StatementSpacingAnalyzer(), new ArgumentLayoutAnalyzer()],
             providers: [new ControlFlowBracesCodeFixProvider(), new StatementSpacingCodeFixProvider(), new ArgumentLayoutCodeFixProvider()],
             static fault => Assert.Fail(fault),
@@ -94,8 +95,9 @@ public sealed class CodeFixRunnerTests
 
         using AdhocWorkspace workspace = new();
 
-        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(CreateFieldProject(workspace,
-                method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal)),
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(CreateFieldProject(workspace, method.Replace(oldValue: "STATEMENT",
+                    statement,
+                    StringComparison.Ordinal)),
             analyzers: [new ArgumentLayoutAnalyzer(), new StatementSpacingAnalyzer()],
             providers: [new ArgumentLayoutCodeFixProvider(), new StatementSpacingCodeFixProvider()],
             static fault => Assert.Fail(fault),
@@ -458,9 +460,7 @@ public sealed class CodeFixRunnerTests
         Assert.Contains(expectedSubstring: "namespace Consumer;", formatted, StringComparison.Ordinal);
         Assert.DoesNotContain(expectedSubstring: "namespace Consumer.Nested;", formatted, StringComparison.Ordinal);
         Assert.Contains(expectedSubstring: "private static int Value;", formatted, StringComparison.Ordinal);
-
-        Assert.Contains(messages,
-            static message => message.Contains(value: "other projects can name", StringComparison.Ordinal));
+        Assert.Contains(messages, static message => message.Contains(value: "other projects can name", StringComparison.Ordinal));
     }
 
     /// <summary>Rejects new compiler errors before accepting an automatic fix.</summary>
@@ -788,10 +788,8 @@ public sealed class CodeFixRunnerTests
         {
             Attempts++;
 
-            context.RegisterCodeFix(CodeAction.Create(title: "Declare the missing code",
-                    cancellationToken => Task.FromResult(context.Document
-                        .WithText(SourceText.From(text: "class Example { void Run() { } }")))),
-                context.Diagnostics);
+            context.RegisterCodeFix(CodeAction.Create(title: "Declare the missing code", cancellationToken => Task.FromResult(context.Document
+                .WithText(SourceText.From(text: "class Example { void Run() { } }")))), context.Diagnostics);
 
             return Task.CompletedTask;
         }
@@ -896,9 +894,8 @@ public sealed class CodeFixRunnerTests
         {
             Attempts++;
 
-            context.RegisterCodeFix(CodeAction.Create(title: "Replace method body",
-                    cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
-                context.Diagnostics);
+            context.RegisterCodeFix(CodeAction.Create(title: "Replace method body", cancellationToken => Task.FromResult(context.Document
+                .WithText(SourceText.From(source)))), context.Diagnostics);
 
             return Task.CompletedTask;
         }
@@ -941,9 +938,8 @@ public sealed class CodeFixRunnerTests
         {
             Attempts++;
 
-            context.RegisterCodeFix(CodeAction.Create(title: "Replace suggestion body",
-                    cancellationToken => Task.FromResult(context.Document.WithText(SourceText.From(source)))),
-                context.Diagnostics);
+            context.RegisterCodeFix(CodeAction.Create(title: "Replace suggestion body", cancellationToken => Task.FromResult(context.Document
+                .WithText(SourceText.From(source)))), context.Diagnostics);
 
             return Task.CompletedTask;
         }
