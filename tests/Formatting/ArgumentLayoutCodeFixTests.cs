@@ -13,8 +13,8 @@ public sealed class ArgumentLayoutCodeFixTests
     [Fact]
     public async Task CollapsesLambdaArgument()
     {
-        const string source = "public class ExampleType { public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(\n() => {\nSystem.Console.WriteLine();\n}\n); }";
-        const string expected = "public class ExampleType { public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); }); }";
+        const string source = "public class ExampleType\n{\n    public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(\n() => {\nSystem.Console.WriteLine();\n}\n);\n}";
+        const string expected = "public class ExampleType\n{\n    public System.Threading.Tasks.Task Execute() => System.Threading.Tasks.Task.Run(() => { System.Console.WriteLine(); });\n}";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
@@ -25,8 +25,8 @@ public sealed class ArgumentLayoutCodeFixTests
     [Fact]
     public async Task CollapsesShortSignaturesAndCalls()
     {
-        const string source = "public class ExampleType { public void Execute(\n[System.Runtime.InteropServices.In] string value,\nint count = 0\n) { Execute(\nvalue,\ncount\n); } }";
-        const string expected = "public class ExampleType { public void Execute([System.Runtime.InteropServices.In] string value, int count = 0) { Execute(value, count); } }";
+        const string source = "public class ExampleType\n{\n    public void Execute(\n[System.Runtime.InteropServices.In] string value,\nint count = 0\n) { Execute(\nvalue,\ncount\n); }\n}";
+        const string expected = "public class ExampleType\n{\n    public void Execute([System.Runtime.InteropServices.In] string value, int count = 0) { Execute(value, count); }\n}";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
