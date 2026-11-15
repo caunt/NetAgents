@@ -177,8 +177,8 @@ public sealed class RequiredDocumentationAnalyzer() : PolicyAnalyzer(Rule)
         return name is null || !name.StartsWith(value: "ThrowIf", StringComparison.Ordinal)
             ? null
             : model.GetSymbolInfo(invocation).Symbol is not IMethodSymbol { IsStatic: true, ContainingType: INamedTypeSymbol type }
-            ? null
-            : IsException(type) ? type : null;
+                ? null
+                : IsException(type) ? type : null;
     }
 
     // A throw inside a try block whose catch clauses take that exception never leaves the member.

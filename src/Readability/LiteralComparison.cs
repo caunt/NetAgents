@@ -41,8 +41,11 @@ internal static class LiteralComparison
         ExpressionSyntax? second = GetArgument(call, ordinal: 1);
 
         // Exactly one side is a string literal, and the other is the value it is compared with.
-        bool firstLiteral = first is LiteralExpressionSyntax literalFirst && literalFirst.IsKind(SyntaxKind.StringLiteralExpression);
-        bool secondLiteral = second is LiteralExpressionSyntax literalSecond && literalSecond.IsKind(SyntaxKind.StringLiteralExpression);
+        bool firstLiteral = first is LiteralExpressionSyntax literalFirst
+            && literalFirst.IsKind(SyntaxKind.StringLiteralExpression);
+
+        bool secondLiteral = second is LiteralExpressionSyntax literalSecond
+            && literalSecond.IsKind(SyntaxKind.StringLiteralExpression);
 
         if (first is null || second is null || firstLiteral == secondLiteral || IsInExpressionTree(invocation, model, cancellationToken))
             return null;
@@ -64,7 +67,9 @@ internal static class LiteralComparison
     // The node the pattern replaces: the ! in front of the call, which the pattern takes as not, or the call itself.
     public static ExpressionSyntax GetReplaced(InvocationExpressionSyntax invocation)
     {
-        return invocation.Parent is PrefixUnaryExpressionSyntax negation && negation.IsKind(SyntaxKind.LogicalNotExpression) ? negation : invocation;
+        return invocation.Parent is PrefixUnaryExpressionSyntax negation && negation.IsKind(SyntaxKind.LogicalNotExpression)
+            ? negation
+            : invocation;
     }
 
     private static ExpressionSyntax? GetArgument(IInvocationOperation call, int ordinal)
@@ -145,7 +150,8 @@ internal static class LiteralComparison
         {
             ParenthesizedExpressionSyntax or ArgumentSyntax or EqualsValueClauseSyntax or ArrowExpressionClauseSyntax or ReturnStatementSyntax => false,
             IfStatementSyntax or WhileStatementSyntax or DoStatementSyntax or ForStatementSyntax or WhenClauseSyntax or CatchFilterClauseSyntax => false,
-            BinaryExpressionSyntax binary => !binary.IsKind(SyntaxKind.LogicalAndExpression) && !binary.IsKind(SyntaxKind.LogicalOrExpression),
+            BinaryExpressionSyntax binary => !binary.IsKind(SyntaxKind.LogicalAndExpression)
+                && !binary.IsKind(SyntaxKind.LogicalOrExpression),
             AssignmentExpressionSyntax assignment => assignment.Left == replaced,
             ConditionalExpressionSyntax conditional => conditional.Condition != replaced,
             LambdaExpressionSyntax lambda => lambda.ExpressionBody != replaced,

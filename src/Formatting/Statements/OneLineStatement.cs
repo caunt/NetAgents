@@ -68,7 +68,9 @@ internal static class OneLineStatement
 
                 return original == last
                     ? joined
-                    : original.HasTrailingTrivia || original.GetNextToken().HasLeadingTrivia ? joined.WithTrailingTrivia(SyntaxFactory.Space) : joined.WithTrailingTrivia(SyntaxTriviaList.Empty);
+                    : original.HasTrailingTrivia || original.GetNextToken().HasLeadingTrivia
+                        ? joined.WithTrailingTrivia(SyntaxFactory.Space)
+                        : joined.WithTrailingTrivia(SyntaxTriviaList.Empty);
             });
     }
 

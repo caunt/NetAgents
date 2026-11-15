@@ -29,8 +29,8 @@ public sealed class ArgumentLayoutAnalyzerTests
     [InlineData("public record ExampleType(string aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,\n    int bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb);")]
     [InlineData("public class ExampleType { public void Execute(int first, int second) { Execute(1, // explanation\n    2); } }")]
     [InlineData("public class ExampleType { public void Execute() { System.Console.WriteLine(\"An intentionally long call argument that exceeds one hundred and twenty-eight characters, which a single item may do on one line.\"); } }")]
-    [InlineData("public class ExampleType { public void Execute(string value) { string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n        \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"),\n    value); } }")]
-    [InlineData("public class ExampleType { public void Execute() { System.Console.WriteLine(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\")); } }")]
+    [InlineData("public class ExampleType { public void Execute(string value) { string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n        \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n        \"x\"),\n    value,\n    value); } }")]
+    [InlineData("public class ExampleType { public void Execute() { System.Console.WriteLine(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n    \"x\")); } }")]
     public async Task AcceptsValidLayouts(string source)
     {
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source));
@@ -196,7 +196,7 @@ public sealed class ArgumentLayoutAnalyzerTests
     [InlineData("public class ExampleType { public ExampleType() : this(\nstring.Empty\n) { } public ExampleType(string value) { } }")]
     [InlineData("[System.Obsolete(\n\"Message\"\n)] public class ExampleType { }")]
     [InlineData("public class ExampleType { public int Execute(int[] values) => values[\n0\n]; }")]
-    [InlineData("public class ExampleType { public void Execute() { string.Concat(\"An intentionally long call argument that exceeds one hundred and twenty-eight characters together with\", \"the next argument it is joined to.\"); } }")]
+    [InlineData("public class ExampleType { public void Execute() { string.Concat(\"An intentionally long call argument that exceeds one hundred and twenty-eight characters together with\", \"the next argument it is joined to,\", \"and a third.\"); } }")]
     [InlineData("public class ExampleType { public void Execute() { System.Console.WriteLine(\n\"An intentionally long call argument that exceeds one hundred and twenty-eight characters, which a single item may do on one line.\"); } }")]
     [InlineData("public class ExampleType { public void Execute() { System.Console.WriteLine(\"An intentionally long call argument that exceeds one hundred and twenty-eight characters, which a single item may do on one line.\"\n); } }")]
     public async Task RejectsInvalidCallLayouts(string source)
@@ -212,10 +212,10 @@ public sealed class ArgumentLayoutAnalyzerTests
     /// </summary>
     /// <param name="source">A source with one list whose later items are indented wrongly.</param>
     [Theory]
-    [InlineData("public class ExampleType { public void Execute() { string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n      \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"); } }")]
-    [InlineData("public class ExampleType { public void Execute() { string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"); } }")]
-    [InlineData("public class ExampleType { public void Execute(string value) { string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"),\n    value); } }")]
-    [InlineData("public class ExampleType { public void Execute() { System.Console.WriteLine(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n        \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\")); } }")]
+    [InlineData("public class ExampleType { public void Execute() { string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n      \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n    \"x\"); } }")]
+    [InlineData("public class ExampleType { public void Execute() { string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n    \"x\"); } }")]
+    [InlineData("public class ExampleType { public void Execute(string value) { string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n    \"x\"),\n    value,\n    value); } }")]
+    [InlineData("public class ExampleType { public void Execute() { System.Console.WriteLine(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n        \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n        \"x\")); } }")]
     [InlineData("public class ExampleType { public void Execute() { string.Concat(\n// Explanation\n\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"); } }")]
     public async Task RejectsMisindentedItems(string source)
     {

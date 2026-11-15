@@ -39,7 +39,9 @@ internal static class RazorSource
     private static bool Admits(SyntaxNode node, bool generated)
     {
         SyntaxTree tree = node.SyntaxTree;
-        bool generatedOrHidden = generated || (tree.HasHiddenRegions() && tree.GetLineVisibility(node.SpanStart) == LineVisibility.Hidden);
+
+        bool generatedOrHidden = generated
+            || (tree.HasHiddenRegions() && tree.GetLineVisibility(node.SpanStart) == LineVisibility.Hidden);
 
         return !generatedOrHidden || IsAuthored(node);
     }
@@ -63,7 +65,8 @@ internal static class RazorSource
 
     private static bool IsRazorFile(string path)
     {
-        return path.EndsWith(value: ".razor", StringComparison.OrdinalIgnoreCase) || path.EndsWith(value: ".cshtml", StringComparison.OrdinalIgnoreCase);
+        return path.EndsWith(value: ".razor", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(value: ".cshtml", StringComparison.OrdinalIgnoreCase);
     }
 
     private static ImmutableArray<TextSpan> Read(SyntaxTree tree)
@@ -73,7 +76,9 @@ internal static class RazorSource
 
         foreach (LineMapping mapping in tree.GetLineMappings())
         {
-            bool copied = !mapping.IsHidden && mapping.MappedSpan.HasMappedPath && IsRazorFile(mapping.MappedSpan.Path)
+            bool copied = !mapping.IsHidden
+                && mapping.MappedSpan.HasMappedPath
+                && IsRazorFile(mapping.MappedSpan.Path)
                 && mapping.Span.End.Line < lines.Count;
 
             if (!copied)

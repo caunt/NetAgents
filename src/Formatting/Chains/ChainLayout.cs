@@ -120,9 +120,31 @@ internal static class ChainLayout
     {
         int members = links.Count(static link => !link.IsQualifier);
 
-        return members < 2 || IsExempt(top, links, model, text, cancellationToken) ? null : members > MaximumLinks || !Fits(top,
-            links,
-            text);
+        return members < 2 || IsExempt(top, links, model, text, cancellationToken)
+            ? null
+            : members > MaximumLinks || !Fits(top, links, text);
+    }
+
+    // Whether something around an expression keeps it on one line: a condition, which NETAGENTS0019 keeps there, an
+    // interpolation, an attribute argument, or a list NETAGENTS0020 writes on one line.
+    public static bool IsHeldOnOneLine(ExpressionSyntax top, SemanticModel model, SourceText text, CancellationToken cancellationToken)
+    {
+        // The search for conditions stops at the statement holding the expression, since one beyond it is another
+        // statement's. A list joins everything inside it, a lambda's statements included, so that search goes on.
+        bool inStatement = true;
+
+        foreach (SyntaxNode ancestor in top.AncestorsAndSelf())
+        {
+            if (inStatement && (IsCondition(ancestor) || ancestor is InterpolationSyntax or AttributeArgumentSyntax))
+                return true;
+
+            if (IsJoinedList(ancestor, model, text, cancellationToken))
+                return true;
+
+            inStatement = inStatement && ancestor is not StatementSyntax;
+        }
+
+        return false;
     }
 
     public static bool IsSettled(List<ChainLink> links, bool split, SourceText text)
@@ -311,25 +333,12 @@ internal static class ChainLayout
         };
     }
 
-    // NETAGENTS0019 keeps conditions on one line, an interpolation holds no line break, NETAGENTS0020 writes a list
-    // whose contents fit on one line, and a comment beside a dot belongs to its author, so the rule lays none of those
-    // out.
+    // A chain held on one line by what is around it, or with a comment beside a dot, which belongs to its author, is
+    // not laid out.
     private static bool IsExempt(ExpressionSyntax top, List<ChainLink> links, SemanticModel model, SourceText text, CancellationToken cancellationToken)
     {
-        // The search for conditions stops at the statement holding the chain, since one beyond it is another
-        // statement's. A list joins everything inside it, a lambda's statements included, so that search goes on.
-        bool inStatement = true;
-
-        foreach (SyntaxNode ancestor in top.AncestorsAndSelf())
-        {
-            if (inStatement && (IsCondition(ancestor) || ancestor is InterpolationSyntax or AttributeArgumentSyntax))
-                return true;
-
-            if (IsJoinedList(ancestor, model, text, cancellationToken))
-                return true;
-
-            inStatement = inStatement && ancestor is not StatementSyntax;
-        }
+        if (IsHeldOnOneLine(top, model, text, cancellationToken))
+            return true;
 
         foreach (ChainLink link in links)
         {
@@ -350,10 +359,9 @@ internal static class ChainLayout
         bool laidOut = ArgumentLayout.IsList(node) && !node.ContainsDiagnostics && !node.ContainsDirectives;
 
         // A short call kept together although it is too long joins nothing inside it.
-        return laidOut && !ArgumentLayout.Wraps(node, model, text, cancellationToken) && !ArgumentLayout.KeepsTogether(node,
-            model,
-            text,
-            cancellationToken);
+        return laidOut
+            && !ArgumentLayout.Wraps(node, model, text, cancellationToken)
+            && !ArgumentLayout.KeepsTogether(node, model, text, cancellationToken);
     }
 
     // A namespace or type the chain is reached through, as Console is in System.Console.Error.WriteLine(…).
@@ -384,7 +392,9 @@ internal static class ChainLayout
     // initializer that always expands. Whether they must is settled by their contents, not by how they are written.
     private static bool SpreadsOverLines(ChainLink link)
     {
-        return link.Access.Parent is InvocationExpressionSyntax call && call.Expression == link.Access && ArgumentLayout.RequiresMultipleLines(call.ArgumentList);
+        return link.Access.Parent is InvocationExpressionSyntax call
+            && call.Expression == link.Access
+            && ArgumentLayout.RequiresMultipleLines(call.ArgumentList);
     }
 
     private static bool StartsLine(SyntaxToken dot, SourceText text)

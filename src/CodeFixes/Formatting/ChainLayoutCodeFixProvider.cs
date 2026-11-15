@@ -61,11 +61,9 @@ public sealed class ChainLayoutCodeFixProvider : CodeFixProvider
 
             List<ChainLink>? links = ChainLayout.GetLinks(top, model, text, context.CancellationToken);
 
-            bool? split = links is null ? null : ChainLayout.GetRequiredSplit(top,
-                links,
-                model,
-                text,
-                context.CancellationToken);
+            bool? split = links is null
+                ? null
+                : ChainLayout.GetRequiredSplit(top, links, model, text, context.CancellationToken);
 
             if (links is null || split is not bool required || ChainLayout.IsSettled(links, required, text))
                 continue;

@@ -58,9 +58,15 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
 
     public async Task<ValidationResult> Validate(Project project, ImmutableArray<Diagnostic> before, string actionKey, bool optional, CancellationToken cancellationToken)
     {
-        string? fingerprint = optional ? await Fingerprint(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false) : null;
+        string? fingerprint = optional
+            ? await Fingerprint(project, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+            : null;
+
         RejectedAction? rejected = null;
-        bool cached = fingerprint is not null && _rejected.TryGetValue(actionKey, out rejected) && rejected.Fingerprint == fingerprint;
+
+        bool cached = fingerprint is not null
+            && _rejected.TryGetValue(actionKey, out rejected)
+            && rejected.Fingerprint == fingerprint;
 
         if (cached && rejected is not null)
         {

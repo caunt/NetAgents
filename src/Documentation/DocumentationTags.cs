@@ -150,7 +150,8 @@ internal static class DocumentationTags
                             if (written.Length == 0)
                                 continue;
 
-                            bool ends = token.IsKind(SyntaxKind.XmlTextLiteralToken) && written[written.Length - 1] is '.' or '!' or '?';
+                            bool ends = token.IsKind(SyntaxKind.XmlTextLiteralToken)
+                                && written[written.Length - 1] is '.' or '!' or '?';
 
                             return ends ? null : token.SpanStart + written.Length;
                         }
@@ -384,12 +385,17 @@ internal static class DocumentationTags
             _ => null,
         };
 
-        return method is not null && method.MethodKind is not MethodKind.Constructor and not MethodKind.StaticConstructor && !method.ReturnsVoid && !IsResultlessTask(method.ReturnType);
+        return method is not null
+            && method.MethodKind is not MethodKind.Constructor and not MethodKind.StaticConstructor
+            && !method.ReturnsVoid
+            && !IsResultlessTask(method.ReturnType);
     }
 
     private static bool IsResultlessTask(ITypeSymbol type)
     {
-        return type is INamedTypeSymbol { IsGenericType: false } named && named.Name is "Task" or "ValueTask" && named.ContainingNamespace?.ToDisplayString() is "System.Threading.Tasks";
+        return type is INamedTypeSymbol { IsGenericType: false } named
+            && named.Name is "Task" or "ValueTask"
+            && named.ContainingNamespace?.ToDisplayString() is "System.Threading.Tasks";
     }
 }
 

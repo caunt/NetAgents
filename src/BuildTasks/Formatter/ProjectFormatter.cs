@@ -223,7 +223,9 @@ internal static class ProjectFormatter
             ?? throw new InvalidOperationException(message: "The formatting project is missing.");
 
         Solution solution = initial.WithDefaultNamespace(inputs.RootNamespace).Solution;
-        string projectDirectory = Path.GetDirectoryName(inputs.ProjectPath) ?? throw new InvalidOperationException(message: "The project directory is missing.");
+
+        string projectDirectory = Path.GetDirectoryName(inputs.ProjectPath)
+            ?? throw new InvalidOperationException(message: "The project directory is missing.");
 
         foreach (ITaskItem source in inputs.SourceItems)
         {
@@ -294,7 +296,8 @@ internal static class ProjectFormatter
 
         foreach (Document document in codeFixes.Project.Documents)
         {
-            Document previous = original.GetDocument(document.Id) ?? throw new InvalidOperationException(message: "A code fix unexpectedly added a document.");
+            Document previous = original.GetDocument(document.Id)
+                ?? throw new InvalidOperationException(message: "A code fix unexpectedly added a document.");
 
             SourceText before = await previous.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
             SourceText after = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);

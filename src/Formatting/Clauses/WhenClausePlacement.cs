@@ -17,7 +17,9 @@ internal static class WhenClausePlacement
     {
         SyntaxToken previous = keyword.GetPreviousToken();
 
-        return keyword.IsKind(SyntaxKind.WhenKeyword) && IsWhitespace(previous.TrailingTrivia) && IsWhitespace(keyword.LeadingTrivia);
+        return keyword.IsKind(SyntaxKind.WhenKeyword)
+            && IsWhitespace(previous.TrailingTrivia)
+            && IsWhitespace(keyword.LeadingTrivia);
     }
 
     public static SyntaxToken GetKeyword(SyntaxNode clause)
@@ -47,7 +49,9 @@ internal static class WhenClausePlacement
     {
         SyntaxToken previous = keyword.GetPreviousToken();
 
-        return root.ReplaceTokens(tokens: [previous, keyword], (original, rewritten) => original == previous ? rewritten.WithTrailingTrivia(SyntaxFactory.Space) : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
+        return root.ReplaceTokens(tokens: [previous, keyword], (original, rewritten) => original == previous
+            ? rewritten.WithTrailingTrivia(SyntaxFactory.Space)
+            : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
     }
 
     private static bool IsWhitespace(SyntaxTriviaList trivia)

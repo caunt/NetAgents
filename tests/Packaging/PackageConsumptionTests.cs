@@ -312,7 +312,10 @@ public sealed class PackageConsumptionTests
 
             string longName = new(c: 'p', count: 130);
 
-            string longSource = ValidSource.Replace(oldValue: "return recipientName;", newValue: "return string.Concat(recipientName, string.Empty);", StringComparison.Ordinal)
+            string longSource = ValidSource
+                .Replace(oldValue: "return recipientName;",
+                    newValue: "return string.Concat(recipientName, string.Empty, string.Empty);",
+                    StringComparison.Ordinal)
                 .Replace(oldValue: "recipientName", longName, StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, longSource);
@@ -320,9 +323,13 @@ public sealed class PackageConsumptionTests
 
             string expanded = await File.ReadAllTextAsync(sourcePath);
 
-            // A single item has nothing to split from and stays beside its delimiters; a later item starts a line.
+            // A single item has nothing to split from and stays beside its delimiters; in a call of three
+            // arguments, each later one starts a line.
             Assert.Contains("CreateGreeting(string " + longName + ")\n", expanded, StringComparison.Ordinal);
-            Assert.Contains("string.Concat(" + longName + ",\n            string.Empty);", expanded, StringComparison.Ordinal);
+
+            Assert.Contains("string.Concat(" + longName + ",\n            string.Empty,\n            string.Empty);",
+                expanded,
+                StringComparison.Ordinal);
 
             // An unresolved symbol stays a compiler error: no generated declaration, no formatting failure.
             string unresolvedSource = ValidSource.Replace(oldValue: "return recipientName;",

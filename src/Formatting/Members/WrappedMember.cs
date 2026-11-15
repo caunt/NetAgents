@@ -75,7 +75,9 @@ internal static class WrappedMember
     {
         SeparatedSyntaxList<VariableDeclaratorSyntax> variables = field.Declaration.Variables;
 
-        return variables.Count == 1 && variables[index: 0].Initializer is EqualsValueClauseSyntax initializer ? initializer.EqualsToken : default;
+        return variables.Count == 1 && variables[index: 0].Initializer is EqualsValueClauseSyntax initializer
+            ? initializer.EqualsToken
+            : default;
     }
 
     private static int GetLine(SourceText text, int position)

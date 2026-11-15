@@ -100,7 +100,9 @@ public sealed class FormattingAnalysisTests
             CancellationToken.None);
 
         Assert.True(validation.IntroducedErrors.IsEmpty);
-        Assert.DoesNotContain(validation.Diagnostics.ToArray(), static diagnostic => diagnostic.Id == "CS0219" && !diagnostic.IsSuppressed);
+
+        Assert.DoesNotContain(validation.Diagnostics.ToArray(), static diagnostic => diagnostic.Id == "CS0219"
+            && !diagnostic.IsSuppressed);
     }
 
     /// <summary>An error already present in today's baseline no longer justifies rejecting the action.</summary>
@@ -365,7 +367,8 @@ public sealed class FormattingAnalysisTests
                 string dependencySource = dependency.GetText().ToString();
 
                 // Reader.cs is wrong only while it reads 2 and the dependency still holds 0.
-                bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal) && dependencySource.Contains(value: "= 0;", StringComparison.Ordinal);
+                bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal)
+                    && dependencySource.Contains(value: "= 0;", StringComparison.Ordinal);
 
                 if (invalid)
                     compilation.ReportDiagnostic(Diagnostic.Create(Rule, reader.GetRoot().GetFirstToken().GetLocation()));

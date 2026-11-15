@@ -45,13 +45,18 @@ internal static class LiteralConcatenation
         bool interpolated = pieces.Exists(static piece => piece is InterpolatedStringExpressionSyntax);
         ExpressionSyntax? merged = interpolated ? MergeInterpolated(pieces) : MergeLiterals(pieces);
 
-        return merged is null || (interpolated && !KeepsBinding(top, merged, model, cancellationToken)) ? null : merged.WithTriviaFrom(top);
+        return merged is null || (interpolated && !KeepsBinding(top, merged, model, cancellationToken))
+            ? null
+            : merged.WithTriviaFrom(top);
     }
 
     // A longer run continues through the addition this one is the left side of.
     private static bool ContinuesRun(BinaryExpressionSyntax top)
     {
-        return top.Parent is BinaryExpressionSyntax parent && parent.IsKind(SyntaxKind.AddExpression) && parent.Left == top && IsPiece(parent.Right);
+        return top.Parent is BinaryExpressionSyntax parent
+            && parent.IsKind(SyntaxKind.AddExpression)
+            && parent.Left == top
+            && IsPiece(parent.Right);
     }
 
     // The pieces from left to right, when every operand of the run is one.
@@ -153,9 +158,8 @@ internal static class LiteralConcatenation
         return expression switch
         {
             LiteralExpressionSyntax literal => literal.IsKind(SyntaxKind.StringLiteralExpression)
-                && literal.Token.IsKind(SyntaxKind.StringLiteralToken) && literal.Token
-                    .Text
-                    .StartsWith(value: "\"", StringComparison.Ordinal),
+                && literal.Token.IsKind(SyntaxKind.StringLiteralToken)
+                && literal.Token.Text.StartsWith(value: "\"", StringComparison.Ordinal),
             InterpolatedStringExpressionSyntax interpolated => interpolated.StringStartToken
                 .IsKind(SyntaxKind.InterpolatedStringStartToken),
             _ => false,

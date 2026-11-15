@@ -56,7 +56,9 @@ internal static class StatementSpacing
                 {
                     int position = compilation.Members.IndexOf(global);
 
-                    return position > 0 && compilation.Members[position - 1] is GlobalStatementSyntax previous ? previous.Statement : null;
+                    return position > 0 && compilation.Members[position - 1] is GlobalStatementSyntax previous
+                        ? previous.Statement
+                        : null;
                 }
             default:
                 return null;

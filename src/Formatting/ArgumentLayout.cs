@@ -42,7 +42,11 @@ internal static class ArgumentLayout
         SyntaxNode[] items = [.. list.ChildNodes()];
 
         if (items.Length == 0 || !Wraps(list, model, source, cancellationToken))
-            return KeepsTogether(list, model, source, cancellationToken) ? JoinItems(list, items, source) : [new TextChange(list.Span, GetCompactText(list))];
+        {
+            return KeepsTogether(list, model, source, cancellationToken)
+                ? JoinItems(list, items, source)
+                : [new TextChange(list.Span, GetCompactText(list))];
+        }
 
         string indentation = GetIndentation(source, list.SpanStart);
         string itemIndentation = GetItemIndentation(list, source);
@@ -201,9 +205,13 @@ internal static class ArgumentLayout
     {
         LineFitMeasurement measurement = Measure(list);
 
-        return IsShortCall(list) && !measurement.HasInlineComment && !measurement.HasTokenLineBreak && !measurement.HasSpreadStatement && (IsTooLong(list, measurement) || (EndsPastLimit(list,
-            measurement,
-            source) && !ChainLayout.BreaksLineOf(list, model, source, cancellationToken)));
+        return IsShortCall(list)
+            && !measurement.HasInlineComment
+            && !measurement.HasTokenLineBreak
+            && !measurement.HasSpreadStatement
+            && (IsTooLong(list, measurement)
+                || (EndsPastLimit(list, measurement, source)
+                    && !ChainLayout.BreaksLineOf(list, model, source, cancellationToken)));
     }
 
     // Whether the list's own contents keep it off one line: a comment, a statement that spreads, a line break inside a
@@ -214,14 +222,20 @@ internal static class ArgumentLayout
         LineFitMeasurement measurement = Measure(list);
 
         // Only trivia the compact text reproduces matters; trivia outside the delimiters stays where it is.
-        return measurement.HasInlineComment || measurement.HasTokenLineBreak || measurement.HasSpreadStatement || (!IsShortCall(list) && IsTooLong(list, measurement));
+        return measurement.HasInlineComment
+            || measurement.HasTokenLineBreak
+            || measurement.HasSpreadStatement
+            || (!IsShortCall(list) && IsTooLong(list, measurement));
     }
 
     internal static TextChange SeparateItems(SourceText source, int start, int end, string newline, string indentation)
     {
         TextSpan span = TextSpan.FromBounds(start, end);
         string comments = source.ToString(span).Trim();
-        string replacement = comments.Length == 0 ? newline + indentation : newline + indentation + comments + newline + indentation;
+
+        string replacement = comments.Length == 0
+            ? newline + indentation
+            : newline + indentation + comments + newline + indentation;
 
         return new TextChange(span, replacement);
     }
@@ -252,7 +266,8 @@ internal static class ArgumentLayout
     {
         BlockSyntax body = GetBody(function);
 
-        return (body.Statements.Count > 0 && SharesLine(source, body.Statements[index: 0].GetFirstToken())) || SharesLine(source, body.CloseBraceToken);
+        return (body.Statements.Count > 0 && SharesLine(source, body.Statements[index: 0].GetFirstToken()))
+            || SharesLine(source, body.CloseBraceToken);
     }
 
     // The token widths bracket the compact length, as they do for the contents, so most lists never build it.
@@ -260,7 +275,10 @@ internal static class ArgumentLayout
     {
         int column = list.SpanStart - source.Lines.GetLineFromPosition(list.SpanStart).Start;
 
-        return !list.ContainsDirectives && column + measurement.Width + measurement.Tokens > LayoutLimits.MaximumInlineLength && (column + measurement.Width > LayoutLimits.MaximumInlineLength || column + GetCompactText(list).Length > LayoutLimits.MaximumInlineLength);
+        return !list.ContainsDirectives
+            && column + measurement.Width + measurement.Tokens > LayoutLimits.MaximumInlineLength
+            && (column + measurement.Width > LayoutLimits.MaximumInlineLength
+                || column + GetCompactText(list).Length > LayoutLimits.MaximumInlineLength);
     }
 
     private static BlockSyntax GetBody(AnonymousFunctionExpressionSyntax function)
@@ -299,8 +317,9 @@ internal static class ArgumentLayout
     {
         return [.. list.DescendantNodes()
             .OfType<AnonymousFunctionExpressionSyntax>()
-            .Where(function => function.Block is BlockSyntax body && function.Ancestors().First(IsList) == list
-                    && body.DescendantTokens().Any(HoldsSpreadStatement))];
+            .Where(function => function.Block is BlockSyntax body
+                && function.Ancestors().First(IsList) == list
+                && body.DescendantTokens().Any(HoldsSpreadStatement))];
     }
 
     // The statement lists this list lays out: those it encloses most closely, so a block inside a
@@ -330,7 +349,8 @@ internal static class ArgumentLayout
     {
         return token.Parent switch
         {
-            BlockSyntax block => token.IsKind(SyntaxKind.OpenBraceToken) && (block.Statements.Count > 1 || ControlFlowBraces.BelongsToStatement(block)),
+            BlockSyntax block => token.IsKind(SyntaxKind.OpenBraceToken)
+                && (block.Statements.Count > 1 || ControlFlowBraces.BelongsToStatement(block)),
             SwitchLabelSyntax { Parent: SwitchSectionSyntax section } => section.Statements.Count > 1,
             IfStatementSyntax or ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
                 or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax or TryStatementSyntax
@@ -452,10 +472,10 @@ internal static class ArgumentLayout
     {
         bool call = list.Kind() is SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList;
 
-        return call && !IsShortCall(list) && EndsPastLimit(list, Measure(list), source) && !ChainLayout.BreaksLineOf(list,
-            model,
-            source,
-            cancellationToken);
+        return call
+            && !IsShortCall(list)
+            && EndsPastLimit(list, Measure(list), source)
+            && !ChainLayout.BreaksLineOf(list, model, source, cancellationToken);
     }
 
     // A line break stands between a short call's parentheses and arguments, outside any comment.

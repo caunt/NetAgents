@@ -949,7 +949,9 @@ public sealed class CodeFixRunnerTests
     private sealed class ThrowingFix(string stage) : CodeFixProvider
     {
         // A provider built against another Roslyn fails while listing what it fixes, which is the behavior under test.
-        public override ImmutableArray<string> FixableDiagnosticIds => stage == "identifiers" ? ListSkewedIdentifiers() : [MarkerAnalyzer.Identifier];
+        public override ImmutableArray<string> FixableDiagnosticIds => stage == "identifiers"
+            ? ListSkewedIdentifiers()
+            : [MarkerAnalyzer.Identifier];
 
         public int Attempts { get; private set; }
 

@@ -50,7 +50,8 @@ public abstract class PolicyAnalyzer(DiagnosticDescriptor rule, bool analyzesRaz
         if (rule is null)
             throw new ArgumentNullException(nameof(rule));
 
-        bool isMandatoryError = rule.DefaultSeverity == DiagnosticSeverity.Error && rule.IsEnabledByDefault
+        bool isMandatoryError = rule.DefaultSeverity == DiagnosticSeverity.Error
+            && rule.IsEnabledByDefault
             && rule.CustomTags.Contains(WellKnownDiagnosticTags.NotConfigurable, StringComparer.Ordinal);
 
         return !isMandatoryError

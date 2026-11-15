@@ -180,8 +180,9 @@ internal static class CodeFixRunner
 
         foreach (Diagnostic diagnostic in ordered)
         {
-            Document? document = diagnostic.Location.SourceTree is null ? null : project.GetDocument(diagnostic.Location
-                .SourceTree);
+            Document? document = diagnostic.Location.SourceTree is null
+                ? null
+                : project.GetDocument(diagnostic.Location.SourceTree);
 
             if (document is null || !editable.Contains(document.Id) || diagnostic.IsSuppressed)
                 continue;
@@ -222,7 +223,8 @@ internal static class CodeFixRunner
                             selected,
                             fixable,
                             cancellationToken)
-                            .ConfigureAwait(continueOnCapturedContext: false) ?? selected;
+                            .ConfigureAwait(continueOnCapturedContext: false)
+                            ?? selected;
                     }
 
                     Project? updated = await GetSupportedChange(project, preferred, editable, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -393,7 +395,8 @@ internal static class CodeFixRunner
 
         // ponytail: handles case-only collisions; extend the comparison if other naming transformations need repair.
         bool collision = model.LookupSymbols(diagnosticSpan.Start)
-            .Any(symbol => symbol is ILocalSymbol or IParameterSymbol && !SymbolEqualityComparer.Default.Equals(symbol, local)
+            .Any(symbol => symbol is ILocalSymbol or IParameterSymbol
+                && !SymbolEqualityComparer.Default.Equals(symbol, local)
                 && string.Equals(symbol.Name, local.Name, StringComparison.OrdinalIgnoreCase));
 
         if (!collision)
@@ -440,7 +443,8 @@ internal static class CodeFixRunner
                 .ThenByDescending(static candidate => candidate.SourceSpan.Start)
         )
         {
-            Document document = updated.GetDocument(candidate.Document) ?? throw new InvalidOperationException(message: "The naming document is missing.");
+            Document document = updated.GetDocument(candidate.Document)
+                ?? throw new InvalidOperationException(message: "The naming document is missing.");
 
             Project? renamed = await AvoidNamingCollision(document, candidate.SourceSpan, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
@@ -481,7 +485,9 @@ internal static class CodeFixRunner
             if (node.Parent is TypeDeclarationSyntax)
                 continue;
 
-            SyntaxTokenList modifiers = node is BaseTypeDeclarationSyntax type ? type.Modifiers : ((DelegateDeclarationSyntax)node).Modifiers;
+            SyntaxTokenList modifiers = node is BaseTypeDeclarationSyntax type
+                ? type.Modifiers
+                : ((DelegateDeclarationSyntax)node).Modifiers;
 
             foreach (SyntaxToken modifier in modifiers)
             {
@@ -519,7 +525,8 @@ internal static class CodeFixRunner
     {
         foreach (DocumentId identifier in editable)
         {
-            Document document = project.GetDocument(identifier) ?? throw new InvalidOperationException(message: "A formatting document is missing.");
+            Document document = project.GetDocument(identifier)
+                ?? throw new InvalidOperationException(message: "A formatting document is missing.");
 
             Document formatted = await Formatter.FormatAsync(document, cancellationToken: cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
@@ -534,8 +541,10 @@ internal static class CodeFixRunner
                 .AnalyzerConfigOptionsProvider
                 .GetOptions(tree ?? throw new InvalidOperationException(message: "A syntax tree is missing."));
 
-            bool needsFinalNewline = text.Length > 0 && text.Lines.GetLineFromPosition(text.Length).Span.Length > 0
-                && options.TryGetValue(key: "insert_final_newline", out string? finalNewline) && finalNewline == "true";
+            bool needsFinalNewline = text.Length > 0
+                && text.Lines.GetLineFromPosition(text.Length).Span.Length > 0
+                && options.TryGetValue(key: "insert_final_newline", out string? finalNewline)
+                && finalNewline == "true";
 
             if (needsFinalNewline)
                 formatted = formatted.WithText(text.WithChanges(new TextChange(new TextSpan(text.Length, length: 0), GetLineEnding(text, options))));
@@ -651,7 +660,9 @@ internal static class CodeFixRunner
 
         ProjectChanges differences = updated.GetChanges(project);
 
-        return differences.GetChangedDocuments().All(editable.Contains) && SupportsDocumentChanges(project, updated, differences) ? updated : null;
+        return differences.GetChangedDocuments().All(editable.Contains) && SupportsDocumentChanges(project, updated, differences)
+            ? updated
+            : null;
     }
 
     // Namespaces that enclose a type declaration. A file whose set changes has moved its types,
@@ -677,8 +688,11 @@ internal static class CodeFixRunner
     {
         foreach (DocumentId identifier in changedDocuments)
         {
-            Document beforeDocument = before.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The original document is missing.");
-            Document afterDocument = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
+            Document beforeDocument = before.GetDocument(identifier)
+                ?? throw new InvalidOperationException(message: "The original document is missing.");
+
+            Document afterDocument = after.GetDocument(identifier)
+                ?? throw new InvalidOperationException(message: "The updated document is missing.");
 
             SourceText beforeText = await beforeDocument.GetTextAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
@@ -716,8 +730,11 @@ internal static class CodeFixRunner
     {
         foreach (DocumentId identifier in after.GetChanges(before).GetChangedDocuments())
         {
-            Document beforeDocument = before.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The original document is missing.");
-            Document afterDocument = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
+            Document beforeDocument = before.GetDocument(identifier)
+                ?? throw new InvalidOperationException(message: "The original document is missing.");
+
+            Document afterDocument = after.GetDocument(identifier)
+                ?? throw new InvalidOperationException(message: "The updated document is missing.");
 
             SyntaxNode? beforeRoot = await beforeDocument.GetSyntaxRootAsync(cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
@@ -780,7 +797,8 @@ internal static class CodeFixRunner
     {
         foreach (DocumentId identifier in after.GetChanges(before).GetChangedDocuments())
         {
-            Document document = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
+            Document document = after.GetDocument(identifier)
+                ?? throw new InvalidOperationException(message: "The updated document is missing.");
 
             SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
@@ -856,11 +874,16 @@ internal static class CodeFixRunner
     {
         foreach (DocumentId identifier in differences.GetChangedDocuments())
         {
-            Document original = before.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The original document is missing.");
-            Document updated = after.GetDocument(identifier) ?? throw new InvalidOperationException(message: "The updated document is missing.");
+            Document original = before.GetDocument(identifier)
+                ?? throw new InvalidOperationException(message: "The original document is missing.");
 
-            bool sameIdentity = original.Name == updated.Name && original.FilePath == updated.FilePath
-                && original.SourceCodeKind == updated.SourceCodeKind && original.Folders.SequenceEqual(updated.Folders);
+            Document updated = after.GetDocument(identifier)
+                ?? throw new InvalidOperationException(message: "The updated document is missing.");
+
+            bool sameIdentity = original.Name == updated.Name
+                && original.FilePath == updated.FilePath
+                && original.SourceCodeKind == updated.SourceCodeKind
+                && original.Folders.SequenceEqual(updated.Folders);
 
             if (!sameIdentity)
                 return false;
@@ -868,17 +891,27 @@ internal static class CodeFixRunner
 
         // Project-system edits are not source formatting. Fixed non-source inputs also make a
         // complete source fingerprint sufficient for the rejection cache's validation context.
-        return before.CompilationOptions == after.CompilationOptions && before.ParseOptions == after.ParseOptions
-            && before.AssemblyName == after.AssemblyName && before.DefaultNamespace == after.DefaultNamespace
-            && before.Name == after.Name && before.FilePath == after.FilePath && before.OutputFilePath == after.OutputFilePath
-            && !differences.GetAddedDocuments().Any() && !differences.GetRemovedDocuments().Any()
-            && !differences.GetAddedAdditionalDocuments().Any() && !differences.GetRemovedAdditionalDocuments().Any()
+        return before.CompilationOptions == after.CompilationOptions
+            && before.ParseOptions == after.ParseOptions
+            && before.AssemblyName == after.AssemblyName
+            && before.DefaultNamespace == after.DefaultNamespace
+            && before.Name == after.Name
+            && before.FilePath == after.FilePath
+            && before.OutputFilePath == after.OutputFilePath
+            && !differences.GetAddedDocuments().Any()
+            && !differences.GetRemovedDocuments().Any()
+            && !differences.GetAddedAdditionalDocuments().Any()
+            && !differences.GetRemovedAdditionalDocuments().Any()
             && !differences.GetChangedAdditionalDocuments().Any()
-            && !differences.GetAddedAnalyzerConfigDocuments().Any() && !differences.GetRemovedAnalyzerConfigDocuments().Any()
+            && !differences.GetAddedAnalyzerConfigDocuments().Any()
+            && !differences.GetRemovedAnalyzerConfigDocuments().Any()
             && !differences.GetChangedAnalyzerConfigDocuments().Any()
-            && !differences.GetAddedMetadataReferences().Any() && !differences.GetRemovedMetadataReferences().Any()
-            && !differences.GetAddedProjectReferences().Any() && !differences.GetRemovedProjectReferences().Any()
-            && !differences.GetAddedAnalyzerReferences().Any() && !differences.GetRemovedAnalyzerReferences().Any();
+            && !differences.GetAddedMetadataReferences().Any()
+            && !differences.GetRemovedMetadataReferences().Any()
+            && !differences.GetAddedProjectReferences().Any()
+            && !differences.GetRemovedProjectReferences().Any()
+            && !differences.GetAddedAnalyzerReferences().Any()
+            && !differences.GetRemovedAnalyzerReferences().Any();
     }
 
     internal sealed record CodeFixResult(Project Project, ImmutableArray<Diagnostic> Blocking, ImmutableArray<Diagnostic> Introduced, string? IntroducedBy);

@@ -246,7 +246,9 @@ public sealed class FormattingFingerprintTests
 
             // The folders the formatter loads its fixes and Roslyn from.
             Inputs.CodeFixDirectory = Path.GetDirectoryName(Item(relativePath: "fixes/StyleFixes.dll")) ?? string.Empty;
-            Inputs.SdkAssemblyDirectory = Path.GetDirectoryName(Item(relativePath: "sdk/Microsoft.CodeAnalysis.dll")) ?? string.Empty;
+
+            Inputs.SdkAssemblyDirectory = Path.GetDirectoryName(Item(relativePath: "sdk/Microsoft.CodeAnalysis.dll"))
+                ?? string.Empty;
 
             Assert.True(File.Exists(Item(relativePath: "analyzers/Dependency.dll")));
         }

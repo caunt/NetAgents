@@ -46,9 +46,9 @@ internal static class MemberKeys
     // The type a constant is declared with, as written; every other member has none.
     public static string GetConstantType(MemberDeclarationSyntax member)
     {
-        return member is FieldDeclarationSyntax field && field.Modifiers.Any(SyntaxKind.ConstKeyword) ? field.Declaration
-            .Type
-            .ToString() : string.Empty;
+        return member is FieldDeclarationSyntax field && field.Modifiers.Any(SyntaxKind.ConstKeyword)
+            ? field.Declaration.Type.ToString()
+            : string.Empty;
     }
 
     public static int GetKind(MemberDeclarationSyntax member)
@@ -79,7 +79,9 @@ internal static class MemberKeys
     {
         return member switch
         {
-            BaseFieldDeclarationSyntax field => field.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) || field.Modifiers.Any(SyntaxKind.ConstKeyword) ? 0 : 1,
+            BaseFieldDeclarationSyntax field => field.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) || field.Modifiers.Any(SyntaxKind.ConstKeyword)
+                ? 0
+                : 1,
             PropertyDeclarationSyntax property => IsSettable(property) ? 1 : 0,
             _ => member.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) ? 0 : 1,
         };
@@ -89,10 +91,9 @@ internal static class MemberKeys
     {
         return member switch
         {
-            BaseFieldDeclarationSyntax field => field.Declaration.Variables.Count > 0 ? field.Declaration
-                .Variables[index: 0]
-                .Identifier
-                .ValueText : string.Empty,
+            BaseFieldDeclarationSyntax field => field.Declaration.Variables.Count > 0
+                ? field.Declaration.Variables[index: 0].Identifier.ValueText
+                : string.Empty,
             BaseTypeDeclarationSyntax type => type.Identifier.ValueText,
             MethodDeclarationSyntax method => method.Identifier.ValueText,
             ConstructorDeclarationSyntax constructor => constructor.Identifier.ValueText,
@@ -118,10 +119,10 @@ internal static class MemberKeys
         return modifiers.Any(SyntaxKind.PublicKeyword)
             ? 0
             : modifiers.Any(SyntaxKind.ProtectedKeyword)
-            ? modifiers.Any(SyntaxKind.InternalKeyword) ? 2 : modifiers.Any(SyntaxKind.PrivateKeyword) ? 4 : 3
-            : modifiers.Any(SyntaxKind.InternalKeyword)
-            ? 1
-            : modifiers.Any(SyntaxKind.PrivateKeyword) || member.Parent is not InterfaceDeclarationSyntax ? 5 : 0;
+                ? modifiers.Any(SyntaxKind.InternalKeyword) ? 2 : modifiers.Any(SyntaxKind.PrivateKeyword) ? 4 : 3
+                : modifiers.Any(SyntaxKind.InternalKeyword)
+                    ? 1
+                    : modifiers.Any(SyntaxKind.PrivateKeyword) || member.Parent is not InterfaceDeclarationSyntax ? 5 : 0;
     }
 
     private static bool IsSettable(PropertyDeclarationSyntax property)

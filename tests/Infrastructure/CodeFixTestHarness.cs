@@ -20,6 +20,7 @@ using NetAgents.Analyzers.Formatting;
 using NetAgents.Analyzers.Formatting.Chains;
 using NetAgents.Analyzers.Formatting.Clauses;
 using NetAgents.Analyzers.Formatting.Members;
+using NetAgents.Analyzers.Formatting.Operators;
 using NetAgents.Analyzers.Formatting.Statements;
 using NetAgents.Analyzers.Ordering;
 using NetAgents.Analyzers.Readability;
@@ -175,6 +176,11 @@ internal static class CodeFixTestHarness
         return await Fix(source, new OneLineStatementAnalyzer(), new OneLineStatementCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
+    public static async Task<string> FixOperators(string source, bool fixAll)
+    {
+        return await Fix(source, new OperatorLayoutAnalyzer(), new OperatorLayoutCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     public static async Task<string> FixQualifiedTypeImports(string source, bool fixAll)
     {
         return await Fix(source, new QualifiedTypeImportAnalyzer(), new QualifiedTypeImportCodeFixProvider(), fixAll)
@@ -226,7 +232,10 @@ internal static class CodeFixTestHarness
     private static Document CreateDocument(AdhocWorkspace workspace, string source)
     {
         SyntaxNode sourceRoot = CSharpSyntaxTree.ParseText(source).GetRoot();
-        OutputKind outputKind = sourceRoot.ChildNodes().OfType<GlobalStatementSyntax>().Any() ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary;
+
+        OutputKind outputKind = sourceRoot.ChildNodes().OfType<GlobalStatementSyntax>().Any()
+            ? OutputKind.ConsoleApplication
+            : OutputKind.DynamicallyLinkedLibrary;
 
         Project project = workspace.AddProject(name: "CodeFixTests", LanguageNames.CSharp)
             .WithParseOptions(new CSharpParseOptions(LanguageVersion.CSharp14))

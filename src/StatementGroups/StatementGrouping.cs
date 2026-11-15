@@ -69,7 +69,11 @@ internal static class StatementGrouping
             for (int index = 1; index <= statements.Count; index++)
             {
                 StatementKind next = index < statements.Count ? classifier.Classify(statements[index]) : StatementKind.Alone;
-                bool closes = index == statements.Count || next != kind || next is StatementKind.Alone || StartsGroup(statements[index]);
+
+                bool closes = index == statements.Count
+                    || next != kind
+                    || next is StatementKind.Alone
+                    || StartsGroup(statements[index]);
 
                 if (!closes)
                     continue;
@@ -181,7 +185,8 @@ internal static class StatementGrouping
         TextLine statementLine = source.Lines.GetLineFromPosition(current.SpanStart);
 
         // NETAGENTS0016 adds the blank line that a statement it separates is missing; this rule leaves it alone.
-        bool covered = StatementSpacing.RequiresSeparation(previous, source) || StatementSpacing.RequiresSeparation(current, source);
+        bool covered = StatementSpacing.RequiresSeparation(previous, source)
+            || StatementSpacing.RequiresSeparation(current, source);
 
         // Statements sharing a line are split by the same edit NETAGENTS0016 makes.
         if (first.Start != start)
@@ -220,7 +225,10 @@ internal static class StatementGrouping
 
         // The blank line takes the line break the previous statement ends with.
         TextLine before = source.Lines[first.LineNumber - 1];
-        List<string> replacement = separated ? [source.ToString(TextSpan.FromBounds(before.End, before.EndIncludingLineBreak))] : [];
+
+        List<string> replacement = separated
+            ? [source.ToString(TextSpan.FromBounds(before.End, before.EndIncludingLineBreak))]
+            : [];
 
         foreach (TextLine comment in comments)
             replacement.Add(source.ToString(comment.SpanIncludingLineBreak));

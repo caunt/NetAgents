@@ -228,7 +228,8 @@ public sealed class EditableDocumentsTests
 
                         foreach (DocumentId identifier in fixAllContext.Project.DocumentIds)
                         {
-                            Document document = solution.GetDocument(identifier) ?? throw new InvalidOperationException(message: "A project document is missing.");
+                            Document document = solution.GetDocument(identifier)
+                                ?? throw new InvalidOperationException(message: "A project document is missing.");
 
                             Document internalized = await MakeInternal(document, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 

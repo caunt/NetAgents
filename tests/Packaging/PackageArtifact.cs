@@ -116,7 +116,7 @@ internal static class PackageArtifact
 
         Assert.Equal(expected: 2, package.Entries
             .Count(static entry => entry.FullName.StartsWith(value: "analyzers/", StringComparison.Ordinal)
-            && entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal)));
+                && entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal)));
 
         Assert.NotNull(package.GetEntry(entryName: "tools/tasks/NetAgents.BuildTasks.dll"));
         Assert.NotNull(package.GetEntry(entryName: "tools/tasks/NetAgents.Formatter.dll"));

@@ -65,7 +65,9 @@ public sealed class QualifiedTypeImportAnalyzer() : PolicyAnalyzer(Rule)
             return;
 
         // A colliding name cannot be imported plainly, and choosing the alias is the author's call.
-        string hint = resolution.Collides ? ", under a using alias because this name already refers to something else" : string.Empty;
+        string hint = resolution.Collides
+            ? ", under a using alias because this name already refers to something else"
+            : string.Empty;
 
         context.ReportDiagnostic(Diagnostic.Create(Rule, reference.GetLocation(), hint));
     }

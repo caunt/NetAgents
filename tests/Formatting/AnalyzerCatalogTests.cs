@@ -16,7 +16,7 @@ public sealed class AnalyzerCatalogTests
         .GetCustomAttributes<AssemblyMetadataAttribute>()
         .Single(static attribute => attribute.Key is "CodeStyleDirectory")
         .Value
-            ?? throw new InvalidOperationException(message: "The building SDK's code-style directory is unknown."), path2: "Microsoft.CodeAnalysis.CSharp.CodeStyle.dll");
+        ?? throw new InvalidOperationException(message: "The building SDK's code-style directory is unknown."), path2: "Microsoft.CodeAnalysis.CSharp.CodeStyle.dll");
 
     /// <summary>Hosts a suppressor, which describes suppressions where an analyzer describes rules.</summary>
     [Fact]

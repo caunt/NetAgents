@@ -55,9 +55,10 @@ internal static class ValuePlacement
         SyntaxToken first = value.GetFirstToken();
         bool plain = IsWhitespace(assigned.TrailingTrivia) && IsWhitespace(first.LeadingTrivia);
 
-        return plain && text.Lines.GetLineFromPosition(assigned.Span.End).LineNumber != text.Lines
-            .GetLineFromPosition(first.SpanStart)
-            .LineNumber;
+        return plain
+            && text.Lines.GetLineFromPosition(assigned.Span.End).LineNumber != text.Lines
+                .GetLineFromPosition(first.SpanStart)
+                .LineNumber;
     }
 
     // One space after the =, and nothing before the value: total = first + second.
@@ -66,7 +67,9 @@ internal static class ValuePlacement
         SyntaxToken assigned = GetOperator(node);
         SyntaxToken first = assigned.GetNextToken();
 
-        return root.ReplaceTokens(tokens: [assigned, first], (original, rewritten) => original == assigned ? rewritten.WithTrailingTrivia(SyntaxFactory.Space) : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
+        return root.ReplaceTokens(tokens: [assigned, first], (original, rewritten) => original == assigned
+            ? rewritten.WithTrailingTrivia(SyntaxFactory.Space)
+            : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
     }
 
     private static ExpressionSyntax? GetValue(SyntaxNode node)

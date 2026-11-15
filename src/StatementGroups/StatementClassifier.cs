@@ -29,7 +29,9 @@ internal sealed class StatementClassifier(SemanticModel model, SourceText source
             ? StatementKind.Alone
             : statement switch
             {
-                LocalDeclarationStatementSyntax declaration => StoresAwaitedResults(declaration) ? StatementKind.AwaitedDeclaration : StatementKind.Declaration,
+                LocalDeclarationStatementSyntax declaration => StoresAwaitedResults(declaration)
+                    ? StatementKind.AwaitedDeclaration
+                    : StatementKind.Declaration,
                 ExpressionStatementSyntax expression => ClassifyEffect(expression.Expression),
                 _ => StatementKind.Alone,
             };
@@ -53,7 +55,9 @@ internal sealed class StatementClassifier(SemanticModel model, SourceText source
         {
             AwaitExpressionSyntax => StatementKind.Await,
             AssignmentExpressionSyntax { Right: AwaitExpressionSyntax } => StatementKind.AwaitedAssignment,
-            AssignmentExpressionSyntax assignment => IsEventSubscription(assignment) ? StatementKind.EventSubscription : StatementKind.Assignment,
+            AssignmentExpressionSyntax assignment => IsEventSubscription(assignment)
+                ? StatementKind.EventSubscription
+                : StatementKind.Assignment,
             PrefixUnaryExpressionSyntax or PostfixUnaryExpressionSyntax => StatementKind.Assignment,
             InvocationExpressionSyntax invocation when IsArgumentCheck(invocation) => StatementKind.ArgumentCheck,
             _ => StatementKind.Call,
@@ -87,8 +91,9 @@ internal sealed class StatementClassifier(SemanticModel model, SourceText source
 
     private bool IsEventSubscription(AssignmentExpressionSyntax assignment)
     {
-        return (assignment.IsKind(SyntaxKind.AddAssignmentExpression) || assignment.IsKind(SyntaxKind.SubtractAssignmentExpression)) && model.GetSymbolInfo(assignment.Left, cancellationToken)
-            .Symbol is IEventSymbol;
+        return (assignment.IsKind(SyntaxKind.AddAssignmentExpression)
+            || assignment.IsKind(SyntaxKind.SubtractAssignmentExpression))
+            && model.GetSymbolInfo(assignment.Left, cancellationToken).Symbol is IEventSymbol;
     }
 
     private bool SpansLines(StatementSyntax statement)

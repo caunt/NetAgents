@@ -22,15 +22,16 @@ internal static class ControlFlowBraces
 
     public static bool CanRemove(BlockSyntax block, SourceText source)
     {
-        return HasSingleLineBody(block, source) && block.Parent switch
-        {
-            IfStatementSyntax conditional => CanRemoveFromChain(conditional, source),
-            ElseClauseSyntax { Parent: IfStatementSyntax conditional } => CanRemoveFromChain(conditional, source),
-            ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
-                or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax
-                or SwitchSectionSyntax or BlockSyntax or LabeledStatementSyntax => true,
-            _ => false,
-        };
+        return HasSingleLineBody(block, source)
+            && block.Parent switch
+            {
+                IfStatementSyntax conditional => CanRemoveFromChain(conditional, source),
+                ElseClauseSyntax { Parent: IfStatementSyntax conditional } => CanRemoveFromChain(conditional, source),
+                ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
+                    or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax
+                    or SwitchSectionSyntax or BlockSyntax or LabeledStatementSyntax => true,
+                _ => false,
+            };
     }
 
     public static ImmutableDictionary<TextSpan, SyntaxNode> GetChanges(SyntaxNode root, SourceText source)
@@ -163,15 +164,18 @@ internal static class ControlFlowBraces
 
     private static bool RequiresBraces(StatementSyntax statement, SourceText source)
     {
-        return !statement.ContainsDiagnostics && statement.Parent is not null && !statement.Parent.ContainsDirectives && statement.Parent switch
-        {
-            IfStatementSyntax conditional => !CanRemoveFromChain(conditional, source),
-            ElseClauseSyntax { Parent: IfStatementSyntax conditional } when statement is not IfStatementSyntax
-                => !CanRemoveFromChain(conditional, source),
-            ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
-                or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax or LabeledStatementSyntax => !IsSingleLine(statement, source),
-            _ => false,
-        };
+        return !statement.ContainsDiagnostics
+            && statement.Parent is not null
+            && !statement.Parent.ContainsDirectives
+            && statement.Parent switch
+            {
+                IfStatementSyntax conditional => !CanRemoveFromChain(conditional, source),
+                ElseClauseSyntax { Parent: IfStatementSyntax conditional } when statement is not IfStatementSyntax
+                    => !CanRemoveFromChain(conditional, source),
+                ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
+                    or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax or LabeledStatementSyntax => !IsSingleLine(statement, source),
+                _ => false,
+            };
     }
 
     private static bool RequiresCaseBraces(SwitchSectionSyntax section, SourceText source)

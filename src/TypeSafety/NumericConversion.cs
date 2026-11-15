@@ -70,7 +70,9 @@ internal static class NumericConversion
             IConversionOperation conversion => IsConstant(conversion.Operand),
             IUnaryOperation unary => IsConstant(unary.Operand),
             IBinaryOperation binary => IsConstant(binary.LeftOperand) && IsConstant(binary.RightOperand),
-            IConditionalOperation { WhenFalse: IOperation otherwise } conditional => IsConstant(conditional.Condition) && IsConstant(conditional.WhenTrue) && IsConstant(otherwise),
+            IConditionalOperation { WhenFalse: IOperation otherwise } conditional => IsConstant(conditional.Condition)
+                && IsConstant(conditional.WhenTrue)
+                && IsConstant(otherwise),
             _ => false,
         };
     }

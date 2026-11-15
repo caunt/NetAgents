@@ -70,10 +70,9 @@ public sealed class RuleSuppressionAnalyzer() : PolicyAnalyzer(Rule)
         // Only the rule the suppression names decides, so another analyzer's suppression passes.
         ExpressionSyntax? checkId = suppression ? GetCheckId(attribute.ArgumentList) : null;
 
-        string value = checkId is null ? string.Empty : ReadCheckId(attribute,
-            checkId,
-            context.SemanticModel,
-            context.CancellationToken);
+        string value = checkId is null
+            ? string.Empty
+            : ReadCheckId(attribute, checkId, context.SemanticModel, context.CancellationToken);
 
         if (IsRequired(value))
             context.ReportDiagnostic(Diagnostic.Create(Rule, attribute.GetLocation(), $"'{GetIdentifier(value)}'"));
@@ -115,17 +114,20 @@ public sealed class RuleSuppressionAnalyzer() : PolicyAnalyzer(Rule)
 
         if (target is "assembly" or "module")
         {
-            return target == "assembly" ? model.Compilation.Assembly.GetAttributes() : model.Compilation
-                .SourceModule
-                .GetAttributes();
+            return target == "assembly"
+                ? model.Compilation.Assembly.GetAttributes()
+                : model.Compilation.SourceModule.GetAttributes();
         }
 
-        SyntaxNode? owner = list.Parent is BaseFieldDeclarationSyntax { Declaration.Variables.Count: > 0 } field ? field.Declaration
-            .Variables[index: 0] : list.Parent;
+        SyntaxNode? owner = list.Parent is BaseFieldDeclarationSyntax { Declaration.Variables.Count: > 0 } field
+            ? field.Declaration.Variables[index: 0]
+            : list.Parent;
 
         ISymbol? symbol = owner is null ? null : model.GetDeclaredSymbol(owner, cancellationToken);
 
-        return symbol is IMethodSymbol method && target == "return" ? method.GetReturnTypeAttributes() : symbol?.GetAttributes() ?? [];
+        return symbol is IMethodSymbol method && target == "return"
+            ? method.GetReturnTypeAttributes()
+            : symbol?.GetAttributes() ?? [];
     }
 
     // The rule identifier is the second argument, positional or named checkId.

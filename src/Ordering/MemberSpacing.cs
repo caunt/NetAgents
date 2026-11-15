@@ -42,7 +42,10 @@ internal static class MemberSpacing
 
     public static bool IsSeparated(MemberDeclarationSyntax previous, MemberDeclarationSyntax current)
     {
-        return StandsAlone(previous) || StandsAlone(current) || MemberKeys.CompareBuckets(previous, current) != 0 || StartsGroup(current);
+        return StandsAlone(previous)
+            || StandsAlone(current)
+            || MemberKeys.CompareBuckets(previous, current) != 0
+            || StartsGroup(current);
     }
 
     public static bool StartsGroup(MemberDeclarationSyntax member)
@@ -125,7 +128,9 @@ internal static class MemberSpacing
     // A primary constructor parameter as it is, or behind a null check: _first = first ?? throw ...;.
     private static bool IsParameter(ExpressionSyntax? value, ParameterListSyntax parameters)
     {
-        ExpressionSyntax? stored = value is BinaryExpressionSyntax { Right: ThrowExpressionSyntax } check && check.IsKind(SyntaxKind.CoalesceExpression) ? check.Left : value;
+        ExpressionSyntax? stored = value is BinaryExpressionSyntax { Right: ThrowExpressionSyntax } check && check.IsKind(SyntaxKind.CoalesceExpression)
+            ? check.Left
+            : value;
 
         if (stored is not IdentifierNameSyntax name)
             return false;

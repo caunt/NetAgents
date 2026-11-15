@@ -42,13 +42,13 @@ internal static class DelegateCreation
         // A lambda, an anonymous method, or a method group converts to the delegate; another delegate instance does not.
         ExpressionSyntax wrapped = argument.Expression;
 
-        bool convertible = wrapped is AnonymousFunctionExpressionSyntax || model.GetSymbolInfo(wrapped, cancellationToken)
-            .Symbol is IMethodSymbol;
+        bool convertible = wrapped is AnonymousFunctionExpressionSyntax
+            || model.GetSymbolInfo(wrapped, cancellationToken).Symbol is IMethodSymbol;
 
         ITypeSymbol? type = model.GetTypeInfo(creation, cancellationToken).Type;
 
-        bool sameType = type is INamedTypeSymbol { TypeKind: TypeKind.Delegate } && SymbolEqualityComparer.Default
-            .Equals(GetTargetType(creation, model, cancellationToken), type);
+        bool sameType = type is INamedTypeSymbol { TypeKind: TypeKind.Delegate }
+            && SymbolEqualityComparer.Default.Equals(GetTargetType(creation, model, cancellationToken), type);
 
         return convertible && sameType ? wrapped : null;
     }

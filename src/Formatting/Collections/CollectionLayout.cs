@@ -97,13 +97,21 @@ internal static class CollectionLayout
                 .NormalizeWhitespace(indentation: "", eol: " ")
                 .ToFullString();
 
-            return [new TextChange(TextSpan.FromBounds(value ? previous.Span.End : opening.SpanStart, closing.Span.End), (value ? " " : "") + compact)];
+            return [new TextChange(TextSpan.FromBounds(value ? previous.Span.End : opening.SpanStart, closing.Span.End), (value
+                ? " "
+                : "") + compact)];
         }
 
         // New lines reuse the file's line break, and elements sit one level deeper than the delimiters around them.
         TextLine firstLine = source.Lines[index: 0];
-        string newline = firstLine.EndIncludingLineBreak > firstLine.End ? source.ToString(TextSpan.FromBounds(firstLine.End, firstLine.EndIncludingLineBreak)) : "\n";
-        bool opensBelow = IsBraced(collection) ? !ArgumentLayout.HasComment(source, previous.Span.End, opening.SpanStart) : value;
+
+        string newline = firstLine.EndIncludingLineBreak > firstLine.End
+            ? source.ToString(TextSpan.FromBounds(firstLine.End, firstLine.EndIncludingLineBreak))
+            : "\n";
+
+        bool opensBelow = IsBraced(collection)
+            ? !ArgumentLayout.HasComment(source, previous.Span.End, opening.SpanStart)
+            : value;
 
         // A delimiter moving below the token before it takes that line's indentation; one already on a line of its own,
         // such as a row its outer initializer placed, keeps the indentation it has.
@@ -155,15 +163,18 @@ internal static class CollectionLayout
         }
 
         // The first element starts a line below the opening delimiter, and the closing delimiter a line below the last.
-        bool enclosed = ArgumentLayout.Breaks(source, opening.Span.End, items[0].SpanStart) && ArgumentLayout.Breaks(source,
-            last.Span.End,
-            closing.SpanStart);
+        bool enclosed = ArgumentLayout.Breaks(source, opening.Span.End, items[0].SpanStart)
+            && ArgumentLayout.Breaks(source, last.Span.End, closing.SpanStart);
 
         // A brace, and a collection expression's bracket where it is a value, open below the token before them, unless a
         // comment stands between; a collection expression also ends with a comma.
         bool braced = IsBraced(collection);
         int previousEnd = opening.GetPreviousToken().Span.End;
-        bool required = braced ? !ArgumentLayout.HasComment(source, previousEnd, opening.SpanStart) : IsValue(collection, source);
+
+        bool required = braced
+            ? !ArgumentLayout.HasComment(source, previousEnd, opening.SpanStart)
+            : IsValue(collection, source);
+
         bool opensBelow = !required || ArgumentLayout.Breaks(source, previousEnd, opening.SpanStart);
 
         return enclosed && opensBelow && (braced || trailing);
@@ -184,7 +195,9 @@ internal static class CollectionLayout
     // An anonymous object opens at its brace, after the new keyword; every other collection opens at its first token.
     private static SyntaxToken GetOpening(SyntaxNode collection)
     {
-        return collection is AnonymousObjectCreationExpressionSyntax anonymous ? anonymous.OpenBraceToken : collection.GetFirstToken();
+        return collection is AnonymousObjectCreationExpressionSyntax anonymous
+            ? anonymous.OpenBraceToken
+            : collection.GetFirstToken();
     }
 
     // Initializers and anonymous objects open their brace on a line of its own and leave their trailing comma to the
@@ -196,8 +209,11 @@ internal static class CollectionLayout
 
     private static bool IsObjectLike(InitializerExpressionSyntax initializer)
     {
-        return initializer.IsKind(SyntaxKind.ObjectInitializerExpression) || initializer.IsKind(SyntaxKind.WithInitializerExpression) || (initializer.IsKind(SyntaxKind.ArrayInitializerExpression) && initializer.Parent is InitializerExpressionSyntax row
-            && row.IsKind(SyntaxKind.ArrayInitializerExpression));
+        return initializer.IsKind(SyntaxKind.ObjectInitializerExpression)
+            || initializer.IsKind(SyntaxKind.WithInitializerExpression)
+            || (initializer.IsKind(SyntaxKind.ArrayInitializerExpression)
+                && initializer.Parent is InitializerExpressionSyntax row
+                && row.IsKind(SyntaxKind.ArrayInitializerExpression));
     }
 
     // A value written after =, =>, return, or a parameter name, or the initializer of a creation, which joins the token

@@ -164,9 +164,9 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
         ExpressionSyntax? reference = Find(root, diagnosticSpan);
 
-        QualifiedTypeImport.ImportResolution? resolution = reference is null ? null : QualifiedTypeImport.Resolve(reference,
-            model,
-            cancellationToken);
+        QualifiedTypeImport.ImportResolution? resolution = reference is null
+            ? null
+            : QualifiedTypeImport.Resolve(reference, model, cancellationToken);
 
         if (reference is null || resolution is null || resolution.Collides || Shorten(reference) is not SimpleNameSyntax shortName)
             return document;
@@ -198,9 +198,9 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
         {
             ExpressionSyntax? reference = Find(root, diagnostic.Location.SourceSpan);
 
-            QualifiedTypeImport.ImportResolution? resolution = reference is null ? null : QualifiedTypeImport.Resolve(reference,
-                model,
-                cancellationToken);
+            QualifiedTypeImport.ImportResolution? resolution = reference is null
+                ? null
+                : QualifiedTypeImport.Resolve(reference, model, cancellationToken);
 
             if (reference is null || resolution is null || resolution.Collides || !references.Add(reference))
                 continue;
@@ -214,7 +214,9 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
         // A reference can hold another, such as a type argument, so each shortens what is left of it
         // after the ones inside it were shortened.
-        CompilationUnitSyntax rewritten = unit.ReplaceNodes(references, static (original, current) => Shorten(current) ?? current);
+        CompilationUnitSyntax rewritten = unit.ReplaceNodes(references, static (original, current) => Shorten(current)
+            ?? current);
+
         SyntaxTrivia lineEnding = GetLineEnding(unit);
 
         foreach (string imported in imports)
@@ -225,9 +227,9 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
     private static bool IsFixable(SyntaxNode root, SemanticModel model, TextSpan diagnosticSpan, CancellationToken cancellationToken)
     {
-        QualifiedTypeImport.ImportResolution? resolution = Find(root, diagnosticSpan) is not ExpressionSyntax reference ? null : QualifiedTypeImport.Resolve(reference,
-            model,
-            cancellationToken);
+        QualifiedTypeImport.ImportResolution? resolution = Find(root, diagnosticSpan) is not ExpressionSyntax reference
+            ? null
+            : QualifiedTypeImport.Resolve(reference, model, cancellationToken);
 
         return resolution is not null && !resolution.Collides;
     }

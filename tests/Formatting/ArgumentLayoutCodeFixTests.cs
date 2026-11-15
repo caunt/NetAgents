@@ -101,8 +101,8 @@ public sealed class ArgumentLayoutCodeFixTests
     public async Task FixesNestedCalls()
     {
         string argument = "\"" + new string(c: 'x', count: 130) + "\"";
-        string source = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(string.Concat({argument}, {argument})); }} }}";
-        string expected = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(string.Concat({argument},\n    {argument})); }} }}";
+        string source = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(string.Concat({argument}, {argument}, {argument})); }} }}";
+        string expected = $"public class ExampleType {{ public void Execute() {{ System.Console.WriteLine(string.Concat({argument},\n    {argument},\n    {argument})); }} }}";
 
         Assert.Equal(expected, await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
@@ -114,14 +114,14 @@ public sealed class ArgumentLayoutCodeFixTests
     /// <param name="statement">The statement as written, inside the method body.</param>
     /// <param name="expected">The statement the fix lays out.</param>
     [Theory]
-    [InlineData("string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"), \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\");",
-        "string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n                \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"),\n            \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\");")]
-    [InlineData("System.Console.WriteLine(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"));",
-        "System.Console.WriteLine(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n            \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"));")]
-    [InlineData("string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n      \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\");",
-        "string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n            \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\");")]
-    [InlineData("string.Concat(string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"), \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"), \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\");",
-        "string.Concat(string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n                    \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"),\n                \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"),\n            \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\");")]
+    [InlineData("string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\", \"x\"), \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\", \"y\");",
+        "string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n                \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n                \"x\"),\n            \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\n            \"y\");")]
+    [InlineData("System.Console.WriteLine(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\", \"x\"));",
+        "System.Console.WriteLine(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n            \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n            \"x\"));")]
+    [InlineData("string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n      \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"x\");",
+        "string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n            \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n            \"x\");")]
+    [InlineData("string.Concat(string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\", \"x\"), \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\", \"y\"), \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"z\");",
+        "string.Concat(string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n                    \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n                    \"x\"),\n                \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\n                \"y\"),\n            \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n            \"z\");")]
     public async Task IndentsLaterItems(string statement, string expected)
     {
         const string method = "public class ExampleType\n{\n    public void Execute()\n    {\n        STATEMENT\n    }\n}";

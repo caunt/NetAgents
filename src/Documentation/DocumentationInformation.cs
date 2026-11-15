@@ -112,7 +112,9 @@ internal static class DocumentationInformation
     // upper-case letter of a run, which is where an acronym hands over: TElement, XmlReader, ID.
     private static bool StartsWord(string text, int index)
     {
-        return index != 0 && char.IsUpper(text[index]) && (!char.IsUpper(text[index - 1]) || (index + 1 < text.Length && char.IsLower(text[index + 1])));
+        return index != 0
+            && char.IsUpper(text[index])
+            && (!char.IsUpper(text[index - 1]) || (index + 1 < text.Length && char.IsLower(text[index + 1])));
     }
 
     // Tags carry no prose, and a name written inside a cref or a code element must not count as

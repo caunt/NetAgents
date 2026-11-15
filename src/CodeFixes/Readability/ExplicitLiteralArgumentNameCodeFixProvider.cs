@@ -123,8 +123,7 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
             .Distinct()];
 
         // Replacements are built from the original lists, so a nested list waits for the next pass.
-        return [.. candidates.Where(naming => !candidates.Any(other => other.List.Span != naming.List.Span && other.List
-            .Span
-            .Contains(naming.List.Span)))];
+        return [.. candidates.Where(naming => !candidates.Any(other => other.List.Span != naming.List.Span
+            && other.List.Span.Contains(naming.List.Span)))];
     }
 }

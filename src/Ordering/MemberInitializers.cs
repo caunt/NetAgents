@@ -86,7 +86,9 @@ internal static class MemberInitializers
             _ => attribute.Name.ToString(),
         };
 
-        return name.EndsWith(value: "Attribute", StringComparison.Ordinal) ? name.Substring(startIndex: 0, name.Length - "Attribute".Length) : name;
+        return name.EndsWith(value: "Attribute", StringComparison.Ordinal)
+            ? name.Substring(startIndex: 0, name.Length - "Attribute".Length)
+            : name;
     }
 
     private static List<ExpressionSyntax> GetInitializers(MemberDeclarationSyntax member)
@@ -145,7 +147,9 @@ internal static class MemberInitializers
             foreach (AttributeSyntax attribute in list.Attributes)
             {
                 string name = GetAttributeName(attribute);
-                bool serializer = name.StartsWith(value: "Json", StringComparison.Ordinal) || name.StartsWith(value: "Xml", StringComparison.Ordinal);
+
+                bool serializer = name.StartsWith(value: "Json", StringComparison.Ordinal)
+                    || name.StartsWith(value: "Xml", StringComparison.Ordinal);
 
                 if (serializer || markers.Contains(name))
                     return true;
@@ -159,8 +163,8 @@ internal static class MemberInitializers
     {
         bool valueType = declaration is StructDeclarationSyntax || declaration.Keyword.IsKind(SyntaxKind.StructKeyword);
 
-        bool recordStruct = declaration is RecordDeclarationSyntax record && record.ClassOrStructKeyword
-            .IsKind(SyntaxKind.StructKeyword);
+        bool recordStruct = declaration is RecordDeclarationSyntax record
+            && record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword);
 
         if (valueType || recordStruct)
             return true;
@@ -182,7 +186,9 @@ internal static class MemberInitializers
         foreach (SyntaxNode node in value.DescendantNodesAndSelf(static node => node is not AnonymousFunctionExpressionSyntax))
         {
             // The name after a dot belongs to whatever stands before it, unless that is this object.
-            bool qualified = node.Parent is MemberAccessExpressionSyntax access && access.Name == node && access.Expression is not ThisExpressionSyntax;
+            bool qualified = node.Parent is MemberAccessExpressionSyntax access
+                && access.Name == node
+                && access.Expression is not ThisExpressionSyntax;
 
             if (node is IdentifierNameSyntax identifier && !qualified && names.Contains(identifier.Identifier.ValueText))
                 return true;

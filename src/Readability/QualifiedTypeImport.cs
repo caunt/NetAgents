@@ -161,9 +161,8 @@ internal static class QualifiedTypeImport
     {
         INamespaceSymbol? declaring = type.OriginalDefinition.ContainingNamespace;
 
-        return declaring is not null && string.Equals(declaring.ToDisplayString(),
-            container.ToDisplayString(),
-            StringComparison.Ordinal);
+        return declaring is not null
+            && string.Equals(declaring.ToDisplayString(), container.ToDisplayString(), StringComparison.Ordinal);
     }
 
     private static bool IsSameType(ISymbol bound, INamedTypeSymbol type)

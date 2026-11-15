@@ -34,6 +34,7 @@
     <Compile Include="../Formatting/Chains/ChainLayout.cs" Link="Formatting/Chains/ChainLayout.cs" />
     <Compile Include="../Formatting/Chains/ChainLink.cs" Link="Formatting/Chains/ChainLink.cs" />
     <Compile Include="../Formatting/Collections/CollectionLayout.cs" Link="Formatting/Collections/CollectionLayout.cs" />
+    <Compile Include="../Formatting/Operators/OperatorLayout.cs" Link="Formatting/Operators/OperatorLayout.cs" />
     <Compile Include="../Readability/NestedTry.cs" Link="Readability/NestedTry.cs" />
     <Compile Include="../Readability/LiteralConcatenation.cs" Link="Readability/LiteralConcatenation.cs" />
     <Compile Include="../Readability/LiteralComparison.cs" Link="Readability/LiteralComparison.cs" />

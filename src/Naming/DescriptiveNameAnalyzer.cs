@@ -129,7 +129,8 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
 
         string name = identifier.ValueText.TrimStart(trimChars: ['_']);
 
-        bool hasTypePrefix = (context.Node is InterfaceDeclarationSyntax && name.StartsWith(value: "I", StringComparison.Ordinal))
+        bool hasTypePrefix = (context.Node is InterfaceDeclarationSyntax
+            && name.StartsWith(value: "I", StringComparison.Ordinal))
             || (context.Node is TypeParameterSyntax && name.StartsWith(value: "T", StringComparison.Ordinal));
 
         if (hasTypePrefix)
@@ -141,7 +142,8 @@ public sealed class DescriptiveNameAnalyzer() : PolicyAnalyzer(Rule, analyzesRaz
         {
             string word = wordMatch.Value;
 
-            bool isUppercaseWord = word.Length > 1 && char.IsLetter(word[index: 0])
+            bool isUppercaseWord = word.Length > 1
+                && char.IsLetter(word[index: 0])
                 && word.All(static character => !char.IsLetter(character) || char.IsUpper(character));
 
             if (AbbreviatedWords.Contains(word) || isUppercaseWord)

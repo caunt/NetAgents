@@ -42,9 +42,10 @@ internal static class ExplicitLiteralArgumentName
 
     private static bool AllowsRemovingName(ArgumentSyntax argument, SemanticModel model, CancellationToken cancellationToken)
     {
-        return argument.NameColon is not null && !IsInlineValue(argument.Expression) && argument.Parent is BaseArgumentListSyntax list && IsPositional(list,
-            model,
-            cancellationToken);
+        return argument.NameColon is not null
+            && !IsInlineValue(argument.Expression)
+            && argument.Parent is BaseArgumentListSyntax list
+            && IsPositional(list, model, cancellationToken);
     }
 
     private static bool AppendExpanded(BaseArgumentListSyntax list,
@@ -375,8 +376,8 @@ internal static class ExplicitLiteralArgumentName
 
         SymbolInfo rebinding = speculative.GetSymbolInfo(rebound, cancellationToken);
 
-        return rebinding.CandidateReason is CandidateReason.None && SymbolEqualityComparer.Default
-            .Equals(rebinding.Symbol, original);
+        return rebinding.CandidateReason is CandidateReason.None
+            && SymbolEqualityComparer.Default.Equals(rebinding.Symbol, original);
     }
 
     private static BaseArgumentListSyntax? Replace(BaseArgumentListSyntax list, List<ArgumentSyntax> rewritten)
@@ -395,9 +396,9 @@ internal static class ExplicitLiteralArgumentName
 
     private static bool RequiresName(ArgumentSyntax argument, SemanticModel model, CancellationToken cancellationToken)
     {
-        return argument.NameColon is null && IsInlineValue(argument.Expression) && ResolveParameter(argument,
-            model,
-            cancellationToken) is not null;
+        return argument.NameColon is null
+            && IsInlineValue(argument.Expression)
+            && ResolveParameter(argument, model, cancellationToken) is not null;
     }
 
     private static IParameterSymbol? ResolveParameter(ArgumentSyntax argument, SemanticModel model, CancellationToken cancellationToken)
@@ -414,9 +415,7 @@ internal static class ExplicitLiteralArgumentName
 
         return argumentIndex < parameters.Length
             ? parameters[argumentIndex]
-            : parameters.Length > 0 && parameters[parameters.Length - 1].IsParams
-            ? parameters[parameters.Length - 1]
-            : null;
+            : parameters.Length > 0 && parameters[parameters.Length - 1].IsParams ? parameters[parameters.Length - 1] : null;
     }
 
     private static bool SupportsCollections(SyntaxNode node)

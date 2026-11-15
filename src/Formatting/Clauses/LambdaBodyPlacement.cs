@@ -40,9 +40,10 @@ internal static class LambdaBodyPlacement
         SyntaxToken first = body.GetFirstToken();
         bool plain = IsWhitespace(lambda.ArrowToken.TrailingTrivia) && IsWhitespace(first.LeadingTrivia);
 
-        return plain && text.Lines.GetLineFromPosition(lambda.ArrowToken.Span.End).LineNumber != text.Lines
-            .GetLineFromPosition(first.SpanStart)
-            .LineNumber;
+        return plain
+            && text.Lines.GetLineFromPosition(lambda.ArrowToken.Span.End).LineNumber != text.Lines
+                .GetLineFromPosition(first.SpanStart)
+                .LineNumber;
     }
 
     // One space after the arrow, and nothing before the body: value => value.Length.
@@ -51,7 +52,9 @@ internal static class LambdaBodyPlacement
         SyntaxToken arrow = lambda.ArrowToken;
         SyntaxToken first = lambda.Body.GetFirstToken();
 
-        return root.ReplaceTokens(tokens: [arrow, first], (original, rewritten) => original == arrow ? rewritten.WithTrailingTrivia(SyntaxFactory.Space) : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
+        return root.ReplaceTokens(tokens: [arrow, first], (original, rewritten) => original == arrow
+            ? rewritten.WithTrailingTrivia(SyntaxFactory.Space)
+            : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
     }
 
     private static bool IsWhitespace(SyntaxTriviaList trivia)
