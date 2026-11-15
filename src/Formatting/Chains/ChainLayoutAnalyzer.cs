@@ -37,7 +37,7 @@ public sealed class ChainLayoutAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Member chains must use the standard layout",
-        messageFormat: "Lay this chain out the standard way: up to 4 links (field, property, event, or method accesses) on one line when it fits within 128 characters; otherwise the first link on the receiver's line and every later link on its own line, one level deeper, with a first link whose call spans several lines on its own line too",
+        messageFormat: "Lay this chain out the standard way: up to 4 links (field, property, event, or method accesses) on one line when it fits within 128 characters or calls nothing; otherwise the first link on the receiver's line and every later link on its own line, one level deeper, with a first link whose call spans several lines on its own line too",
         category: "Formatting",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

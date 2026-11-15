@@ -19,11 +19,12 @@ namespace NetAgents.Analyzers.Formatting.Chains;
 /// <para>
 /// A chain's links are the members reached through dots after its receiver, fields, properties, events, and methods
 /// alike; namespace and type qualifiers belong to the receiver, and an element access belongs to the link before it.
-/// A chain of up to four links stays on one line when that line fits within 128 characters. A longer chain, or one
-/// that does not fit, keeps its first link on the receiver's line and puts every later link on a line of its own,
-/// one level deeper than the line it starts on. A first link whose call spreads over lines, as with a wrapped
-/// argument list, a lambda with statements, or an object initializer, goes on a line of its own as well, so what it
-/// spreads lines up with the links after it:
+/// A chain of up to four links stays on one line when that line fits within 128 characters, and however long the
+/// line gets when none of the links is a call. A longer chain, or one with a call that does not fit, keeps its
+/// first link on the receiver's line and puts every later link on a line of its own, one level deeper than the line
+/// it starts on. A first link whose call spreads over lines, as with a wrapped argument list, a lambda with
+/// statements, or an object initializer, goes on a line of its own as well, so what it spreads lines up with the
+/// links after it:
 /// </para>
 /// <code>
 /// string[][] rows = [.. rowsByVersion.Values
@@ -62,20 +63,23 @@ internal static class ChainLayout
         return false;
     }
 
-    // The members a chain that ends at this expression reaches after its receiver, with the namespace and type
-    // qualifiers in front left out, or none when it is no chain.
-    public static int CountMembers(ExpressionSyntax top, SemanticModel model, CancellationToken cancellationToken)
+    // Whether the chain that ends at this expression can split: it reaches more members than one line may hold, or
+    // two or more with a call among them. The namespace and type qualifiers in front are not counted, and they are
+    // bound only for a chain the rest could split.
+    public static bool CanSplit(ExpressionSyntax top, SemanticModel model, CancellationToken cancellationToken)
     {
         List<ChainLink>? links = Collect(top);
         int qualifiers = 0;
 
-        if (links is null)
-            return 0;
+        if (links is null || links.Count < 2 || (links.Count <= MaximumLinks && !links.Exists(IsCalled)))
+            return false;
 
         while (qualifiers < links.Count && IsQualifier(links[qualifiers], model, cancellationToken))
             qualifiers++;
 
-        return links.Count - qualifiers;
+        int members = links.Count - qualifiers;
+
+        return members > MaximumLinks || (members > 1 && links.Exists(IsCalled));
     }
 
     // The links of the chain that ends at this expression, or nothing when it is no chain the rule lays out. Leading
@@ -92,9 +96,11 @@ internal static class ChainLayout
     {
         int members = links.Count(static link => !link.IsQualifier);
 
-        return members < 2 || IsExempt(top, links, model, text, cancellationToken)
-            ? null
-            : members > MaximumLinks || !Fits(top, links, text);
+        if (members < 2 || IsExempt(top, links, model, text, cancellationToken))
+            return null;
+
+        // Width breaks a chain at its calls; members that are only read stay on one line however long it gets.
+        return members > MaximumLinks || (links.Exists(IsCalled) && !Fits(top, links, text));
     }
 
     // Whether something around a node keeps the line it sits on whole: a condition, the node itself included, an
@@ -371,6 +377,12 @@ internal static class ChainLayout
             || node is InterpolationSyntax or AttributeSyntax
             || (CollectionLayout.CanLayOut(node) && !ArgumentLayout.RequiresMultipleLines(node))
             || OperatorLayout.IsWhole(node);
+    }
+
+    // The link is a method the chain calls, as Select is in rows.Values.Select(…).
+    private static bool IsCalled(ChainLink link)
+    {
+        return link.Access.Parent is InvocationExpressionSyntax call && call.Expression == link.Access;
     }
 
     private static bool IsCondition(SyntaxNode node)

@@ -383,7 +383,7 @@ internal static class ArgumentLayout
 
             bool chain = node is ExpressionSyntax top
                 && ChainLayout.IsTop(top)
-                && ChainLayout.CountMembers(top, model, cancellationToken) > 1;
+                && ChainLayout.CanSplit(top, model, cancellationToken);
 
             bool breakable = chain || IsLongCall(node) || OperatorLayout.GetOperators(node) is not null;
 

@@ -17,8 +17,9 @@ public sealed class ChainLayoutTests
     /// <summary>
     /// Verifies chains stay as written when they already fit, hold a single link, or sit where another rule or the
     /// author decides their lines: a condition, an interpolation, a comment beside a dot, a <c>?.</c> access, or an
-    /// argument list NETAGENTS0020 writes on one line, even when its line passes 128 characters. Namespace and type
-    /// qualifiers do not count as links.
+    /// argument list NETAGENTS0020 writes on one line, even when its line passes 128 characters. A chain that calls
+    /// nothing stays on one line however far it runs past the limit. Namespace and type qualifiers do not count as
+    /// links.
     /// </summary>
     /// <param name="statements">A method body that must report nothing.</param>
     [Theory]
@@ -34,14 +35,16 @@ public sealed class ChainLayoutTests
     [InlineData("return rows.Values.FirstOrDefault()?.Where(static value => value > 0).Select(static value => value * 2).Distinct().Order().Sum() ?? 0;")]
     [InlineData("Console.WriteLine(values.Where(static value => value > 0).Select(static value => value * 2).Distinct().Order().Sum());\n\nreturn 0;")]
     [InlineData("Console.WriteLine(rows.Values.Where(static cells => cells.Length > 1).Select(static cells => cells.Length * 2).Sum() + values.Length);\n\nreturn 0;")]
+    [InlineData("int depth = \"a text long enough to push the chain behind it past the limit of one hundred and twenty-eight characters\".Length + node.Next.Next.Depth;\n\nreturn depth;")]
     public async Task KeepsChainsAsWritten(string statements)
     {
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ChainLayoutAnalyzer(), Wrap(statements)));
     }
 
     /// <summary>
-    /// Verifies the fix joins a short chain and splits one that does not fit or holds more than four links before
-    /// every link after the first, whether it is a field, a property, or a call, while the first link and namespace
+    /// Verifies the fix joins a short chain, and one that calls nothing however long its line, and splits one with a
+    /// call that does not fit or one that holds more than four links before every link after the first, whether it
+    /// is a field, a property, or a call, while the first link and namespace
     /// and type qualifiers stay with the receiver, and a first link whose call spreads over lines, with an initializer,
     /// goes below the receiver with what it spreads indented under it. Links written at any other depth move one level
     /// deeper than the line their chain starts on.
@@ -68,6 +71,8 @@ public sealed class ChainLayoutTests
         "int length = Console.Out.Encoding.EncodingName.Length;\n\nreturn length;")]
     [InlineData("int length = System.Console.Out.Encoding.EncodingName.Trim().Length;\n\nreturn length;",
         "int length = System.Console.Out\n    .Encoding\n    .EncodingName\n    .Trim()\n    .Length;\n\nreturn length;")]
+    [InlineData("int depth = \"a text long enough to push the chain behind it past the limit of one hundred and twenty-eight characters\".Length + node.Next.Next\n    .Depth;\n\nreturn depth;",
+        "int depth = \"a text long enough to push the chain behind it past the limit of one hundred and twenty-eight characters\".Length + node.Next.Next.Depth;\n\nreturn depth;")]
     public async Task LaysOutChains(string written, string expected)
     {
         Assert.Equal(Wrap(expected), await CodeFixTestHarness.FixChains(Wrap(written), fixAll: true));
