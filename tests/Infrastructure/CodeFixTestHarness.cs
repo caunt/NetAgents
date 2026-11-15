@@ -133,7 +133,10 @@ internal static class CodeFixTestHarness
 
     public static async Task<string> FixLiteralArgumentNames(string source, bool fixAll)
     {
-        return await Fix(source, new ExplicitLiteralArgumentNameAnalyzer(), new ExplicitLiteralArgumentNameCodeFixProvider(), fixAll)
+        return await Fix(source,
+            new ExplicitLiteralArgumentNameAnalyzer(),
+            new ExplicitLiteralArgumentNameCodeFixProvider(),
+            fixAll)
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 
@@ -191,6 +194,11 @@ internal static class CodeFixTestHarness
     public static async Task<string> FixSummaryOpenings(string source, bool fixAll)
     {
         return await Fix(source, new SummaryOpeningAnalyzer(), new SummaryOpeningCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
+    }
+
+    public static async Task<string> FixValuePlacements(string source, bool fixAll)
+    {
+        return await Fix(source, new ValuePlacementAnalyzer(), new ValuePlacementCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
     public static async Task<string> FixWhenClauses(string source, bool fixAll)

@@ -27,7 +27,8 @@ internal static class ProjectFormatter
 
         await using (projectLock.ConfigureAwait(continueOnCapturedContext: false))
         {
-            FormattingProgress progress = new(inputs.AssemblyName, message => inputs.Log.LogMessage(MessageImportance.High, message));
+            FormattingProgress progress = new(inputs.AssemblyName,
+                message => inputs.Log.LogMessage(MessageImportance.High, message));
 
             progress.Report(activity: "checking formatting inputs");
 
@@ -77,7 +78,9 @@ internal static class ProjectFormatter
         ImmutableArray<string> referenceAliases = string.IsNullOrEmpty(aliases) ? [] : [.. aliases.Split(separator: ',')];
 
         MetadataReferenceProperties properties = new(aliases: referenceAliases,
-            embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"), b: "true", StringComparison.OrdinalIgnoreCase));
+            embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"),
+                b: "true",
+                StringComparison.OrdinalIgnoreCase));
 
         return MetadataReference.CreateFromFile(GetPath(item), properties);
     }
@@ -95,7 +98,9 @@ internal static class ProjectFormatter
 
         // Paths read relative to the project, as MSBuild prints its own errors.
         string path = span.Path.Length == 0 ? "(unknown file)" : GetDisplayPath(projectDirectory, span.Path);
-        string position = string.Create(CultureInfo.InvariantCulture, $"{path}({line + 1},{span.StartLinePosition.Character + 1})");
+
+        string position = string.Create(CultureInfo.InvariantCulture,
+            $"{path}({line + 1},{span.StartLinePosition.Character + 1})");
 
         return $"  {position}: {diagnostic.Id}: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}{Environment.NewLine}    as formatted: {written}";
     }
@@ -104,7 +109,8 @@ internal static class ProjectFormatter
     {
         progress.Report(activity: "checking source syntax");
 
-        LanguageVersionResolver.LanguageVersionResolution languageVersion = LanguageVersionResolver.Resolve(inputs.LanguageVersion, inputs.ProjectPath);
+        LanguageVersionResolver.LanguageVersionResolution languageVersion = LanguageVersionResolver.Resolve(inputs.LanguageVersion,
+            inputs.ProjectPath);
 
         if (languageVersion.Substituted)
         {
@@ -236,7 +242,11 @@ internal static class ProjectFormatter
             string[] segments = logicalPath.Replace(oldChar: '\\', newChar: '/').Split(separator: '/');
             string[] folders = segments[0] == ".." ? [] : [.. segments.Take(segments.Length - 1)];
 
-            solution = solution.AddDocument(DocumentId.CreateNewId(projectIdentifier), Path.GetFileName(path), text, folders, path);
+            solution = solution.AddDocument(DocumentId.CreateNewId(projectIdentifier),
+                Path.GetFileName(path),
+                text,
+                folders,
+                path);
         }
 
         foreach (ITaskItem configuration in inputs.ConfigurationItems)
@@ -245,7 +255,10 @@ internal static class ProjectFormatter
 
             SourceText text = await ReadText(path, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            solution = solution.AddAnalyzerConfigDocument(DocumentId.CreateNewId(projectIdentifier), Path.GetFileName(path), text, filePath: path);
+            solution = solution.AddAnalyzerConfigDocument(DocumentId.CreateNewId(projectIdentifier),
+                Path.GetFileName(path),
+                text,
+                filePath: path);
         }
 
         foreach (ITaskItem additional in inputs.AdditionalItems)
@@ -254,7 +267,10 @@ internal static class ProjectFormatter
 
             SourceText text = await ReadText(path, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            solution = solution.AddAdditionalDocument(DocumentId.CreateNewId(projectIdentifier), Path.GetFileName(path), text, filePath: path);
+            solution = solution.AddAdditionalDocument(DocumentId.CreateNewId(projectIdentifier),
+                Path.GetFileName(path),
+                text,
+                filePath: path);
         }
 
         if (!workspace.TryApplyChanges(solution))

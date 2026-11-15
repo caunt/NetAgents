@@ -93,7 +93,8 @@ public sealed class SummaryOpeningTests
         "'Gets or sets'")]
     public async Task ReportsPropertyOpenings(string members, string expected)
     {
-        Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new SummaryOpeningAnalyzer(), Wrap(members, type: "class")));
+        Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new SummaryOpeningAnalyzer(),
+            Wrap(members, type: "class")));
 
         Assert.Contains(expected, diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
     }

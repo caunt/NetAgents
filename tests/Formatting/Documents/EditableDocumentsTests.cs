@@ -41,7 +41,10 @@ public sealed class EditableDocumentsTests
 
         Project fixedProject = run.Project;
 
-        Assert.Contains(expectedSubstring: "internal static int Value;", await ReadDocument(fixedProject, name: "Editable.cs"), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "internal static int Value;",
+            await ReadDocument(fixedProject, name: "Editable.cs"),
+            StringComparison.Ordinal);
+
         Assert.Equal(GeneratedSource, await ReadDocument(fixedProject, name: "Generated.g.cs"));
     }
 
@@ -96,7 +99,11 @@ public sealed class EditableDocumentsTests
                 filePath: "/workspace/.editorconfig")
             .Project;
 
-        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [], providers: [], static fault => Assert.Fail(fault), CancellationToken.None);
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
+            analyzers: [],
+            providers: [],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None);
 
         Project fixedProject = run.Project;
 
@@ -121,7 +128,9 @@ public sealed class EditableDocumentsTests
 
         Project fixedProject = run.Project;
 
-        Assert.Contains(expectedSubstring: "void Run() { }", await ReadDocument(fixedProject, name: "Example.cs"), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "void Run() { }",
+            await ReadDocument(fixedProject, name: "Example.cs"),
+            StringComparison.Ordinal);
     }
 
     private static Project CreateProject(AdhocWorkspace workspace, string name, string source)
@@ -204,7 +213,8 @@ public sealed class EditableDocumentsTests
         {
             SourceText text = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            return document.WithText(SourceText.From(text.ToString().Replace(oldValue: "private static", newValue: "internal static", StringComparison.Ordinal)));
+            return document.WithText(SourceText.From(text.ToString()
+                .Replace(oldValue: "private static", newValue: "internal static", StringComparison.Ordinal)));
         }
 
         // Ignores the diagnostics it is handed, as a provider that rewrites a whole project might.

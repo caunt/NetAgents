@@ -53,13 +53,19 @@ public sealed class DocumentationTagFitAnalyzer() : PolicyAnalyzer(Rule)
             {
                 case "returns" when !returnsValue:
                     {
-                        Report(context, element, DocumentationTags.Remove, message: "Remove this <returns> element; the member returns no value");
+                        Report(context,
+                            element,
+                            DocumentationTags.Remove,
+                            message: "Remove this <returns> element; the member returns no value");
 
                         break;
                     }
                 case "value" when !hasValue:
                     {
-                        Report(context, element, DocumentationTags.Remove, message: "Remove this <value> element; only a property or an indexer has a value");
+                        Report(context,
+                            element,
+                            DocumentationTags.Remove,
+                            message: "Remove this <value> element; only a property or an indexer has a value");
 
                         break;
                     }
@@ -80,7 +86,12 @@ public sealed class DocumentationTagFitAnalyzer() : PolicyAnalyzer(Rule)
             foreach (XmlNodeSyntax placeholder in element.DescendantNodesAndSelf().OfType<XmlNodeSyntax>())
             {
                 if (DocumentationTags.GetName(placeholder) is "placeholder")
-                    Report(context, placeholder, DocumentationTags.Remove, message: "Remove this <placeholder> element and write the text it stands for");
+                {
+                    Report(context,
+                        placeholder,
+                        DocumentationTags.Remove,
+                        message: "Remove this <placeholder> element and write the text it stands for");
+                }
             }
         }
 
@@ -88,7 +99,10 @@ public sealed class DocumentationTagFitAnalyzer() : PolicyAnalyzer(Rule)
         ImmutableArray<string> typeParameters = DocumentationTags.GetTypeParameterNames(member.Declaration);
 
         ReportOrder(context, DocumentationTags.FindMisordered(member.Elements, element: "param", parameters), element: "param");
-        ReportOrder(context, DocumentationTags.FindMisordered(member.Elements, element: "typeparam", typeParameters), element: "typeparam");
+
+        ReportOrder(context,
+            DocumentationTags.FindMisordered(member.Elements, element: "typeparam", typeParameters),
+            element: "typeparam");
     }
 
     // Something is inherited when the member overrides or implements one, and a type or a constructor
@@ -144,6 +158,9 @@ public sealed class DocumentationTagFitAnalyzer() : PolicyAnalyzer(Rule)
         if (misordered is null)
             return;
 
-        Report(context, misordered, DocumentationTags.Order, $"List the <{element}> elements in the order the declaration lists them");
+        Report(context,
+            misordered,
+            DocumentationTags.Order,
+            $"List the <{element}> elements in the order the declaration lists them");
     }
 }

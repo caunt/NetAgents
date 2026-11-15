@@ -41,6 +41,29 @@ internal static class ChainLayout
 
     public const string RuleIdentifier = "NETAGENTS0047";
 
+    // Whether something around a list breaks or holds the line the list sits on, so the list's width on that line is
+    // not the list's to answer for: a chain that splits breaks the line at its links; a condition, an interpolation,
+    // and an attribute stay whole; and a collection NETAGENTS0020 writes on one line takes the list with it.
+    public static bool BreaksLineOf(SyntaxNode list, SemanticModel model, SourceText text, CancellationToken cancellationToken)
+    {
+        foreach (SyntaxNode ancestor in list.Ancestors())
+        {
+            if (ancestor is StatementSyntax or MemberDeclarationSyntax)
+                break;
+
+            if (IsCondition(ancestor) || ancestor is InterpolationSyntax or AttributeSyntax)
+                return true;
+
+            if (CollectionLayout.CanLayOut(ancestor) && !ArgumentLayout.RequiresMultipleLines(ancestor))
+                return true;
+
+            if (ancestor is ExpressionSyntax chain && IsTop(chain) && Splits(chain, model, text, cancellationToken))
+                return true;
+        }
+
+        return false;
+    }
+
     // The links of the chain that ends at this expression, or nothing when it is no chain the rule lays out. Leading
     // namespace and type qualifiers are bound only when they could change the count.
     public static List<ChainLink>? GetLinks(ExpressionSyntax top, SemanticModel model, SourceText text, CancellationToken cancellationToken)
@@ -93,11 +116,13 @@ internal static class ChainLayout
     }
 
     // The layout the chain must take, or nothing where the rule leaves it as written.
-    public static bool? GetRequiredSplit(ExpressionSyntax top, List<ChainLink> links, SourceText text)
+    public static bool? GetRequiredSplit(ExpressionSyntax top, List<ChainLink> links, SemanticModel model, SourceText text, CancellationToken cancellationToken)
     {
         int members = links.Count(static link => !link.IsQualifier);
 
-        return members < 2 || IsExempt(top, links) ? null : members > MaximumLinks || !Fits(top, links, text);
+        return members < 2 || IsExempt(top, links, model, text, cancellationToken) ? null : members > MaximumLinks || !Fits(top,
+            links,
+            text);
     }
 
     public static bool IsSettled(List<ChainLink> links, bool split, SourceText text)
@@ -154,7 +179,7 @@ internal static class ChainLayout
 
             List<ChainLink>? links = GetLinks(expression, model, text, cancellationToken);
 
-            if (links is not null && GetRequiredSplit(expression, links, text) == true)
+            if (links is not null && GetRequiredSplit(expression, links, model, text, cancellationToken) == true)
                 return true;
         }
 
@@ -289,7 +314,7 @@ internal static class ChainLayout
     // NETAGENTS0019 keeps conditions on one line, an interpolation holds no line break, NETAGENTS0020 writes a list
     // whose contents fit on one line, and a comment beside a dot belongs to its author, so the rule lays none of those
     // out.
-    private static bool IsExempt(ExpressionSyntax top, List<ChainLink> links)
+    private static bool IsExempt(ExpressionSyntax top, List<ChainLink> links, SemanticModel model, SourceText text, CancellationToken cancellationToken)
     {
         // The search for conditions stops at the statement holding the chain, since one beyond it is another
         // statement's. A list joins everything inside it, a lambda's statements included, so that search goes on.
@@ -300,7 +325,7 @@ internal static class ChainLayout
             if (inStatement && (IsCondition(ancestor) || ancestor is InterpolationSyntax or AttributeArgumentSyntax))
                 return true;
 
-            if (IsJoinedList(ancestor))
+            if (IsJoinedList(ancestor, model, text, cancellationToken))
                 return true;
 
             inStatement = inStatement && ancestor is not StatementSyntax;
@@ -317,11 +342,14 @@ internal static class ChainLayout
 
     // An argument or parameter list, collection expression, or initializer NETAGENTS0020 writes on one line, with every
     // chain inside it joined.
-    private static bool IsJoinedList(SyntaxNode node)
+    private static bool IsJoinedList(SyntaxNode node, SemanticModel model, SourceText text, CancellationToken cancellationToken)
     {
-        return CollectionLayout.CanLayOut(node)
-            ? !ArgumentLayout.RequiresMultipleLines(node)
-            : ArgumentLayout.IsList(node) && !node.ContainsDiagnostics && !node.ContainsDirectives && !ArgumentLayout.RequiresMultipleLines(node);
+        if (CollectionLayout.CanLayOut(node))
+            return !ArgumentLayout.RequiresMultipleLines(node);
+
+        bool laidOut = ArgumentLayout.IsList(node) && !node.ContainsDiagnostics && !node.ContainsDirectives;
+
+        return laidOut && !ArgumentLayout.Wraps(node, model, text, cancellationToken);
     }
 
     // A namespace or type the chain is reached through, as Console is in System.Console.Error.WriteLine(…).
@@ -339,6 +367,13 @@ internal static class ChainLayout
         }
 
         return true;
+    }
+
+    private static bool Splits(ExpressionSyntax top, SemanticModel model, SourceText text, CancellationToken cancellationToken)
+    {
+        List<ChainLink>? links = GetLinks(top, model, text, cancellationToken);
+
+        return links is not null && GetRequiredSplit(top, links, model, text, cancellationToken) == true;
     }
 
     // The first link is a call whose arguments must spread over lines: a wrapped list, a lambda with statements, or an

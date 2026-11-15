@@ -43,7 +43,11 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
             .ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
-        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException, concurrentAnalysis: true, logAnalyzerExecutionTime: false);
+        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions,
+            onAnalyzerException,
+            concurrentAnalysis: true,
+            logAnalyzerExecutionTime: false);
+
         CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers, options);
 
         ImmutableArray<Diagnostic> diagnostics = await analysis.GetAllDiagnosticsAsync(cancellationToken)
@@ -122,7 +126,9 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
 
     private static DiagnosticIdentity ErrorKey(Diagnostic diagnostic)
     {
-        return new(diagnostic.Id, diagnostic.GetMessage(CultureInfo.InvariantCulture), diagnostic.Location.SourceTree?.FilePath ?? string.Empty);
+        return new(diagnostic.Id,
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            diagnostic.Location.SourceTree?.FilePath ?? string.Empty);
     }
 
     private static bool SuppressesCompilerDiagnostics(DiagnosticAnalyzer analyzer)
@@ -145,7 +151,10 @@ internal sealed class FormattingAnalysis(ImmutableArray<DiagnosticAnalyzer> anal
     private void Remember(string actionKey, string? fingerprint, ImmutableArray<Diagnostic> diagnostics)
     {
         if (fingerprint is not null)
-            _rejected[actionKey] = new(fingerprint, Errors: [.. diagnostics.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)]);
+        {
+            _rejected[actionKey] = new(fingerprint,
+                Errors: [.. diagnostics.Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)]);
+        }
     }
 
     private readonly record struct DiagnosticIdentity(string Identifier, string Message, string Path);

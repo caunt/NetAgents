@@ -32,7 +32,8 @@ public sealed class AnalyzerCatalogTests
         Assert.Empty(hosting.Unavailable);
 
         // The hosted copy comes from a separate load context, so only the name identifies it.
-        Assert.Contains(collection: [.. hosting.Analyzers], static analyzer => analyzer.GetType().FullName == typeof(ExhaustiveSwitchSuppressor).FullName);
+        Assert.Contains(collection: [.. hosting.Analyzers],
+            static analyzer => analyzer.GetType().FullName == typeof(ExhaustiveSwitchSuppressor).FullName);
     }
 
     /// <summary>Constructs the same analyzers the compiler's loader does, without its version gate.</summary>
@@ -76,7 +77,9 @@ public sealed class AnalyzerCatalogTests
         using AnalyzerLoader loader = new();
 
         AnalyzerCatalog.AnalyzerLoadingResult loading = AnalyzerCatalog.Load(analyzerPaths: [CodeStylePath], loader);
-        string[] identifiers = GetIdentifiers(analyzers: [.. loading.References.SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())]);
+
+        string[] identifiers = GetIdentifiers(analyzers: [.. loading.References
+            .SelectMany(static reference => reference.GetAnalyzers(LanguageNames.CSharp).ToArray())]);
 
         Assert.Empty(loading.Unavailable);
         Assert.Contains(expected: "IDE0005", identifiers, StringComparer.Ordinal);
@@ -104,7 +107,11 @@ public sealed class AnalyzerCatalogTests
             AnalyzerCatalog.AnalyzerLoadingResult loading = AnalyzerCatalog.Load(analyzerPaths: [path], loader);
 
             Assert.Empty(loading.Hosted);
-            Assert.Contains(expectedSubstring: "Broken.Analyzers.dll", Assert.Single(loading.Unavailable), StringComparison.Ordinal);
+
+            Assert.Contains(expectedSubstring: "Broken.Analyzers.dll",
+                Assert.Single(loading.Unavailable),
+                StringComparison.Ordinal);
+
             Assert.Empty(loading.References.Single().GetAnalyzers(LanguageNames.CSharp).ToArray());
         }
         finally

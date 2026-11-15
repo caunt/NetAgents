@@ -49,7 +49,8 @@ public sealed class WhenClausePlacementCodeFixProvider : CodeFixProvider
                 continue;
 
             context.RegisterCodeFix(CodeAction.Create(title: "Move 'when' up behind its clause",
-                    cancellationToken => Task.FromResult(context.Document.WithSyntaxRoot(WhenClausePlacement.MoveUp(root, keyword))),
+                    cancellationToken => Task.FromResult(context.Document
+                        .WithSyntaxRoot(WhenClausePlacement.MoveUp(root, keyword))),
                     nameof(WhenClausePlacementCodeFixProvider)),
                 diagnostic);
         }

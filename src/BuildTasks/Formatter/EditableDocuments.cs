@@ -18,7 +18,11 @@ internal static class EditableDocuments
             .ConfigureAwait(continueOnCapturedContext: false)
             ?? throw new InvalidOperationException(message: "The formatting compilation is unavailable.");
 
-        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions, onAnalyzerException: null, concurrentAnalysis: false, logAnalyzerExecutionTime: false);
+        CompilationWithAnalyzersOptions options = new(project.AnalyzerOptions,
+            onAnalyzerException: null,
+            concurrentAnalysis: false,
+            logAnalyzerExecutionTime: false);
+
         CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers: [new AuthoredTreeAnalyzer()], options);
         List<DocumentId> editable = [];
 
@@ -63,7 +67,9 @@ internal static class EditableDocuments
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSyntaxTreeAction(static tree => tree.ReportDiagnostic(Diagnostic.Create(Mark, Location.Create(tree.Tree, textSpan: default))));
+
+            context.RegisterSyntaxTreeAction(static tree => tree.ReportDiagnostic(Diagnostic.Create(Mark,
+                Location.Create(tree.Tree, textSpan: default))));
         }
     }
 }

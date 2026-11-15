@@ -250,7 +250,10 @@ public sealed class ControlFlowBracesCodeFixTests
         foreach (string comment in new[] { "loop", "opening", "body", "decrement", "closing", "condition", "explanation", "result" })
             Assert.Contains("// " + comment + lineEnding, fixedSource, StringComparison.Ordinal);
 
-        Assert.DoesNotContain(expectedSubstring: "\n", fixedSource.Replace(lineEnding, string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        Assert.DoesNotContain(expectedSubstring: "\n",
+            fixedSource.Replace(lineEnding, string.Empty, StringComparison.Ordinal),
+            StringComparison.Ordinal);
+
         Assert.Empty(await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), fixedSource));
     }
 

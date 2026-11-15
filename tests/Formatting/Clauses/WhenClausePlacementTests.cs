@@ -43,7 +43,9 @@ public sealed class WhenClausePlacementTests
             Assert.Single(await AnalyzerTestHarness.Analyze(new WhenClausePlacementAnalyzer(), source)).Id);
 
         Assert.Equal(expected: 0,
-            await CodeFixTestHarness.CountFixes(source, new WhenClausePlacementAnalyzer(), new WhenClausePlacementCodeFixProvider()));
+            await CodeFixTestHarness.CountFixes(source,
+                new WhenClausePlacementAnalyzer(),
+                new WhenClausePlacementCodeFixProvider()));
     }
 
     /// <summary>

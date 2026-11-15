@@ -22,7 +22,8 @@ public sealed class AwaitedValueAccessTests
     [InlineData("        return 1 + (await numbers is { Length: > 0 } ? 1 : 0);")]
     public async Task AcceptsNamedAwaitedValues(string body)
     {
-        Assert.Empty(await AnalyzerTestHarness.Analyze(new AwaitedValueAccessAnalyzer(), Type.Replace(oldValue: "BODY", body, StringComparison.Ordinal)));
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new AwaitedValueAccessAnalyzer(),
+            Type.Replace(oldValue: "BODY", body, StringComparison.Ordinal)));
     }
 
     /// <summary>

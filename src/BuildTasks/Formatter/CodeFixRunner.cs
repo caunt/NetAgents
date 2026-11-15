@@ -87,7 +87,15 @@ internal static class CodeFixRunner
             if (!states.Add(fingerprint))
                 throw Failure(reason: "repeated a project state without stabilizing", attempt, diagnostics);
 
-            CodeActionApplication application = await ApplyAvailableFix(project, diagnostics, providers, editable, analysis, rejectedFixAllActions, internalsShared, progress, cancellationToken)
+            CodeActionApplication application = await ApplyAvailableFix(project,
+                diagnostics,
+                providers,
+                editable,
+                analysis,
+                rejectedFixAllActions,
+                internalsShared,
+                progress,
+                cancellationToken)
                 .ConfigureAwait(continueOnCapturedContext: false);
 
             attempt = application.Attempt;
@@ -159,7 +167,9 @@ internal static class CodeFixRunner
 
         // A project-wide action fixes every document its diagnostics name, so it is only shown the ones
         // in documents this formatter may rewrite.
-        ImmutableArray<Diagnostic> fixable = [.. diagnostics.Where(diagnostic => IsInEditableDocument(project, editable, diagnostic))];
+        ImmutableArray<Diagnostic> fixable = [.. diagnostics.Where(diagnostic => IsInEditableDocument(project,
+            editable,
+            diagnostic))];
 
         // A total order keeps the chosen fix identical across runs despite parallel analyzer output.
         IOrderedEnumerable<Diagnostic> ordered = diagnostics.ToArray()
@@ -170,7 +180,8 @@ internal static class CodeFixRunner
 
         foreach (Diagnostic diagnostic in ordered)
         {
-            Document? document = diagnostic.Location.SourceTree is null ? null : project.GetDocument(diagnostic.Location.SourceTree);
+            Document? document = diagnostic.Location.SourceTree is null ? null : project.GetDocument(diagnostic.Location
+                .SourceTree);
 
             if (document is null || !editable.Contains(document.Id) || diagnostic.IsSuppressed)
                 continue;
@@ -205,7 +216,12 @@ internal static class CodeFixRunner
 
                     if (canFixProject && fixAllProvider is not null)
                     {
-                        preferred = await GetFixAllAction(provider, fixAllProvider, document, selected, fixable, cancellationToken)
+                        preferred = await GetFixAllAction(provider,
+                            fixAllProvider,
+                            document,
+                            selected,
+                            fixable,
+                            cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false) ?? selected;
                     }
 
@@ -277,7 +293,14 @@ internal static class CodeFixRunner
                     // An error already fails the build, so only lower severities must avoid new analyzer errors.
                     if (diagnostic.Severity != DiagnosticSeverity.Error && !introducedErrors.IsEmpty)
                     {
-                        CodeActionApplication settled = await SettleLayout(updated, validation, diagnostics, providers, editable, analysis, actionKey, cancellationToken)
+                        CodeActionApplication settled = await SettleLayout(updated,
+                            validation,
+                            diagnostics,
+                            providers,
+                            editable,
+                            analysis,
+                            actionKey,
+                            cancellationToken)
                             .ConfigureAwait(continueOnCapturedContext: false);
 
                         if (settled.Project is not null)
@@ -313,7 +336,9 @@ internal static class CodeFixRunner
         ImmutableHashSet<DocumentId> editable,
         CancellationToken cancellationToken)
     {
-        ImmutableArray<Diagnostic> fixable = [.. diagnostics.Where(diagnostic => IsInEditableDocument(project, editable, diagnostic))];
+        ImmutableArray<Diagnostic> fixable = [.. diagnostics.Where(diagnostic => IsInEditableDocument(project,
+            editable,
+            diagnostic))];
 
         foreach (Diagnostic error in introduced)
         {
@@ -513,7 +538,10 @@ internal static class CodeFixRunner
                 && options.TryGetValue(key: "insert_final_newline", out string? finalNewline) && finalNewline == "true";
 
             if (needsFinalNewline)
-                formatted = formatted.WithText(text.WithChanges(new TextChange(new TextSpan(text.Length, length: 0), GetLineEnding(text, options))));
+            {
+                formatted = formatted.WithText(text.WithChanges(new TextChange(new TextSpan(text.Length, length: 0),
+                    GetLineEnding(text, options))));
+            }
 
             project = formatted.Project;
         }
@@ -527,7 +555,10 @@ internal static class CodeFixRunner
 
         try
         {
-            CodeFixContext context = new(document, diagnostic, (action, associatedDiagnostics) => actions.Add(action), cancellationToken);
+            CodeFixContext context = new(document,
+                diagnostic,
+                (action, associatedDiagnostics) => actions.Add(action),
+                cancellationToken);
 
             await provider.RegisterCodeFixesAsync(context).ConfigureAwait(continueOnCapturedContext: false);
         }

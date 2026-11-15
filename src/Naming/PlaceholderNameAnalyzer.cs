@@ -42,7 +42,9 @@ public sealed class PlaceholderNameAnalyzer() : PolicyAnalyzer(Rule)
 
     // Words that join a placeholder without naming anything, as in isConditionMet.
     private static readonly HashSet<string> Fillers = new(StringComparer.OrdinalIgnoreCase) { "is", "met" };
-    private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+", RegexOptions.CultureInvariant);
+
+    private static readonly Regex WordPattern = new(pattern: "[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[0-9]+",
+        RegexOptions.CultureInvariant);
 
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)

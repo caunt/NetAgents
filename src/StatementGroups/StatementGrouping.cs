@@ -181,7 +181,8 @@ internal static class StatementGrouping
         TextLine statementLine = source.Lines.GetLineFromPosition(current.SpanStart);
 
         // NETAGENTS0016 adds the blank line that a statement it separates is missing; this rule leaves it alone.
-        bool covered = StatementSpacing.RequiresSeparation(previous, source) || StatementSpacing.RequiresSeparation(current, source);
+        bool covered = StatementSpacing.RequiresSeparation(previous, source) || StatementSpacing.RequiresSeparation(current,
+            source);
 
         // Statements sharing a line are split by the same edit NETAGENTS0016 makes.
         if (first.Start != start)

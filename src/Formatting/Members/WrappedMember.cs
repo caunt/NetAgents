@@ -32,7 +32,11 @@ internal static class WrappedMember
     {
         SyntaxToken before = operatorToken.GetPreviousToken();
         SyntaxToken after = operatorToken.GetNextToken();
-        bool plain = IsWhitespace(before.TrailingTrivia, operatorToken.LeadingTrivia, operatorToken.TrailingTrivia, after.LeadingTrivia);
+
+        bool plain = IsWhitespace(before.TrailingTrivia,
+            operatorToken.LeadingTrivia,
+            operatorToken.TrailingTrivia,
+            after.LeadingTrivia);
 
         if (operatorToken.IsKind(SyntaxKind.None) || !plain)
             return false;
@@ -61,7 +65,8 @@ internal static class WrappedMember
         SyntaxToken before = operatorToken.GetPreviousToken();
         SyntaxToken after = operatorToken.GetNextToken();
 
-        return root.ReplaceTokens(tokens: [before, operatorToken, after], (original, rewritten) => Respace(original, rewritten, before, after));
+        return root.ReplaceTokens(tokens: [before, operatorToken, after],
+            (original, rewritten) => Respace(original, rewritten, before, after));
     }
 
     private static SyntaxToken GetFieldOperator(BaseFieldDeclarationSyntax field)

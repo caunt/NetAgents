@@ -72,7 +72,11 @@ public sealed class CollectionLayoutTests
         string formatted = await CodeFixTestHarness.FixArguments(Wrap(written), fixAll: true);
 
         Assert.Contains(expectedSubstring: "\n            [\"first\"] = \"A long value", formatted, StringComparison.Ordinal);
-        Assert.Contains(expectedSubstring: "\n            [\"second\"] = \"Another long value", formatted, StringComparison.Ordinal);
+
+        Assert.Contains(expectedSubstring: "\n            [\"second\"] = \"Another long value",
+            formatted,
+            StringComparison.Ordinal);
+
         Assert.NotEmpty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), Wrap(written)));
     }
 

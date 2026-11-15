@@ -59,17 +59,19 @@ internal static class PackageArtifact
             ZipArchiveEntry configurationEntry = package.GetEntry(entryName: "buildTransitive/NetAgents.globalconfig")
                 ?? throw new InvalidOperationException(message: "The packaged configuration is missing.");
 
-            using StreamReader packagedReader = new(await configurationEntry.OpenAsync().ConfigureAwait(continueOnCapturedContext: false));
+            using StreamReader packagedReader = new(await configurationEntry.OpenAsync()
+                .ConfigureAwait(continueOnCapturedContext: false));
 
-            Assert.Equal(embeddedConfiguration, await packagedReader.ReadToEndAsync().ConfigureAwait(continueOnCapturedContext: false));
+            Assert.Equal(embeddedConfiguration,
+                await packagedReader.ReadToEndAsync().ConfigureAwait(continueOnCapturedContext: false));
         }
 
-        AnalyzerConfig[] generatedConfigurations =
-        [
+        AnalyzerConfig[] generatedConfigurations = [
             AnalyzerConfig.Parse(embeddedConfiguration, Path.Combine(paths: [templateDirectory, "NetAgents.globalconfig"])),
         ];
 
-        AnalyzerConfigSet generatedConfiguration = AnalyzerConfigSet.Create(generatedConfigurations, out ImmutableArray<Diagnostic> diagnostics);
+        AnalyzerConfigSet generatedConfiguration = AnalyzerConfigSet.Create(generatedConfigurations,
+            out ImmutableArray<Diagnostic> diagnostics);
 
         Assert.True(diagnostics.IsEmpty);
 

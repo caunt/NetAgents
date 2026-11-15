@@ -123,11 +123,15 @@ public sealed class RazorComponentTests
             await File.WriteAllTextAsync(projectPath, projectContent);
             await File.WriteAllTextAsync(Path.Combine(workspace.FullName, path2: "NuGet.Config"), sourceConfiguration);
             await File.WriteAllTextAsync(counterPath, Counter);
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
+                arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
 
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "quiet"];
 
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, forbiddenOutput: ["NetAgents automatic formatting failed"]);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
+                buildArguments,
+                forbiddenOutput: ["NetAgents automatic formatting failed"]);
 
             Assert.Equal(Counter, await File.ReadAllTextAsync(counterPath));
 

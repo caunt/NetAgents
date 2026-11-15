@@ -26,7 +26,8 @@ public sealed class TupleReturnTypeAnalyzerTests
     [InlineData("public static System.Threading.Tasks.Task<NamedResult> Execute() => System.Threading.Tasks.Task.FromResult(new NamedResult(1, 2)); public sealed record NamedResult(int First, int Second);")]
     public async Task AllowsTuplesOutsideResultContracts(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(),
+            $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }
@@ -78,7 +79,9 @@ public sealed class TupleReturnTypeAnalyzerTests
     {
         const string source = "public static unsafe class ExampleType { public static delegate*<(int First, int Second)> Callback; }";
 
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), source, allowUnsafeCode: true);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(),
+            source,
+            allowUnsafeCode: true);
 
         Assert.Equal(TupleReturnTypeAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -112,6 +115,9 @@ public sealed class TupleReturnTypeAnalyzerTests
         Diagnostic diagnostic = Assert.Single(diagnostics);
 
         Assert.Equal(TupleReturnTypeAnalyzer.RuleIdentifier, diagnostic.Id);
-        Assert.Contains(expectedSubstring: "dedicated named", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+
+        Assert.Contains(expectedSubstring: "dedicated named",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
     }
 }

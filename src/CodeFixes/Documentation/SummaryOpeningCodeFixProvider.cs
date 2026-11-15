@@ -90,7 +90,10 @@ public sealed class SummaryOpeningCodeFixProvider : CodeFixProvider
         int? start = FindStart(summary);
 
         if (start is not int position)
-            return document.WithText(source.WithChanges(new TextChange(new TextSpan(summary.StartTag.Span.End, length: 0), opening + ".")));
+        {
+            return document.WithText(source.WithChanges(new TextChange(new TextSpan(summary.StartTag.Span.End, length: 0),
+                opening + ".")));
+        }
 
         Match written = WrittenOpening.Match(source.ToString(TextSpan.FromBounds(position, summary.EndTag.SpanStart)));
 

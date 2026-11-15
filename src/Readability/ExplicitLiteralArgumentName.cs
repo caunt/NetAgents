@@ -42,7 +42,9 @@ internal static class ExplicitLiteralArgumentName
 
     private static bool AllowsRemovingName(ArgumentSyntax argument, SemanticModel model, CancellationToken cancellationToken)
     {
-        return argument.NameColon is not null && !IsInlineValue(argument.Expression) && argument.Parent is BaseArgumentListSyntax list && IsPositional(list, model, cancellationToken);
+        return argument.NameColon is not null && !IsInlineValue(argument.Expression) && argument.Parent is BaseArgumentListSyntax list && IsPositional(list,
+            model,
+            cancellationToken);
     }
 
     private static bool AppendExpanded(BaseArgumentListSyntax list,
@@ -70,7 +72,11 @@ internal static class ExplicitLiteralArgumentName
             return true;
         }
 
-        ArgumentSyntax? collection = CreateCollection(list, model, parameters[parameters.Length - 1], expanded, cancellationToken);
+        ArgumentSyntax? collection = CreateCollection(list,
+            model,
+            parameters[parameters.Length - 1],
+            expanded,
+            cancellationToken);
 
         if (collection is null)
             return false;
@@ -107,8 +113,13 @@ internal static class ExplicitLiteralArgumentName
         }
 
         SyntaxToken comma = CreateToken(SyntaxKind.CommaToken).WithTrailingTrivia(SyntaxFactory.Space);
-        SeparatedSyntaxList<CollectionElementSyntax> items = SyntaxFactory.SeparatedList(elements, Enumerable.Repeat(comma, elements.Count - 1));
-        CollectionExpressionSyntax collection = SyntaxFactory.CollectionExpression(CreateToken(SyntaxKind.OpenBracketToken), items, CreateToken(SyntaxKind.CloseBracketToken));
+
+        SeparatedSyntaxList<CollectionElementSyntax> items = SyntaxFactory.SeparatedList(elements,
+            Enumerable.Repeat(comma, elements.Count - 1));
+
+        CollectionExpressionSyntax collection = SyntaxFactory.CollectionExpression(CreateToken(SyntaxKind.OpenBracketToken),
+            items,
+            CreateToken(SyntaxKind.CloseBracketToken));
 
         return SyntaxFactory.Argument(collection)
             .WithNameColon(name)
@@ -125,9 +136,14 @@ internal static class ExplicitLiteralArgumentName
 
         SyntaxToken identifier = SyntaxFacts.GetKeywordKind(name) is SyntaxKind.None
             ? SyntaxFactory.Identifier(SyntaxTriviaList.Empty, name, SyntaxTriviaList.Empty)
-            : SyntaxFactory.Identifier(SyntaxTriviaList.Empty, SyntaxKind.IdentifierToken, "@" + name, name, SyntaxTriviaList.Empty);
+            : SyntaxFactory.Identifier(SyntaxTriviaList.Empty,
+                SyntaxKind.IdentifierToken,
+                "@" + name,
+                name,
+                SyntaxTriviaList.Empty);
 
-        return SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(identifier), CreateToken(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
+        return SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(identifier),
+            CreateToken(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
     }
 
     private static ArgumentNaming? CreateNaming(BaseArgumentListSyntax list, SemanticModel model, CancellationToken cancellationToken)
@@ -343,8 +359,12 @@ internal static class ExplicitLiteralArgumentName
             StatementSyntax statement => model.TryGetSpeculativeSemanticModel(position, statement, out speculative),
             EqualsValueClauseSyntax clause => model.TryGetSpeculativeSemanticModel(position, clause, out speculative),
             ArrowExpressionClauseSyntax clause => model.TryGetSpeculativeSemanticModel(position, clause, out speculative),
-            ConstructorInitializerSyntax initializer => model.TryGetSpeculativeSemanticModel(position, initializer, out speculative),
-            PrimaryConstructorBaseTypeSyntax baseType => model.TryGetSpeculativeSemanticModel(position, baseType, out speculative),
+            ConstructorInitializerSyntax initializer => model.TryGetSpeculativeSemanticModel(position,
+                initializer,
+                out speculative),
+            PrimaryConstructorBaseTypeSyntax baseType => model.TryGetSpeculativeSemanticModel(position,
+                baseType,
+                out speculative),
             _ => false,
         };
 
@@ -364,7 +384,8 @@ internal static class ExplicitLiteralArgumentName
 
     private static BaseArgumentListSyntax? Replace(BaseArgumentListSyntax list, List<ArgumentSyntax> rewritten)
     {
-        SeparatedSyntaxList<ArgumentSyntax> updated = SyntaxFactory.SeparatedList(rewritten, list.Arguments.GetSeparators().Take(rewritten.Count - 1));
+        SeparatedSyntaxList<ArgumentSyntax> updated = SyntaxFactory.SeparatedList(rewritten,
+            list.Arguments.GetSeparators().Take(rewritten.Count - 1));
 
         return list switch
         {
@@ -376,7 +397,9 @@ internal static class ExplicitLiteralArgumentName
 
     private static bool RequiresName(ArgumentSyntax argument, SemanticModel model, CancellationToken cancellationToken)
     {
-        return argument.NameColon is null && IsInlineValue(argument.Expression) && ResolveParameter(argument, model, cancellationToken) is not null;
+        return argument.NameColon is null && IsInlineValue(argument.Expression) && ResolveParameter(argument,
+            model,
+            cancellationToken) is not null;
     }
 
     private static IParameterSymbol? ResolveParameter(ArgumentSyntax argument, SemanticModel model, CancellationToken cancellationToken)

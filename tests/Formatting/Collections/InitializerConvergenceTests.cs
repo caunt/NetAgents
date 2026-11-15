@@ -62,7 +62,12 @@ public sealed class InitializerConvergenceTests
             .AddDocument(name: "Order.cs", SourceText.From(Wrap(written)), filePath: "Order.cs")
             .Project;
 
-        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [.. analyzers], providers: [.. providers], static fault => Assert.Fail(fault), CancellationToken.None);
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
+            analyzers: [.. analyzers],
+            providers: [.. providers],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None);
+
         string formatted = await DocumentText.Read(run.Project.Documents.Single());
 
         Assert.Equal(Wrap(expected), formatted);

@@ -29,7 +29,10 @@ public sealed class UnconditionalLoopAnalyzer() : PolicyAnalyzer(Rule, analyzesR
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(AnalyzeSyntax, SyntaxKind.WhileStatement, SyntaxKind.DoStatement, SyntaxKind.ForStatement);
+        context.RegisterSyntaxNodeAction(AnalyzeSyntax,
+            SyntaxKind.WhileStatement,
+            SyntaxKind.DoStatement,
+            SyntaxKind.ForStatement);
     }
 
     private static void AnalyzeSyntax(SyntaxNodeAnalysisContext context)

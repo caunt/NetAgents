@@ -30,8 +30,9 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return FixAllProvider.Create(static async (context, document, diagnostics) =>
-            await FixArguments(document, requestedSpan: null, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
+        return FixAllProvider.Create(static async (context, document, diagnostics) => await FixArguments(document,
+            requestedSpan: null,
+            context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
     }
 
     /// <inheritdoc />
@@ -75,12 +76,22 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
 
             SourceText source = await document.GetTextAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 
-            SyntaxNode? list = root.DescendantNodes().FirstOrDefault(node => NeedsLayout(node, requestedSpan, source));
+            SemanticModel? model = await document.GetSemanticModelAsync(cancellationToken)
+                .ConfigureAwait(continueOnCapturedContext: false);
+
+            if (model is null)
+                return document;
+
+            SyntaxNode? list = root.DescendantNodes()
+                .FirstOrDefault(node => NeedsLayout(node, requestedSpan, model, source, cancellationToken));
 
             if (list is null)
                 return document;
 
-            TextChange[] changes = ArgumentLayout.IsList(list) ? ArgumentLayout.GetChanges(list, source) : CollectionLayout.GetChanges(list, source);
+            TextChange[] changes = ArgumentLayout.IsList(list)
+                ? ArgumentLayout.GetChanges(list, model, source, cancellationToken)
+                : CollectionLayout.GetChanges(list, source);
+
             SourceText changedSource = source.WithChanges(changes);
             int start = Math.Min(list.SpanStart, changes[0].Span.Start);
             TextSpan changedSpan = TextSpan.FromBounds(start, list.Span.End + changedSource.Length - source.Length);
@@ -98,10 +109,16 @@ public sealed class ArgumentLayoutCodeFixProvider : CodeFixProvider
         return document;
     }
 
-    private static bool NeedsLayout(SyntaxNode node, TextSpan? requestedSpan, SourceText source)
+    private static bool NeedsLayout(SyntaxNode node, TextSpan? requestedSpan, SemanticModel model, SourceText source, CancellationToken cancellationToken)
     {
-        return (requestedSpan is not TextSpan span || node.Span == span) && (ArgumentLayout.IsList(node)
-            ? !node.ContainsDiagnostics && ArgumentLayout.CanFix(node) && !ArgumentLayout.HasExpectedLayout(node, source)
-            : CollectionLayout.CanLayOut(node) && !CollectionLayout.HasExpectedLayout(node, source));
+        if (requestedSpan is TextSpan span && node.Span != span)
+            return false;
+
+        if (!ArgumentLayout.IsList(node))
+            return CollectionLayout.CanLayOut(node) && !CollectionLayout.HasExpectedLayout(node, source);
+
+        bool fixable = !node.ContainsDiagnostics && ArgumentLayout.CanFix(node);
+
+        return fixable && !ArgumentLayout.HasExpectedLayout(node, model, source, cancellationToken);
     }
 }

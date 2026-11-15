@@ -31,8 +31,10 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return FixAllProvider.Create(static async (context, document, diagnostics) =>
-            await FixBraces(document, diagnostics, fixAll: true, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
+        return FixAllProvider.Create(static async (context, document, diagnostics) => await FixBraces(document,
+            diagnostics,
+            fixAll: true,
+            context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
     }
 
     /// <inheritdoc />
@@ -41,7 +43,10 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Fix body braces",
-                    cancellationToken => FixBraces(context.Document, diagnostics: [diagnostic], fixAll: false, cancellationToken),
+                    cancellationToken => FixBraces(context.Document,
+                        diagnostics: [diagnostic],
+                        fixAll: false,
+                        cancellationToken),
                     nameof(ControlFlowBracesCodeFixProvider)),
                 diagnostic);
         }
@@ -89,7 +94,11 @@ public sealed class ControlFlowBracesCodeFixProvider : CodeFixProvider
             .ThenBy(static change => change.Span.Length)];
 
         Document changedDocument = document.WithText(source.WithChanges(orderedChanges));
-        IEnumerable<TextSpan> formattingSpans = affectedSpans.Select(span => TextSpan.FromBounds(Translate(span.Start, orderedChanges, includeInsertions: false), Translate(span.End, orderedChanges, includeInsertions: true)));
+
+        IEnumerable<TextSpan> formattingSpans = affectedSpans.Select(span => TextSpan.FromBounds(Translate(span.Start,
+                orderedChanges,
+                includeInsertions: false),
+            Translate(span.End, orderedChanges, includeInsertions: true)));
 
         OptionSet options = await document.GetOptionsAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 

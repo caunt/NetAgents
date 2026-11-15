@@ -31,13 +31,15 @@ public sealed class QualifiedTypeImportAnalyzer() : PolicyAnalyzer(Rule)
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(static analysis => Report(analysis, (QualifiedNameSyntax)analysis.Node), SyntaxKind.QualifiedName);
+        context.RegisterSyntaxNodeAction(static analysis => Report(analysis, (QualifiedNameSyntax)analysis.Node),
+            SyntaxKind.QualifiedName);
 
         context.RegisterCompilationStartAction(static start =>
         {
             ImmutableHashSet<string> namespaces = QualifiedTypeImport.CollectNamespaceNames(start.Compilation);
 
-            start.RegisterSyntaxNodeAction(analysis => AnalyzeMemberAccess(analysis, namespaces), SyntaxKind.SimpleMemberAccessExpression);
+            start.RegisterSyntaxNodeAction(analysis => AnalyzeMemberAccess(analysis, namespaces),
+                SyntaxKind.SimpleMemberAccessExpression);
         });
     }
 
@@ -57,7 +59,9 @@ public sealed class QualifiedTypeImportAnalyzer() : PolicyAnalyzer(Rule)
 
     private static void Report(SyntaxNodeAnalysisContext context, ExpressionSyntax reference)
     {
-        QualifiedTypeImport.ImportResolution? resolution = QualifiedTypeImport.Resolve(reference, context.SemanticModel, context.CancellationToken);
+        QualifiedTypeImport.ImportResolution? resolution = QualifiedTypeImport.Resolve(reference,
+            context.SemanticModel,
+            context.CancellationToken);
 
         if (resolution is null)
             return;

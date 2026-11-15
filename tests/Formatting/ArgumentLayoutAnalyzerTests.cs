@@ -66,22 +66,30 @@ public sealed class ArgumentLayoutAnalyzerTests
     }
 
     /// <summary>
-    /// Counts call argument contents without the invocation name or parentheses.
+    /// Wraps a call's arguments when, written on one line, they end past column 128 where the list stands, although
+    /// their own contents fit, and keeps them together inside a chain that splits, which breaks the line instead.
     /// </summary>
-    /// <param name="lengthText">The compact length of both arguments, including quotes and the separator.</param>
+    /// <param name="endText">The column the argument list ends at when written on one line.</param>
     [Theory]
     [InlineData("127")]
     [InlineData("128")]
     [InlineData("129")]
-    public async Task EnforcesCallBoundary(string lengthText)
+    public async Task EnforcesCallBoundary(string endText)
     {
-        int length = int.Parse(lengthText, CultureInfo.InvariantCulture);
-        string arguments = "\"" + new string(c: 'x', length - 7) + "\", \"y\"";
-        string source = $"public class ExampleType {{ public void Execute() {{ string.Concat({arguments}); }} }}";
+        int end = int.Parse(endText, CultureInfo.InvariantCulture);
+
+        // The list opens at column 21, after the indentation and the call's name, and closes two characters after
+        // its seven-character frame of quotes and separator.
+        string arguments = "\"" + new string(c: 'x', end - 30) + "\", \"y\"";
+        string source = $"public class ExampleType\n{{\n    public void Execute()\n    {{\n        string.Concat({arguments});\n    }}\n}}\n";
 
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source);
 
-        Assert.Equal(length > 128 ? 1 : 0, diagnostics.Length);
+        Assert.Equal(end > 128 ? 1 : 0, diagnostics.Length);
+
+        string chained = $"public class ExampleType\n{{\n    public int Execute()\n    {{\n        return string.Concat({arguments})\n            .Trim()\n            .Length;\n    }}\n}}\n";
+
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), chained));
     }
 
     /// <summary>
@@ -208,7 +216,8 @@ public sealed class ArgumentLayoutAnalyzerTests
         string parameters = layout.Replace(oldValue: "FIRST", "string " + new string(c: 'a', count: 70), StringComparison.Ordinal)
             .Replace(oldValue: "SECOND", "string " + new string(c: 'b', count: 70), StringComparison.Ordinal);
 
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), $"public record ExampleType({parameters});");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(),
+            $"public record ExampleType({parameters});");
 
         Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -234,7 +243,11 @@ public sealed class ArgumentLayoutAnalyzerTests
     private static bool ExceedsOneLine(string source)
     {
         SyntaxNode root = CSharpSyntaxTree.ParseText(source).GetRoot();
-        SyntaxNode list = Assert.Single(root.DescendantNodes().Where(static node => node.IsKind(SyntaxKind.ParameterList)).ToArray());
+
+        SyntaxNode list = Assert.Single(root.DescendantNodes()
+            .Where(static node => node.IsKind(SyntaxKind.ParameterList))
+            .ToArray());
+
         string compact = list.WithoutTrivia().NormalizeWhitespace(indentation: "", eol: " ").ToFullString();
         bool hasInlineComment = false;
 

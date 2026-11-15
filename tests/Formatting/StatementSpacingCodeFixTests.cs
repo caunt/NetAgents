@@ -14,7 +14,10 @@ public sealed class StatementSpacingCodeFixTests
     public async Task KeepsMultilineCommentsAttached()
     {
         const string source = "public static class ExampleType\n{\n    public static int Execute()\n    {\n        int count = 0;\n        /* result\n\n           explanation */\n        return count;\n    }\n}";
-        string expected = source.Replace(oldValue: "        /* result", newValue: "\n        /* result", StringComparison.Ordinal);
+
+        string expected = source.Replace(oldValue: "        /* result",
+            newValue: "\n        /* result",
+            StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixSpacing(source, fixAll: false));
     }
@@ -42,7 +45,9 @@ public sealed class StatementSpacingCodeFixTests
                 "}",
             ]);
 
-        string expected = source.Replace(oldValue: "        // explain the result", lineEnding + "        // explain the result", StringComparison.Ordinal);
+        string expected = source.Replace(oldValue: "        // explain the result",
+            lineEnding + "        // explain the result",
+            StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixSpacing(source, fixAll: false));
     }
@@ -137,7 +142,10 @@ public sealed class StatementSpacingCodeFixTests
     public async Task SeparatesStatementsOnTheSameLine()
     {
         const string source = "public static class ExampleType\n{\n    public static int Execute()\n    {\n        int count = 0; return count;\n    }\n}";
-        string expected = source.Replace(oldValue: "; return count;", newValue: ";\n\n        return count;", StringComparison.Ordinal);
+
+        string expected = source.Replace(oldValue: "; return count;",
+            newValue: ";\n\n        return count;",
+            StringComparison.Ordinal);
 
         Assert.Equal(expected, await CodeFixTestHarness.FixSpacing(source, fixAll: false));
     }

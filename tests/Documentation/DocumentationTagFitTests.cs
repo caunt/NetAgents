@@ -64,7 +64,10 @@ public sealed class DocumentationTagFitTests
     {
         Diagnostic diagnostic = Assert.Single(await Analyze(members: "/// <inheritdoc/>\npublic void Forget() { }"));
 
-        Assert.Contains(expectedSubstring: "nothing to inherit", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "nothing to inherit",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
+
         Assert.Empty(diagnostic.Properties);
     }
 

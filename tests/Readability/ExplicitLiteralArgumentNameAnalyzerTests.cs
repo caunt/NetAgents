@@ -108,7 +108,9 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), source);
 
         Assert.Equal(expected: 2, diagnostics.Length);
-        Assert.All(diagnostics, static diagnostic => Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, diagnostic.Id));
+
+        Assert.All(diagnostics,
+            static diagnostic => Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, diagnostic.Id));
     }
 
     /// <summary>

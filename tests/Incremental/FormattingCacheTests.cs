@@ -21,7 +21,8 @@ public sealed class FormattingCacheTests
 
             await cancellation.CancelAsync();
 
-            OperationCanceledException failure = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cache.Store(fingerprint, cancellation.Token));
+            OperationCanceledException failure = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cache.Store(fingerprint,
+                cancellation.Token));
 
             Assert.Equal(cancellation.Token, failure.CancellationToken);
             Assert.False(cache.Matches(fingerprint));

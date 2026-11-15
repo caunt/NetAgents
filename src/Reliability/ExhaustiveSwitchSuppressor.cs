@@ -13,11 +13,15 @@ namespace NetAgents.Analyzers.Reliability;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class ExhaustiveSwitchSuppressor : DiagnosticSuppressor
 {
-    private const string Justification =
-        "The default arm already handles every remaining member, so naming them adds no coverage, and the fix would shadow the default.";
+    private const string Justification = "The default arm already handles every remaining member, so naming them adds no coverage, and the fix would shadow the default.";
 
-    private static readonly SuppressionDescriptor ExpressionSuppression = new(id: "NETAGENTS1002", suppressedDiagnosticId: "IDE0072", Justification);
-    private static readonly SuppressionDescriptor StatementSuppression = new(id: "NETAGENTS1001", suppressedDiagnosticId: "IDE0010", Justification);
+    private static readonly SuppressionDescriptor ExpressionSuppression = new(id: "NETAGENTS1002",
+        suppressedDiagnosticId: "IDE0072",
+        Justification);
+
+    private static readonly SuppressionDescriptor StatementSuppression = new(id: "NETAGENTS1001",
+        suppressedDiagnosticId: "IDE0010",
+        Justification);
 
     /// <inheritdoc />
     public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions => [StatementSuppression, ExpressionSuppression];

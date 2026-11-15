@@ -42,7 +42,10 @@ public sealed class LanguageKeywordTests
     {
         Diagnostic diagnostic = Assert.Single(await Analyze(members));
 
-        Assert.Contains(expectedSubstring: "otherwise", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "otherwise",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
+
         Assert.Empty(diagnostic.Properties);
     }
 

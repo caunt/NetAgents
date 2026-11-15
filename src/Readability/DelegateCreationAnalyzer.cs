@@ -35,7 +35,9 @@ public sealed class DelegateCreationAnalyzer() : PolicyAnalyzer(Rule)
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(AnalyzeCreation, SyntaxKind.ObjectCreationExpression, SyntaxKind.ImplicitObjectCreationExpression);
+        context.RegisterSyntaxNodeAction(AnalyzeCreation,
+            SyntaxKind.ObjectCreationExpression,
+            SyntaxKind.ImplicitObjectCreationExpression);
     }
 
     private static void AnalyzeCreation(SyntaxNodeAnalysisContext context)

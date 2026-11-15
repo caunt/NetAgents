@@ -32,8 +32,9 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
         // Each reference in a document rewrites the same import list, so a batch of separate edits
         // conflicts and only part of it survives a pass. Rewriting the document once per pass lets
         // the whole file settle immediately instead of costing a re-analysis per surviving edit.
-        return FixAllProvider.Create(static async (context, document, diagnostics) =>
-            await ImportAll(document, diagnostics, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
+        return FixAllProvider.Create(static async (context, document, diagnostics) => await ImportAll(document,
+            diagnostics,
+            context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
     }
 
     /// <inheritdoc />
@@ -163,7 +164,10 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
             return document;
 
         ExpressionSyntax? reference = Find(root, diagnosticSpan);
-        QualifiedTypeImport.ImportResolution? resolution = reference is null ? null : QualifiedTypeImport.Resolve(reference, model, cancellationToken);
+
+        QualifiedTypeImport.ImportResolution? resolution = reference is null ? null : QualifiedTypeImport.Resolve(reference,
+            model,
+            cancellationToken);
 
         if (reference is null || resolution is null || resolution.Collides || Shorten(reference) is not SimpleNameSyntax shortName)
             return document;
@@ -194,7 +198,10 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
         foreach (Diagnostic diagnostic in diagnostics)
         {
             ExpressionSyntax? reference = Find(root, diagnostic.Location.SourceSpan);
-            QualifiedTypeImport.ImportResolution? resolution = reference is null ? null : QualifiedTypeImport.Resolve(reference, model, cancellationToken);
+
+            QualifiedTypeImport.ImportResolution? resolution = reference is null ? null : QualifiedTypeImport.Resolve(reference,
+                model,
+                cancellationToken);
 
             if (reference is null || resolution is null || resolution.Collides || !references.Add(reference))
                 continue;
@@ -208,7 +215,9 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
         // A reference can hold another, such as a type argument, so each shortens what is left of it
         // after the ones inside it were shortened.
-        CompilationUnitSyntax rewritten = unit.ReplaceNodes(references, static (original, current) => Shorten(current) ?? current);
+        CompilationUnitSyntax rewritten = unit.ReplaceNodes(references,
+            static (original, current) => Shorten(current) ?? current);
+
         SyntaxTrivia lineEnding = GetLineEnding(unit);
 
         foreach (string imported in imports)
@@ -219,7 +228,9 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
     private static bool IsFixable(SyntaxNode root, SemanticModel model, TextSpan diagnosticSpan, CancellationToken cancellationToken)
     {
-        QualifiedTypeImport.ImportResolution? resolution = Find(root, diagnosticSpan) is not ExpressionSyntax reference ? null : QualifiedTypeImport.Resolve(reference, model, cancellationToken);
+        QualifiedTypeImport.ImportResolution? resolution = Find(root, diagnosticSpan) is not ExpressionSyntax reference ? null : QualifiedTypeImport.Resolve(reference,
+            model,
+            cancellationToken);
 
         return resolution is not null && !resolution.Collides;
     }

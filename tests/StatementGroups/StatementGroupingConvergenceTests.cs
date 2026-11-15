@@ -104,7 +104,12 @@ public sealed class StatementGroupingConvergenceTests
             .AddDocument(name: "Example.cs", SourceText.From(Wrap(written)), filePath: "Example.cs")
             .Project;
 
-        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [.. analyzers], providers: [.. providers], static fault => Assert.Fail(fault), CancellationToken.None);
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
+            analyzers: [.. analyzers],
+            providers: [.. providers],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None);
+
         string formatted = await DocumentText.Read(run.Project.Documents.Single());
 
         Assert.Equal(Wrap(expected), formatted);
@@ -132,7 +137,12 @@ public sealed class StatementGroupingConvergenceTests
     {
         public const string Identifier = "TEST0101";
 
-        private static readonly DiagnosticDescriptor Rule = new(Identifier, title: "Unwrap", messageFormat: "Unwrap", category: "Testing", DiagnosticSeverity.Info, isEnabledByDefault: true);
+        private static readonly DiagnosticDescriptor Rule = new(Identifier,
+            title: "Unwrap",
+            messageFormat: "Unwrap",
+            category: "Testing",
+            DiagnosticSeverity.Info,
+            isEnabledByDefault: true);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Rule];
 
@@ -140,7 +150,10 @@ public sealed class StatementGroupingConvergenceTests
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSyntaxNodeAction(static node => node.ReportDiagnostic(Diagnostic.Create(Rule, node.Node.GetFirstToken().GetLocation())), SyntaxKind.IfStatement);
+
+            context.RegisterSyntaxNodeAction(static node => node.ReportDiagnostic(Diagnostic.Create(Rule,
+                    node.Node.GetFirstToken().GetLocation())),
+                SyntaxKind.IfStatement);
         }
     }
 
@@ -162,9 +175,12 @@ public sealed class StatementGroupingConvergenceTests
             if (root?.FindToken(context.Span.Start).Parent is not IfStatementSyntax statement)
                 return;
 
-            SyntaxNode unwrapped = root.ReplaceNode(statement, statement.Statement.WithLeadingTrivia(statement.GetLeadingTrivia()));
+            SyntaxNode unwrapped = root.ReplaceNode(statement,
+                statement.Statement.WithLeadingTrivia(statement.GetLeadingTrivia()));
 
-            context.RegisterCodeFix(CodeAction.Create(title: "Unwrap", cancellationToken => Task.FromResult(context.Document.WithSyntaxRoot(unwrapped)), equivalenceKey: "Unwrap"),
+            context.RegisterCodeFix(CodeAction.Create(title: "Unwrap",
+                    cancellationToken => Task.FromResult(context.Document.WithSyntaxRoot(unwrapped)),
+                    equivalenceKey: "Unwrap"),
                 context.Diagnostics);
         }
     }

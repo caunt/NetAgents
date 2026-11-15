@@ -100,8 +100,13 @@ public sealed class DocumentationInformationAnalyzerTests
 
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new DocumentationInformationAnalyzer(), source));
 
-        Assert.Contains(expectedSubstring: "an empty one", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
-        Assert.Contains(expectedSubstring: "Write it by hand", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "an empty one",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
+
+        Assert.Contains(expectedSubstring: "Write it by hand",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -124,7 +129,10 @@ public sealed class DocumentationInformationAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DocumentationInformationAnalyzer(), source);
 
         Assert.Equal(DocumentationInformationAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
-        Assert.Contains(expectedSubstring: "recipientName", diagnostics[0].GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+
+        Assert.Contains(expectedSubstring: "recipientName",
+            diagnostics[0].GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
     }
 
     /// <summary>

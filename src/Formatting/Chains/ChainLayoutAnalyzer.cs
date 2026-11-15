@@ -46,7 +46,10 @@ public sealed class ChainLayoutAnalyzer() : PolicyAnalyzer(Rule)
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(AnalyzeChain, SyntaxKind.InvocationExpression, SyntaxKind.SimpleMemberAccessExpression, SyntaxKind.ElementAccessExpression);
+        context.RegisterSyntaxNodeAction(AnalyzeChain,
+            SyntaxKind.InvocationExpression,
+            SyntaxKind.SimpleMemberAccessExpression,
+            SyntaxKind.ElementAccessExpression);
     }
 
     private static void AnalyzeChain(SyntaxNodeAnalysisContext context)
@@ -62,7 +65,7 @@ public sealed class ChainLayoutAnalyzer() : PolicyAnalyzer(Rule)
         if (links is null)
             return;
 
-        bool? split = ChainLayout.GetRequiredSplit(top, links, text);
+        bool? split = ChainLayout.GetRequiredSplit(top, links, context.SemanticModel, text, context.CancellationToken);
 
         if (split is bool required && !ChainLayout.IsSettled(links, required, text))
             context.ReportDiagnostic(Diagnostic.Create(Rule, top.GetLocation()));

@@ -175,7 +175,10 @@ public sealed class QualifiedTypeImportTests
         Diagnostic diagnostic = Assert.Single(diagnostics);
 
         Assert.Equal(QualifiedTypeImportAnalyzer.RuleIdentifier, diagnostic.Id);
-        Assert.Contains(expectedSubstring: "under a using alias", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+
+        Assert.Contains(expectedSubstring: "under a using alias",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -197,6 +200,8 @@ public sealed class QualifiedTypeImportTests
 
         Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new QualifiedTypeImportAnalyzer(), source));
 
-        Assert.Contains(expectedSubstring: "under a using alias", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "under a using alias",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
     }
 }

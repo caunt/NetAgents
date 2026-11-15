@@ -52,20 +52,32 @@ public sealed class CodeFixPerformanceTests
         Assert.Equal(expected: 4, analyzer.States.Distinct(StringComparer.Ordinal).Count());
 
         // The required fix lands three times, and the suggestion is tried last, only when it is offered.
-        Assert.Equal(includeSuggestion ? ["required", "required", "required", "optional"] : ["required", "required", "required"], actions);
+        Assert.Equal(includeSuggestion ? ["required", "required", "required", "optional"] : ["required", "required", "required"],
+            actions);
 
         // The fixes reached the source: the value is 3 and the doubled space is gone.
-        Assert.Contains(expectedSubstring: "=> 3;", await DocumentText.Read(run.Project.Documents.First()), StringComparison.Ordinal);
-        Assert.DoesNotContain(expectedSubstring: "static  int", await DocumentText.Read(run.Project.Documents.First()), StringComparison.Ordinal);
+        Assert.Contains(expectedSubstring: "=> 3;",
+            await DocumentText.Read(run.Project.Documents.First()),
+            StringComparison.Ordinal);
+
+        Assert.DoesNotContain(expectedSubstring: "static  int",
+            await DocumentText.Read(run.Project.Documents.First()),
+            StringComparison.Ordinal);
 
         // Progress names each pass and the action being validated, and ends with the summary line.
         Assert.Contains(messages, static message => message.Contains(value: "pass 1, elapsed", StringComparison.Ordinal));
         Assert.Contains(messages, static message => message.Contains(value: "pass 4, elapsed", StringComparison.Ordinal));
-        Assert.Contains(messages, static message => message.Contains(value: "validating PERF0002 action", StringComparison.Ordinal));
+
+        Assert.Contains(messages,
+            static message => message.Contains(value: "validating PERF0002 action", StringComparison.Ordinal));
+
         Assert.Contains(expectedSubstring: "finished applying available fixes", messages.Last(), StringComparison.Ordinal);
 
         if (includeSuggestion)
-            Assert.Contains(messages, static message => message.Contains(value: "rejected PERF0001 action", StringComparison.Ordinal));
+        {
+            Assert.Contains(messages,
+                static message => message.Contains(value: "rejected PERF0001 action", StringComparison.Ordinal));
+        }
     }
 
     /// <summary>Rejects a project-wide action once even while accepted fixes keep changing the project.</summary>
@@ -88,12 +100,19 @@ public sealed class CodeFixPerformanceTests
         // Every pass changes Step.cs, so the rejected candidate is never the one the validation cache
         // remembers. Only skipping the action outright keeps the later passes from revalidating it.
         Assert.True(run.Blocking.IsEmpty);
-        Assert.Equal(expected: 1, messages.Count(static message => message.Contains(value: "rejected PERF0007", StringComparison.Ordinal)));
+
+        Assert.Equal(expected: 1,
+            messages.Count(static message => message.Contains(value: "rejected PERF0007", StringComparison.Ordinal)));
+
         Assert.Equal(expected: 5, analyzer.Runs);
 
         // The accepted fixes still land, and the rejected action is never looked up again.
-        Assert.Contains(expectedSubstring: "=> 3;", await DocumentText.Read(run.Project.Documents.First()), StringComparison.Ordinal);
-        Assert.DoesNotContain(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
+        Assert.Contains(expectedSubstring: "=> 3;",
+            await DocumentText.Read(run.Project.Documents.First()),
+            StringComparison.Ordinal);
+
+        Assert.DoesNotContain(messages,
+            static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
     }
 
     /// <summary>Reports the malformed switch before formatting or invoking any analyzer or fix.</summary>
@@ -285,7 +304,8 @@ public sealed class CodeFixPerformanceTests
                 {
                     SyntaxTree suggestion = trees.Single(static tree => tree.FilePath == "Suggestion.cs");
 
-                    compilation.ReportDiagnostic(Diagnostic.Create(SuggestionRule, suggestion.GetRoot().GetFirstToken().GetLocation()));
+                    compilation.ReportDiagnostic(Diagnostic.Create(SuggestionRule,
+                        suggestion.GetRoot().GetFirstToken().GetLocation()));
                 }
             });
         }

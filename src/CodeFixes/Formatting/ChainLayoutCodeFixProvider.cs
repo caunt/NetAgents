@@ -60,13 +60,22 @@ public sealed class ChainLayoutCodeFixProvider : CodeFixProvider
                 continue;
 
             List<ChainLink>? links = ChainLayout.GetLinks(top, model, text, context.CancellationToken);
-            bool? split = links is null ? null : ChainLayout.GetRequiredSplit(top, links, text);
+
+            bool? split = links is null ? null : ChainLayout.GetRequiredSplit(top,
+                links,
+                model,
+                text,
+                context.CancellationToken);
 
             if (links is null || split is not bool required || ChainLayout.IsSettled(links, required, text))
                 continue;
 
             context.RegisterCodeFix(CodeAction.Create(title: "Lay out the chain",
-                    cancellationToken => LayOut(context.Document, root, top, new ChainRewrite(links, required, text), cancellationToken),
+                    cancellationToken => LayOut(context.Document,
+                        root,
+                        top,
+                        new ChainRewrite(links, required, text),
+                        cancellationToken),
                     nameof(ChainLayoutCodeFixProvider)),
                 diagnostic);
         }

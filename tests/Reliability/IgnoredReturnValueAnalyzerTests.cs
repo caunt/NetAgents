@@ -45,7 +45,9 @@ public sealed class IgnoredReturnValueAnalyzerTests
     [InlineData("public static async System.Threading.Tasks.Task Execute(System.Collections.Generic.IAsyncEnumerable<(int, int)> pairs) { await foreach (var (first, second) in pairs) System.Console.WriteLine(first + second); }")]
     public async Task AllowsConsumedValuesAndVoidCalls(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(),
+            $"public static class ExampleType {{ {memberSource} }}",
+            allowUnsafeCode: true);
 
         Assert.Empty(diagnostics);
     }
@@ -69,7 +71,8 @@ public sealed class IgnoredReturnValueAnalyzerTests
     [InlineData("public static int Execute() { int _; int count; (_, count) = (1, 2); return _ + count; }")]
     public async Task RejectsAssignmentsToUnderscoreSymbols(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(),
+            $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -125,7 +128,9 @@ public sealed class IgnoredReturnValueAnalyzerTests
     [InlineData("public static void Execute(System.Func<(int, (int, int))> callback) { var (number, (otherNumber, _)) = callback(); System.Console.WriteLine(number + otherNumber); }")]
     public async Task RejectsIgnoredAndDiscardedValues(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}", allowUnsafeCode: true);
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(),
+            $"public static class ExampleType {{ {memberSource} }}",
+            allowUnsafeCode: true);
 
         Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -143,7 +148,8 @@ public sealed class IgnoredReturnValueAnalyzerTests
     [InlineData("public static async System.Threading.Tasks.Task Execute(System.Collections.Generic.IAsyncEnumerable<(int, int)> pairs) { await foreach (var (_, count) in pairs) System.Console.WriteLine(count); }")]
     public async Task RejectsLoopDiscards(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(),
+            $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Equal(IgnoredReturnValueAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

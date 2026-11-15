@@ -57,10 +57,14 @@ public sealed class ArgumentLayoutAnalyzer() : PolicyAnalyzer(Rule)
 
         // Collection expressions and initializers of two or more elements take the same one-line-or-one-per-line layout.
         bool settled = ArgumentLayout.IsList(context.Node)
-            ? ArgumentLayout.HasExpectedLayout(context.Node, source)
+            ? ArgumentLayout.HasExpectedLayout(context.Node, context.SemanticModel, source, context.CancellationToken)
             : !CollectionLayout.CanLayOut(context.Node) || CollectionLayout.HasExpectedLayout(context.Node, source);
 
         if (!settled)
-            context.ReportDiagnostic(Diagnostic.Create(Rule, context.Node.GetLocation(), LayoutLimits.MaximumInlineLength.ToString(CultureInfo.InvariantCulture)));
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Rule,
+                context.Node.GetLocation(),
+                LayoutLimits.MaximumInlineLength.ToString(CultureInfo.InvariantCulture)));
+        }
     }
 }

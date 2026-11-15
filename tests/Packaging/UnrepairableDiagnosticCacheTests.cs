@@ -67,7 +67,9 @@ public sealed class UnrepairableDiagnosticCacheTests
             await File.WriteAllTextAsync(projectPath, projectContent);
             await File.WriteAllTextAsync(Path.Combine(workspace.FullName, path2: "NuGet.Config"), sourceConfiguration);
             await File.WriteAllTextAsync(sourcePath, UnrepairableSource);
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
+
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
+                arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);
 
             string[] buildArguments = ["build", projectPath, "--no-restore", "--nologo", "--verbosity", "minimal"];
 
@@ -93,7 +95,9 @@ public sealed class UnrepairableDiagnosticCacheTests
 
             Assert.Equal(formatted, await File.ReadAllTextAsync(sourcePath));
 
-            string cachePath = Assert.Single(Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories));
+            string cachePath = Assert.Single(Directory.GetFiles(workspace.FullName,
+                searchPattern: "*.NetAgents.formatting.cache",
+                SearchOption.AllDirectories));
 
             Assert.True(File.Exists(cachePath));
 
@@ -103,7 +107,10 @@ public sealed class UnrepairableDiagnosticCacheTests
                     newValue: "    /// <remarks>Describes the same declaration a second time.</remarks>\n",
                     StringComparison.Ordinal));
 
-            await ConsumerBuild.RunDevelopmentKit(workspace.FullName, buildArguments, expectedOutput: ["analyzing project"], withoutShell: true);
+            await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
+                buildArguments,
+                expectedOutput: ["analyzing project"],
+                withoutShell: true);
         }
         finally
         {

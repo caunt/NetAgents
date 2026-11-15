@@ -54,7 +54,8 @@ public sealed class SummaryOpeningAnalyzer() : PolicyAnalyzer(Rule)
         if (opening.Success && opening.Groups[groupnum: 1].Value == kind && NamesType(summary, type, context.SemanticModel))
             return;
 
-        string cref = type.TypeParameters.Length == 0 ? type.Name : type.Name + "{" + string.Join(separator: ",", type.TypeParameters.Select(static parameter => parameter.Name)) + "}";
+        string cref = type.TypeParameters.Length == 0 ? type.Name : type.Name + "{" + string.Join(separator: ",",
+            type.TypeParameters.Select(static parameter => parameter.Name)) + "}";
 
         ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>.Empty
             .Add(DocumentationTags.CrefProperty, cref)

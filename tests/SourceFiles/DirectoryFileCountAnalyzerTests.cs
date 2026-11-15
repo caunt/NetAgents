@@ -84,7 +84,8 @@ public sealed class DirectoryFileCountAnalyzerTests
     {
         ArgumentNullException.ThrowIfNull(directory);
 
-        Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new DirectoryFileCountAnalyzer(), CreateFiles(directory, count: 17)));
+        Diagnostic diagnostic = Assert.Single(await AnalyzerTestHarness.Analyze(new DirectoryFileCountAnalyzer(),
+            CreateFiles(directory, count: 17)));
 
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, diagnostic.Id);
     }
@@ -115,7 +116,9 @@ public sealed class DirectoryFileCountAnalyzerTests
     public async Task KeepsCompilationStateIsolated()
     {
         DirectoryFileCountAnalyzer analyzer = new();
-        Diagnostic oversized = Assert.Single(await AnalyzerTestHarness.Analyze(analyzer, CreateFiles(directory: "Features", count: 17)));
+
+        Diagnostic oversized = Assert.Single(await AnalyzerTestHarness.Analyze(analyzer,
+            CreateFiles(directory: "Features", count: 17)));
 
         Assert.Equal(DirectoryFileCountAnalyzer.RuleIdentifier, oversized.Id);
         Assert.Empty(await AnalyzerTestHarness.Analyze(analyzer, CreateFiles(directory: "Features", count: 16)));
@@ -148,8 +151,12 @@ public sealed class DirectoryFileCountAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DirectoryFileCountAnalyzer(), files.Reverse());
 
         Assert.Equal(expected: 2, diagnostics.Length);
-        Assert.Contains(diagnostics, static diagnostic => diagnostic.Location.SourceTree?.FilePath == "Features/Buying/Source00.cs");
-        Assert.Contains(diagnostics, static diagnostic => diagnostic.Location.SourceTree?.FilePath == "Features/Selling/Source00.cs");
+
+        Assert.Contains(diagnostics,
+            static diagnostic => diagnostic.Location.SourceTree?.FilePath == "Features/Buying/Source00.cs");
+
+        Assert.Contains(diagnostics,
+            static diagnostic => diagnostic.Location.SourceTree?.FilePath == "Features/Selling/Source00.cs");
     }
 
     private static SyntaxTree[] CreateFiles(string directory, int count)

@@ -60,7 +60,10 @@ public sealed class StatementGroupingAnalyzer() : PolicyAnalyzer(Rule)
         SyntaxNode root = tree.GetRoot(context.CancellationToken);
         SourceText source = tree.GetText(context.CancellationToken);
 
-        foreach (KeyValuePair<TextSpan, TextChange> change in StatementGrouping.GetChanges(root, context.SemanticModel, source, context.CancellationToken))
+        foreach (KeyValuePair<TextSpan, TextChange> change in StatementGrouping.GetChanges(root,
+            context.SemanticModel,
+            source,
+            context.CancellationToken))
             context.ReportDiagnostic(Diagnostic.Create(Rule, Location.Create(tree, change.Key)));
     }
 }

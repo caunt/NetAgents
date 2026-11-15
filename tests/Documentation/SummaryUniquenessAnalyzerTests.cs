@@ -61,7 +61,10 @@ public sealed class SummaryUniquenessAnalyzerTests
     public async Task ReportsEverySummaryAfterTheFirst()
     {
         const int extra = 9;
-        string stacked = string.Concat(Enumerable.Range(start: 0, extra).Select(static index => $"/// <summary>Describes member {index}.</summary>\n"));
+
+        string stacked = string.Concat(Enumerable.Range(start: 0, extra)
+            .Select(static index => $"/// <summary>Describes member {index}.</summary>\n"));
+
         string source = $"/// <summary>Describes the type.</summary>\n{stacked}public sealed record ExampleType(int Value);\n";
 
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new SummaryUniquenessAnalyzer(), source);

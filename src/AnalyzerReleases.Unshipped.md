@@ -55,3 +55,4 @@ NETAGENTS0050 | Readability | Error | Strings joined with + on one line written 
 NETAGENTS0051 | Readability | Error | Comparisons with a string literal written as a constant pattern
 NETAGENTS0052 | Readability | Error | Lambdas and method groups assigned directly instead of wrapped in a delegate constructor
 NETAGENTS0053 | Formatting | Error | A lambda's expression body on the line of its arrow
+NETAGENTS0054 | Formatting | Error | An assigned value on the line of its =

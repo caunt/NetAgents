@@ -65,7 +65,8 @@ internal sealed record FormattingFingerprint(string Context, string Sources)
         // Include both hosts and every sibling dependency the analyzer loader can resolve, not just
         // the analyzer entry points. Adding or removing an assembly also changes this inventory.
         IEnumerable<string> directories = new[] { packagedDirectory, inputs.SdkAssemblyDirectory, inputs.CodeFixDirectory }
-            .Concat(inputs.AnalyzerItems.Select(static item => Path.GetDirectoryName(item.GetMetadata(metadataName: "FullPath")) ?? string.Empty));
+            .Concat(inputs.AnalyzerItems
+                .Select(static item => Path.GetDirectoryName(item.GetMetadata(metadataName: "FullPath")) ?? string.Empty));
 
         foreach (string directory in directories.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
         {

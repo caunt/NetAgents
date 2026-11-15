@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
+using NetAgents.Analyzers.Formatting.Chains;
 using NetAgents.Analyzers.Formatting.Collections;
 
 namespace NetAgents.Analyzers.Formatting;
@@ -35,11 +37,11 @@ internal static class ArgumentLayout
         return !list.ContainsDirectives && list.DescendantTrivia().All(IsWhitespaceOrComment);
     }
 
-    internal static TextChange[] GetChanges(SyntaxNode list, SourceText source)
+    internal static TextChange[] GetChanges(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
     {
         SyntaxNode[] items = [.. list.ChildNodes()];
 
-        if (items.Length == 0 || !RequiresMultipleLines(list))
+        if (items.Length == 0 || !Wraps(list, model, source, cancellationToken))
             return [new TextChange(list.Span, GetCompactText(list))];
 
         string indentation = GetIndentation(source, list.SpanStart);
@@ -74,7 +76,13 @@ internal static class ArgumentLayout
             for (int index = 1; index < statements.Count; index++)
             {
                 if (GetLine(source, statements[index].SpanStart) == GetLine(source, statements[index - 1].Span.End))
-                    changes.Add(SeparateItems(source, statements[index - 1].Span.End, statements[index].SpanStart, newline, indentation + "    "));
+                {
+                    changes.Add(SeparateItems(source,
+                        statements[index - 1].Span.End,
+                        statements[index].SpanStart,
+                        newline,
+                        indentation + "    "));
+                }
             }
         }
 
@@ -86,10 +94,22 @@ internal static class ArgumentLayout
             SyntaxToken end = body.CloseBraceToken;
 
             if (!OpensUnderLambda(function, source))
-                changes.Add(SeparateItems(source, opening.GetPreviousToken().Span.End, opening.SpanStart, newline, lambdaIndentation));
+            {
+                changes.Add(SeparateItems(source,
+                    opening.GetPreviousToken().Span.End,
+                    opening.SpanStart,
+                    newline,
+                    lambdaIndentation));
+            }
 
             if (body.Statements.Count > 0 && SharesLine(source, body.Statements[index: 0].GetFirstToken()))
-                changes.Add(SeparateItems(source, opening.Span.End, body.Statements[index: 0].SpanStart, newline, lambdaIndentation + "    "));
+            {
+                changes.Add(SeparateItems(source,
+                    opening.Span.End,
+                    body.Statements[index: 0].SpanStart,
+                    newline,
+                    lambdaIndentation + "    "));
+            }
 
             if (SharesLine(source, end))
                 changes.Add(SeparateItems(source, end.GetPreviousToken().Span.End, end.SpanStart, newline, lambdaIndentation));
@@ -120,10 +140,10 @@ internal static class ArgumentLayout
         return source.ToString(TextSpan.FromBounds(start, end)).Trim().Length > 0;
     }
 
-    internal static bool HasExpectedLayout(SyntaxNode list, SourceText source)
+    internal static bool HasExpectedLayout(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
     {
         SyntaxNode[] items = [.. list.ChildNodes()];
-        bool multiple = RequiresMultipleLines(list);
+        bool multiple = Wraps(list, model, source, cancellationToken);
 
         if (items.Length == 0 && multiple)
             return true;
@@ -169,6 +189,8 @@ internal static class ArgumentLayout
             or SyntaxKind.AttributeArgumentList or SyntaxKind.ParameterList or SyntaxKind.BracketedParameterList;
     }
 
+    // Whether the list's own contents keep it off one line: their width, a comment, a statement that spreads, or a line
+    // break inside a token. Where the list stands on its line plays no part.
     internal static bool RequiresMultipleLines(SyntaxNode list)
     {
         LineFitMeasurement measurement = Measure(list);
@@ -204,6 +226,13 @@ internal static class ArgumentLayout
         return new TextChange(span, replacement);
     }
 
+    // A list goes over several lines when its contents require it, or when it is a call's arguments and the line
+    // they sit on would pass the limit with nothing else to break it.
+    internal static bool Wraps(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
+    {
+        return RequiresMultipleLines(list) || PassesLine(list, model, source, cancellationToken);
+    }
+
     private static void Classify(SyntaxNode list, SyntaxTrivia trivia, ref bool blockComment, ref bool inlineComment)
     {
         if (!list.Span.Contains(trivia.SpanStart))
@@ -223,7 +252,8 @@ internal static class ArgumentLayout
     {
         BlockSyntax body = GetBody(function);
 
-        return (body.Statements.Count > 0 && SharesLine(source, body.Statements[index: 0].GetFirstToken())) || SharesLine(source, body.CloseBraceToken);
+        return (body.Statements.Count > 0 && SharesLine(source, body.Statements[index: 0].GetFirstToken())) || SharesLine(source,
+            body.CloseBraceToken);
     }
 
     private static BlockSyntax GetBody(AnonymousFunctionExpressionSyntax function)
@@ -352,6 +382,25 @@ internal static class ArgumentLayout
 
         return GetLine(source, brace.SpanStart) > GetLine(source, brace.GetPreviousToken().Span.End)
             && GetIndentation(source, brace.SpanStart) == GetIndentation(source, function.SpanStart);
+    }
+
+    // A call's arguments written on one line end past the limit, measured from where the list opens, so what follows
+    // the list never decides. The line is the list's to break only where nothing else breaks it: a chain that splits
+    // breaks at its links, and a condition, an interpolation, an attribute, and a one-line collection stay whole.
+    private static bool PassesLine(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
+    {
+        if (list.Kind() is not (SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList) || list.ContainsDirectives)
+            return false;
+
+        // The token widths bracket the compact length, as they do for the contents, so most lists never build it.
+        int column = list.SpanStart - source.Lines.GetLineFromPosition(list.SpanStart).Start;
+        LineFitMeasurement measurement = Measure(list);
+        bool fits = column + measurement.Width + measurement.Tokens <= LayoutLimits.MaximumInlineLength;
+
+        return !fits && (column + measurement.Width > LayoutLimits.MaximumInlineLength || column + GetCompactText(list).Length > LayoutLimits.MaximumInlineLength) && !ChainLayout.BreaksLineOf(list,
+            model,
+            source,
+            cancellationToken);
     }
 
     private static bool SharesLine(SourceText source, SyntaxToken token)

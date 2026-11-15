@@ -31,7 +31,8 @@ public sealed class SyntaxPolicyAnalyzerTests
     [Fact]
     public async Task AllowsRethrowingCaughtExceptions()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { throw; } } }");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(),
+            source: "public class ExampleType { public void Execute() { try { } catch { throw; } } }");
 
         Assert.Empty(diagnostics);
     }
@@ -55,7 +56,8 @@ public sealed class SyntaxPolicyAnalyzerTests
     [Fact]
     public async Task RejectsCommentOnlyCatchBlocks()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), source: "public class ExampleType { public void Execute() { try { } catch { /* ignored */ } } }");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(),
+            source: "public class ExampleType { public void Execute() { try { } catch { /* ignored */ } } }");
 
         Assert.Equal(EmptyCatchBlockAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -66,7 +68,8 @@ public sealed class SyntaxPolicyAnalyzerTests
     [Fact]
     public async Task RejectsLockStatements()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new LockStatementAnalyzer(), source: "public class ExampleType { public void Execute() { lock (this) { } } }");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new LockStatementAnalyzer(),
+            source: "public class ExampleType { public void Execute() { lock (this) { } } }");
 
         Assert.Equal(LockStatementAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -77,7 +80,8 @@ public sealed class SyntaxPolicyAnalyzerTests
     [Fact]
     public async Task RejectsNamespaceContainmentCollisions()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TypeContainmentNameAnalyzer(), source: "namespace ExampleType { public class ExampleType { } }");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TypeContainmentNameAnalyzer(),
+            source: "namespace ExampleType { public class ExampleType { } }");
 
         Assert.Equal(TypeContainmentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -88,7 +92,8 @@ public sealed class SyntaxPolicyAnalyzerTests
     [Fact]
     public async Task RejectsNullForgivingOperators()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new NullForgivingOperatorAnalyzer(), source: "public class ExampleType { public string Value => null!; }");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new NullForgivingOperatorAnalyzer(),
+            source: "public class ExampleType { public string Value => null!; }");
 
         Assert.Equal(NullForgivingOperatorAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -103,7 +108,8 @@ public sealed class SyntaxPolicyAnalyzerTests
     [InlineData("do { break; } while (true);")]
     public async Task RejectsUnconditionalLoops(string loop)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UnconditionalLoopAnalyzer(), $"public class ExampleType {{ public void Execute() {{ {loop} }} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UnconditionalLoopAnalyzer(),
+            $"public class ExampleType {{ public void Execute() {{ {loop} }} }}");
 
         Assert.Equal(UnconditionalLoopAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

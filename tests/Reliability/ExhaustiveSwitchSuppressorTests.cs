@@ -104,7 +104,8 @@ public sealed class ExhaustiveSwitchSuppressorTests
             logAnalyzerExecutionTime: false,
             reportSuppressedDiagnostics: true);
 
-        CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers: [new PopulateSwitchAnalyzer(diagnosticIdentifier), new ExhaustiveSwitchSuppressor()], options);
+        CompilationWithAnalyzers analysis = compilation.WithAnalyzers(analyzers: [new PopulateSwitchAnalyzer(diagnosticIdentifier), new ExhaustiveSwitchSuppressor()],
+            options);
 
         ImmutableArray<Diagnostic> diagnostics = await analysis.GetAllDiagnosticsAsync(CancellationToken.None)
             .ConfigureAwait(continueOnCapturedContext: false);
@@ -144,7 +145,9 @@ public sealed class ExhaustiveSwitchSuppressorTests
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSyntaxNodeAction(Report, identifier == "IDE0010" ? SyntaxKind.SwitchStatement : SyntaxKind.SwitchExpression);
+
+            context.RegisterSyntaxNodeAction(Report,
+                identifier == "IDE0010" ? SyntaxKind.SwitchStatement : SyntaxKind.SwitchExpression);
         }
 
         private void Report(SyntaxNodeAnalysisContext context)

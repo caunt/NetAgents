@@ -29,7 +29,8 @@ public sealed class FormatProject : UtilitiesTask, ICancelableTask, IDisposable
 
     /// <summary>Gets the compilation references read from <see cref="References"/>.</summary>
     /// <value>One item per line of <see cref="References"/>, with its <c>Aliases</c> and <c>EmbedInteropTypes</c> metadata.</value>
-    public IReadOnlyList<ITaskItem> ReferenceItems => TaskItemLines.Parse(References, metadataNames: ["Aliases", "EmbedInteropTypes"]);
+    public IReadOnlyList<ITaskItem> ReferenceItems => TaskItemLines.Parse(References,
+        metadataNames: ["Aliases", "EmbedInteropTypes"]);
 
     /// <summary>Gets the source files read from <see cref="SourceFiles"/>.</summary>
     /// <value>One item per line of <see cref="SourceFiles"/>, with its <c>Link</c> metadata where the line has one.</value>

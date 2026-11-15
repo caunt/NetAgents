@@ -29,8 +29,9 @@ public sealed class NumericConversionCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return FixAllProvider.Create(static async (context, document, diagnostics) =>
-            await Convert(document, diagnostics, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
+        return FixAllProvider.Create(static async (context, document, diagnostics) => await Convert(document,
+            diagnostics,
+            context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
     }
 
     /// <inheritdoc />
@@ -77,7 +78,8 @@ public sealed class NumericConversionCodeFixProvider : CodeFixProvider
             return document;
 
         // Nested casts are rewritten inside out, so an outer one wraps the call its operand became.
-        SyntaxNode rewritten = root.ReplaceNodes(replacements.Keys, (original, current) => Rewrite(current, replacements[original]));
+        SyntaxNode rewritten = root.ReplaceNodes(replacements.Keys,
+            (original, current) => Rewrite(current, replacements[original]));
 
         return document.WithSyntaxRoot(rewritten);
     }
@@ -123,7 +125,8 @@ public sealed class NumericConversionCodeFixProvider : CodeFixProvider
             while (value is ParenthesizedExpressionSyntax parenthesized)
                 value = parenthesized.Expression;
 
-            expression = SyntaxFactory.ParseExpression(step.Receiver + "." + step.Factory + "(" + value.WithoutTrivia().ToFullString() + ")");
+            expression = SyntaxFactory.ParseExpression(step.Receiver + "." + step.Factory + "(" + value.WithoutTrivia()
+                .ToFullString() + ")");
         }
 
         return expression.WithTriviaFrom(current);

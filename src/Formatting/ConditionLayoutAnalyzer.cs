@@ -111,6 +111,10 @@ public sealed class ConditionLayoutAnalyzer() : PolicyAnalyzer(Rule)
             != source.Lines.GetLineFromPosition(span.End).LineNumber;
 
         if (isMultiline || span.Length > LayoutLimits.MaximumInlineLength)
-            context.ReportDiagnostic(Diagnostic.Create(Rule, testedExpression.GetLocation(), LayoutLimits.MaximumInlineLength.ToString(CultureInfo.InvariantCulture)));
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Rule,
+                testedExpression.GetLocation(),
+                LayoutLimits.MaximumInlineLength.ToString(CultureInfo.InvariantCulture)));
+        }
     }
 }

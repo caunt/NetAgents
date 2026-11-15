@@ -6,8 +6,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace NetAgents.Analyzers.Formatting.Clauses;
 
 /// <summary>
-/// Finds an expression-bodied lambda whose body starts on a line below its <c>=&gt;</c> although its first line fits
-/// beside the arrow, and joins the two.
+/// Finds an expression-bodied lambda whose body starts on a line below its <c>=&gt;</c>, and joins the two.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -22,9 +21,9 @@ namespace NetAgents.Analyzers.Formatting.Clauses;
 /// </code>
 /// <para>
 /// A body that starts beside its arrow, <c>async () => await closeAdvertisement</c> with the chain's links below it,
-/// has a line the other layout rules can measure from. A body whose first line would pass 128 characters beside the
-/// arrow keeps its break, since nothing inside it may offer another. A lambda with a block keeps its brace where the
-/// rules for blocks put it, and a comment between the arrow and the body stays where its author wrote it.
+/// has a line the other layout rules can measure from, and a long body breaks inside itself: at the links of its
+/// chain, or at the arguments of its call. A lambda with a block keeps its brace where the rules for blocks put it,
+/// and a comment between the arrow and the body stays where its author wrote it.
 /// </para>
 /// </remarks>
 internal static class LambdaBodyPlacement
@@ -41,13 +40,9 @@ internal static class LambdaBodyPlacement
         SyntaxToken first = body.GetFirstToken();
         bool plain = IsWhitespace(lambda.ArrowToken.TrailingTrivia) && IsWhitespace(first.LeadingTrivia);
 
-        // Joining puts the body's first line one space after the arrow, and the line that makes must still fit.
-        TextLine arrowLine = text.Lines.GetLineFromPosition(lambda.ArrowToken.Span.End);
-        TextLine bodyLine = text.Lines.GetLineFromPosition(first.SpanStart);
-        int bodyWidth = text.ToString(TextSpan.FromBounds(first.SpanStart, bodyLine.End)).TrimEnd().Length;
-        int joinedWidth = lambda.ArrowToken.Span.End - arrowLine.Start + 1 + bodyWidth;
-
-        return plain && arrowLine.LineNumber != bodyLine.LineNumber && joinedWidth <= LayoutLimits.MaximumInlineLength;
+        return plain && text.Lines.GetLineFromPosition(lambda.ArrowToken.Span.End).LineNumber != text.Lines
+            .GetLineFromPosition(first.SpanStart)
+            .LineNumber;
     }
 
     // One space after the arrow, and nothing before the body: value => value.Length.

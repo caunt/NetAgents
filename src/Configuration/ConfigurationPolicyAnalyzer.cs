@@ -35,8 +35,8 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
     /// <inheritdoc />
     protected override void RegisterAnalysisActions(AnalysisContext context)
     {
-        context.RegisterCompilationStartAction(static compilationContext =>
-            compilationContext.RegisterSyntaxTreeAction(treeContext => AnalyzeConfiguration(treeContext, compilationContext.Compilation)));
+        context.RegisterCompilationStartAction(static compilationContext => compilationContext.RegisterSyntaxTreeAction(treeContext => AnalyzeConfiguration(treeContext,
+            compilationContext.Compilation)));
     }
 
     private static void AnalyzeConfiguration(SyntaxTreeAnalysisContext context, Compilation compilation)
@@ -83,7 +83,9 @@ public sealed class ConfigurationPolicyAnalyzer() : PolicyAnalyzer(Rule)
             {
                 string[] messageArguments = [requiredOption.Key, requiredOption.Value];
 
-                context.ReportDiagnostic(Diagnostic.Create(Rule, Location.Create(context.Tree, new TextSpan(start: 0, length: 0)), messageArgs: messageArguments));
+                context.ReportDiagnostic(Diagnostic.Create(Rule,
+                    Location.Create(context.Tree, new TextSpan(start: 0, length: 0)),
+                    messageArgs: messageArguments));
             }
         }
     }

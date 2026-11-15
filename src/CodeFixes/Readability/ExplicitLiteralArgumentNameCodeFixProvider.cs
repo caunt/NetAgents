@@ -28,8 +28,10 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider()
     {
-        return FixAllProvider.Create(static async (context, document, diagnostics) =>
-            await FixNames(document, requestedSpans: null, fixAll: true, context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
+        return FixAllProvider.Create(static async (context, document, diagnostics) => await FixNames(document,
+            requestedSpans: null,
+            fixAll: true,
+            context.CancellationToken).ConfigureAwait(continueOnCapturedContext: false));
     }
 
     /// <inheritdoc />
@@ -46,8 +48,9 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
         if (root is null || model is null)
             return;
 
-        ImmutableDictionary<TextSpan, ExplicitLiteralArgumentName.ArgumentNaming> namings =
-            ExplicitLiteralArgumentName.GetChanges(root, model, context.CancellationToken);
+        ImmutableDictionary<TextSpan, ExplicitLiteralArgumentName.ArgumentNaming> namings = ExplicitLiteralArgumentName.GetChanges(root,
+            model,
+            context.CancellationToken);
 
         foreach (Diagnostic diagnostic in context.Diagnostics)
         {
@@ -84,7 +87,10 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
             if (root is null || model is null)
                 return document;
 
-            ExplicitLiteralArgumentName.ArgumentNaming[] selected = SelectOutermost(ExplicitLiteralArgumentName.GetChanges(root, model, cancellationToken), requestedSpans);
+            ExplicitLiteralArgumentName.ArgumentNaming[] selected = SelectOutermost(ExplicitLiteralArgumentName.GetChanges(root,
+                    model,
+                    cancellationToken),
+                requestedSpans);
 
             if (selected.Length == 0)
                 return document;
@@ -119,6 +125,8 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
             .Distinct()];
 
         // Replacements are built from the original lists, so a nested list waits for the next pass.
-        return [.. candidates.Where(naming => !candidates.Any(other => other.List.Span != naming.List.Span && other.List.Span.Contains(naming.List.Span)))];
+        return [.. candidates.Where(naming => !candidates.Any(other => other.List.Span != naming.List.Span && other.List
+            .Span
+            .Contains(naming.List.Span)))];
     }
 }

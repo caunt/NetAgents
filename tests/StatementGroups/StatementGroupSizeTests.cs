@@ -115,7 +115,10 @@ public sealed class StatementGroupSizeTests
         Diagnostic diagnostic = Assert.Single(await Analyze(members));
 
         Assert.Equal(StatementGroupSizeAnalyzer.RuleIdentifier, diagnostic.Id);
-        Assert.StartsWith($"These 5 {kind} run together", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+
+        Assert.StartsWith($"These 5 {kind} run together",
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
     }
 
     private static async Task<Diagnostic[]> Analyze(string members)

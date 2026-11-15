@@ -41,9 +41,15 @@ public sealed class FormattingAnalysisTests
         Assert.Equal(expected: 4, analyzer.Runs);
 
         // The rejected candidate is validated once, and the accepted one lands.
-        Assert.Equal(expected: 1, messages.Count(static message => message.Contains(value: "rejected PERF0004", StringComparison.Ordinal)));
-        Assert.DoesNotContain(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
-        Assert.Contains(expectedSubstring: "=> 4;", await DocumentText.Read(run.Project.Documents.First()), StringComparison.Ordinal);
+        Assert.Equal(expected: 1,
+            messages.Count(static message => message.Contains(value: "rejected PERF0004", StringComparison.Ordinal)));
+
+        Assert.DoesNotContain(messages,
+            static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
+
+        Assert.Contains(expectedSubstring: "=> 4;",
+            await DocumentText.Read(run.Project.Documents.First()),
+            StringComparison.Ordinal);
     }
 
     /// <summary>Counts errors by identity, so a moved one is not new and a repeated one is.</summary>
@@ -65,7 +71,8 @@ public sealed class FormattingAnalysisTests
 
         Assert.Empty(FormattingAnalysis.IntroducedErrors(after: [first], before: [second]).ToArray());
 
-        Diagnostic repeated = Assert.Single(FormattingAnalysis.IntroducedErrors(after: [first, second], before: [first]).ToArray());
+        Diagnostic repeated = Assert.Single(FormattingAnalysis.IntroducedErrors(after: [first, second], before: [first])
+            .ToArray());
 
         Assert.Equal(rule.Id, repeated.Id);
     }
@@ -77,7 +84,8 @@ public sealed class FormattingAnalysisTests
         using AdhocWorkspace workspace = new();
 
         Project before = CreateProject(workspace)
-            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, generalDiagnosticOption: ReportDiagnostic.Error));
+            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                generalDiagnosticOption: ReportDiagnostic.Error));
 
         FormattingAnalysis analysis = new(analyzers: [new UnusedValueSuppressor()],
             static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
@@ -85,12 +93,20 @@ public sealed class FormattingAnalysisTests
 
         ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None);
 
-        Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() { int unused = 0; return 1; } }\n");
+        Project candidate = Change(before,
+            name: "Reader.cs",
+            source: "internal static class Reader { internal static int Read() { int unused = 0; return 1; } }\n");
 
-        FormattingAnalysis.ValidationResult validation = await analysis.Validate(candidate, baseline, actionKey: "unused variable", optional: false, CancellationToken.None);
+        FormattingAnalysis.ValidationResult validation = await analysis.Validate(candidate,
+            baseline,
+            actionKey: "unused variable",
+            optional: false,
+            CancellationToken.None);
 
         Assert.True(validation.IntroducedErrors.IsEmpty);
-        Assert.DoesNotContain(validation.Diagnostics.ToArray(), static diagnostic => diagnostic.Id == "CS0219" && !diagnostic.IsSuppressed);
+
+        Assert.DoesNotContain(validation.Diagnostics.ToArray(),
+            static diagnostic => diagnostic.Id == "CS0219" && !diagnostic.IsSuppressed);
     }
 
     /// <summary>An error already present in today's baseline no longer justifies rejecting the action.</summary>
@@ -101,15 +117,29 @@ public sealed class FormattingAnalysisTests
 
         Project before = CreateProject(workspace);
         DependencyAnalyzer analyzer = new();
-        FormattingAnalysis analysis = new(analyzers: [analyzer], static (exception, failed, diagnostic) => Assert.Fail(exception.Message), new(before.Name, report: null));
+
+        FormattingAnalysis analysis = new(analyzers: [analyzer],
+            static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
+            new(before.Name, report: null));
 
         ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None);
 
         // One candidate, validated against the baseline and then against the errors its first validation found.
-        Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() => 2; }\n");
+        Project candidate = Change(before,
+            name: "Reader.cs",
+            source: "internal static class Reader { internal static int Read() => 2; }\n");
 
-        FormattingAnalysis.ValidationResult rejected = await analysis.Validate(candidate, baseline, actionKey: "optional", optional: true, CancellationToken.None);
-        FormattingAnalysis.ValidationResult accepted = await analysis.Validate(candidate, rejected.Diagnostics, actionKey: "optional", optional: true, CancellationToken.None);
+        FormattingAnalysis.ValidationResult rejected = await analysis.Validate(candidate,
+            baseline,
+            actionKey: "optional",
+            optional: true,
+            CancellationToken.None);
+
+        FormattingAnalysis.ValidationResult accepted = await analysis.Validate(candidate,
+            rejected.Diagnostics,
+            actionKey: "optional",
+            optional: true,
+            CancellationToken.None);
 
         Assert.Equal(expected: "PERF0003", Assert.Single(rejected.IntroducedErrors.ToArray()).Id);
         Assert.True(accepted.IntroducedErrors.IsEmpty);
@@ -128,7 +158,9 @@ public sealed class FormattingAnalysisTests
         List<string> messages = [];
 
         // The untouched project is measured once, as the baseline every validation compares against.
-        FormattingAnalysis analysis = new(analyzers: [analyzer], static (exception, failed, diagnostic) => Assert.Fail(exception.Message), new(before.Name, messages.Add));
+        FormattingAnalysis analysis = new(analyzers: [analyzer],
+            static (exception, failed, diagnostic) => Assert.Fail(exception.Message),
+            new(before.Name, messages.Add));
 
         ImmutableArray<Diagnostic> baseline = await analysis.GetDiagnostics(before, CancellationToken.None);
 
@@ -136,25 +168,41 @@ public sealed class FormattingAnalysisTests
         const string candidateSource = "internal static class Reader { internal static int Read() => 2; }\n";
         Project candidate = Change(before, name: "Reader.cs", candidateSource);
 
-        FormattingAnalysis.ValidationResult first = await analysis.Validate(candidate, baseline, actionKey: "optional", optional: true, CancellationToken.None);
+        FormattingAnalysis.ValidationResult first = await analysis.Validate(candidate,
+            baseline,
+            actionKey: "optional",
+            optional: true,
+            CancellationToken.None);
 
         // An identical copy built separately must reuse that rejection instead of analyzing again.
         Project identical = Change(before, name: "Reader.cs", candidateSource);
 
-        FormattingAnalysis.ValidationResult repeated = await analysis.Validate(identical, baseline, actionKey: "optional", optional: true, CancellationToken.None);
+        FormattingAnalysis.ValidationResult repeated = await analysis.Validate(identical,
+            baseline,
+            actionKey: "optional",
+            optional: true,
+            CancellationToken.None);
 
         Assert.Equal(expected: "PERF0003", Assert.Single(first.IntroducedErrors.ToArray()).Id);
         Assert.Equal(expected: "PERF0003", Assert.Single(repeated.IntroducedErrors.ToArray()).Id);
         Assert.Equal(expected: 2, analyzer.Runs);
-        Assert.Contains(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
 
-        Project changed = Change(before, name: "Dependency.cs", source: "internal static class Dependency { internal const int Value = 1; }\n");
+        Assert.Contains(messages,
+            static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
+
+        Project changed = Change(before,
+            name: "Dependency.cs",
+            source: "internal static class Dependency { internal const int Value = 1; }\n");
 
         ImmutableArray<Diagnostic> changedBaseline = await analysis.GetDiagnostics(changed, CancellationToken.None);
 
         Project changedCandidate = Change(changed, name: "Reader.cs", candidateSource);
 
-        FormattingAnalysis.ValidationResult accepted = await analysis.Validate(changedCandidate, changedBaseline, actionKey: "optional", optional: true, CancellationToken.None);
+        FormattingAnalysis.ValidationResult accepted = await analysis.Validate(changedCandidate,
+            changedBaseline,
+            actionKey: "optional",
+            optional: true,
+            CancellationToken.None);
 
         Assert.True(accepted.IntroducedErrors.IsEmpty);
         Assert.DoesNotContain(accepted.Diagnostics.ToArray(), static diagnostic => diagnostic.Id == "PERF0003");
@@ -167,7 +215,8 @@ public sealed class FormattingAnalysisTests
     {
         List<string> messages = await ValidateBrokenCandidate(suppressedDiagnosticIdentifier: "IDE0072");
 
-        Assert.Contains(messages, static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
+        Assert.Contains(messages,
+            static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
     }
 
     /// <summary>Runs the full analysis when a suppressor could change the effective compiler errors.</summary>
@@ -176,7 +225,8 @@ public sealed class FormattingAnalysisTests
     {
         List<string> messages = await ValidateBrokenCandidate(suppressedDiagnosticIdentifier: "CS0219");
 
-        Assert.DoesNotContain(messages, static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
+        Assert.DoesNotContain(messages,
+            static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
     }
 
     private static Project Change(Project project, string name, string source)
@@ -214,7 +264,9 @@ public sealed class FormattingAnalysisTests
             .ConfigureAwait(continueOnCapturedContext: false);
 
         // A candidate that no longer compiles is what the shortcut exists to reject without analyzers.
-        Project candidate = Change(before, name: "Reader.cs", source: "internal static class Reader { internal static int Read() => \"text\"; }\n");
+        Project candidate = Change(before,
+            name: "Reader.cs",
+            source: "internal static class Reader { internal static int Read() => \"text\"; }\n");
 
         FormattingAnalysis.ValidationResult validation = await analysis.Validate(candidate, baseline, actionKey: "broken candidate", optional: false, CancellationToken.None)
             .ConfigureAwait(continueOnCapturedContext: false);
@@ -323,7 +375,8 @@ public sealed class FormattingAnalysisTests
                 string dependencySource = dependency.GetText().ToString();
 
                 // Reader.cs is wrong only while it reads 2 and the dependency still holds 0.
-                bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal) && dependencySource.Contains(value: "= 0;", StringComparison.Ordinal);
+                bool invalid = source.Contains(value: "=> 2;", StringComparison.Ordinal) && dependencySource.Contains(value: "= 0;",
+                    StringComparison.Ordinal);
 
                 if (invalid)
                     compilation.ReportDiagnostic(Diagnostic.Create(Rule, reader.GetRoot().GetFirstToken().GetLocation()));
@@ -348,7 +401,9 @@ public sealed class FormattingAnalysisTests
         Justification = "This private test suppressor is constructed explicitly and is not shipped.")]
     private sealed class UnusedValueSuppressor : DiagnosticSuppressor
     {
-        private static readonly SuppressionDescriptor Descriptor = new(id: "PERFSP0001", suppressedDiagnosticId: "CS0219", justification: "Exercise effective compiler diagnostics.");
+        private static readonly SuppressionDescriptor Descriptor = new(id: "PERFSP0001",
+            suppressedDiagnosticId: "CS0219",
+            justification: "Exercise effective compiler diagnostics.");
 
         public override ImmutableArray<SuppressionDescriptor> SupportedSuppressions => [Descriptor];
 

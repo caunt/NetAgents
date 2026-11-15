@@ -57,7 +57,10 @@ public sealed class StatementGroupSizeAnalyzer() : PolicyAnalyzer(Rule)
         SyntaxNode root = tree.GetRoot(context.CancellationToken);
         SourceText source = tree.GetText(context.CancellationToken);
 
-        foreach (StatementGroup group in StatementGrouping.GetLargeGroups(root, context.SemanticModel, source, context.CancellationToken))
+        foreach (StatementGroup group in StatementGrouping.GetLargeGroups(root,
+            context.SemanticModel,
+            source,
+            context.CancellationToken))
         {
             Location location = Location.Create(tree, TextSpan.FromBounds(group.First.SpanStart, group.Last.Span.End));
             string count = group.Count.ToString(CultureInfo.InvariantCulture);
@@ -70,7 +73,9 @@ public sealed class StatementGroupSizeAnalyzer() : PolicyAnalyzer(Rule)
     {
         foreach (MemberGroup group in MemberSpacing.GetLargeGroups((TypeDeclarationSyntax)context.Node))
         {
-            Location location = Location.Create(context.Node.SyntaxTree, TextSpan.FromBounds(group.First.SpanStart, group.Last.Span.End));
+            Location location = Location.Create(context.Node.SyntaxTree,
+                TextSpan.FromBounds(group.First.SpanStart, group.Last.Span.End));
+
             string count = group.Count.ToString(CultureInfo.InvariantCulture);
 
             context.ReportDiagnostic(Diagnostic.Create(Rule, location, count, group.Description));

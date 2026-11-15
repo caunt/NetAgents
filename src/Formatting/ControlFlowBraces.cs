@@ -169,7 +169,8 @@ internal static class ControlFlowBraces
             ElseClauseSyntax { Parent: IfStatementSyntax conditional } when statement is not IfStatementSyntax
                 => !CanRemoveFromChain(conditional, source),
             ForStatementSyntax or CommonForEachStatementSyntax or WhileStatementSyntax or DoStatementSyntax
-                or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax or LabeledStatementSyntax => !IsSingleLine(statement, source),
+                or UsingStatementSyntax or LockStatementSyntax or FixedStatementSyntax or LabeledStatementSyntax => !IsSingleLine(statement,
+                    source),
             _ => false,
         };
     }

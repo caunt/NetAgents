@@ -83,7 +83,8 @@ public sealed class DocumentationTagFitCodeFixProvider : CodeFixProvider
         if (DocumentationTags.FindMisordered(DocumentationTags.GetElements(declaration), element, declared) is null)
             return [];
 
-        List<XmlNodeSyntax> ordered = [.. written.OrderBy(node => declared.IndexOf(DocumentationTags.GetAttribute(node, attribute: "name") ?? string.Empty))];
+        List<XmlNodeSyntax> ordered = [.. written.OrderBy(node => declared.IndexOf(DocumentationTags.GetAttribute(node,
+            attribute: "name") ?? string.Empty))];
 
         return written.Select((node, index) => new TextChange(node.Span, source.ToString(ordered[index].Span)));
     }

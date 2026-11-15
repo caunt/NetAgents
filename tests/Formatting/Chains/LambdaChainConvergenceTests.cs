@@ -67,7 +67,12 @@ public sealed class LambdaChainConvergenceTests
             .AddDocument(name: "Example.cs", SourceText.From(Wrap(written)), filePath: "Example.cs")
             .Project;
 
-        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project, analyzers: [.. analyzers], providers: [.. providers], static fault => Assert.Fail(fault), CancellationToken.None);
+        CodeFixRunner.CodeFixResult run = await CodeFixRunner.Fix(project,
+            analyzers: [.. analyzers],
+            providers: [.. providers],
+            static fault => Assert.Fail(fault),
+            CancellationToken.None);
+
         string formatted = await DocumentText.Read(run.Project.Documents.Single());
 
         Assert.Equal(Wrap(expected), formatted);
