@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.Text;
 
 using NetAgents.Analyzers.Formatting.Chains;
 using NetAgents.Analyzers.Formatting.Collections;
+using NetAgents.Analyzers.Formatting.Operators;
 
 namespace NetAgents.Analyzers.Formatting;
 
@@ -152,8 +153,8 @@ internal static class ArgumentLayout
         if (items.Length == 0 && multiple)
             return true;
 
-        // A short call too long for its line keeps its arguments together and lets what they hold break; any other
-        // list that does not wrap sits on one line whole.
+        // A short call too long for its line keeps its arguments together and leaves what they hold as it is laid
+        // out; any other list that does not wrap sits on one line whole.
         if (!multiple && KeepsTogether(list, model, source, cancellationToken))
             return !SeparatesItems(list, items, source);
 
@@ -199,24 +200,22 @@ internal static class ArgumentLayout
     }
 
     // A call with one or two arguments that are too long for their line, by their contents or by where the list stands,
-    // keeps them together all the same: nothing separates them from each other or from the parentheses, while a chain,
-    // a longer call, or a collection inside an argument still breaks by its own rule.
+    // keeps them together all the same while nothing inside them would have to break: nothing separates them from
+    // each other or from the parentheses, and what they hold keeps the layout its own rules give it.
     internal static bool KeepsTogether(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
     {
         LineFitMeasurement measurement = Measure(list);
+        bool plain = !measurement.HasInlineComment && !measurement.HasTokenLineBreak && !measurement.HasSpreadStatement;
 
         return IsShortCall(list)
-            && !measurement.HasInlineComment
-            && !measurement.HasTokenLineBreak
-            && !measurement.HasSpreadStatement
-            && (IsTooLong(list, measurement)
-                || (EndsPastLimit(list, measurement, source)
-                    && !ChainLayout.BreaksLineOf(list, model, source, cancellationToken)));
+            && plain
+            && IsOverlong(list, measurement, model, source, cancellationToken)
+            && !HoldsBreak(list, model, source, cancellationToken);
     }
 
     // Whether the list's own contents keep it off one line: a comment, a statement that spreads, a line break inside a
     // token, or, for anything but a call with one or two arguments, their width. Where the list stands on its line
-    // plays no part.
+    // plays no part, so a call with one or two arguments is never kept off one line by its width here.
     internal static bool RequiresMultipleLines(SyntaxNode list)
     {
         LineFitMeasurement measurement = Measure(list);
@@ -286,6 +285,27 @@ internal static class ArgumentLayout
         return function.Block ?? throw new InvalidOperationException(message: "A spread lambda has no block body.");
     }
 
+    // The column each token of the list would end at with the list written on one line from where it opens.
+    private static Dictionary<SyntaxToken, int> GetCompactEnds(SyntaxNode list, SourceText source)
+    {
+        int column = list.SpanStart - source.Lines.GetLineFromPosition(list.SpanStart).Start;
+        SyntaxNode compact = list.WithoutTrivia().NormalizeWhitespace(indentation: "", eol: " ");
+        Dictionary<SyntaxToken, int> ends = [];
+
+        // Normalizing keeps every token in its place, so the two walks stay in step.
+        using IEnumerator<SyntaxToken> written = list.DescendantTokens().GetEnumerator();
+
+        foreach (SyntaxToken token in compact.DescendantTokens())
+        {
+            if (!written.MoveNext())
+                break;
+
+            ends[written.Current] = column + token.Span.End - compact.FullSpan.Start;
+        }
+
+        return ends;
+    }
+
     // Later items sit one level deeper than the line the list starts on, and one more for each enclosing
     // list that opens on that line and continues past it, so nested lists never share an indentation.
     private static string GetItemIndentation(SyntaxNode list, SourceText source)
@@ -317,9 +337,7 @@ internal static class ArgumentLayout
     {
         return [.. list.DescendantNodes()
             .OfType<AnonymousFunctionExpressionSyntax>()
-            .Where(function => function.Block is BlockSyntax body
-                && function.Ancestors().First(IsList) == list
-                && body.DescendantTokens().Any(HoldsSpreadStatement))];
+            .Where(function => function.Block is BlockSyntax body && function.Ancestors().First(IsList) == list && body.DescendantTokens().Any(HoldsSpreadStatement))];
     }
 
     // The statement lists this list lays out: those it encloses most closely, so a block inside a
@@ -338,6 +356,37 @@ internal static class ArgumentLayout
             if (statements.Count > 1 && node.Ancestors().First(IsList) == list)
                 yield return statements;
         }
+    }
+
+    // Whether something inside a short call would have to break with the call written on one line where it opens: a
+    // list or collection whose own contents keep it off one line, or a chain, a call with three arguments or more, or
+    // an operator sequence that would end past the limit there with nothing holding it on its line. The sequence
+    // itself stays whole inside an argument, so the call wrapping is what gives it room.
+    private static bool HoldsBreak(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
+    {
+        Dictionary<SyntaxToken, int>? ends = null;
+
+        foreach (SyntaxNode node in list.DescendantNodes())
+        {
+            if ((IsList(node) || CollectionLayout.CanLayOut(node)) && RequiresMultipleLines(node))
+                return true;
+
+            bool chain = node is ExpressionSyntax top
+                && ChainLayout.IsTop(top)
+                && ChainLayout.CountMembers(top, model, cancellationToken) > 1;
+
+            bool breakable = chain || IsLongCall(node) || OperatorLayout.GetOperators(node) is not null;
+
+            if (!breakable || ChainLayout.IsHeld(node))
+                continue;
+
+            ends ??= GetCompactEnds(list, source);
+
+            if (ends.TryGetValue(node.GetLastToken(), out int end) && end > LayoutLimits.MaximumInlineLength)
+                return true;
+        }
+
+        return false;
     }
 
     // Some statements never share one line inside an argument, and joining the list would undo their
@@ -362,7 +411,23 @@ internal static class ArgumentLayout
         };
     }
 
-    // A call's argument list holding one or two arguments, which no length ever puts on lines of their own.
+    // A call's argument list holding three arguments or more, which wraps where its line passes the limit.
+    private static bool IsLongCall(SyntaxNode list)
+    {
+        bool call = list.Kind() is SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList;
+
+        return call && list.ChildNodes().Skip(count: 2).Any();
+    }
+
+    // A short call's arguments are too long for their line: by their contents alone, or by where the list stands on a
+    // line nothing else breaks or holds.
+    private static bool IsOverlong(SyntaxNode list, LineFitMeasurement measurement, SemanticModel model, SourceText source, CancellationToken cancellationToken)
+    {
+        return IsTooLong(list, measurement)
+            || (EndsPastLimit(list, measurement, source) && !ChainLayout.BreaksLineOf(list, model, source, cancellationToken));
+    }
+
+    // A call's argument list holding one or two arguments, which their own width never puts on lines of their own.
     private static bool IsShortCall(SyntaxNode list)
     {
         bool call = list.Kind() is SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList;
@@ -465,17 +530,21 @@ internal static class ArgumentLayout
     }
 
     // A call's arguments written on one line end past the limit, measured from where the list opens, so what follows
-    // the list never decides. The line is the list's to break only where it holds three arguments or more and nothing
-    // else breaks the line: a chain that splits breaks at its links, and a condition, an interpolation, an attribute,
-    // and a one-line collection stay whole.
+    // the list never decides. The line is the list's to break only where nothing else breaks it: a chain that splits
+    // breaks at its links, and a condition, an interpolation, an attribute, and a one-line collection stay whole.
+    // One or two arguments stay together however long the line gets, unless something inside them would have to break
+    // instead; then the call wraps first, so a line breaks at its outermost call before it breaks inside an argument.
     private static bool PassesLine(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
     {
-        bool call = list.Kind() is SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList;
+        if (list.Kind() is not (SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList))
+            return false;
 
-        return call
-            && !IsShortCall(list)
-            && EndsPastLimit(list, Measure(list), source)
-            && !ChainLayout.BreaksLineOf(list, model, source, cancellationToken);
+        LineFitMeasurement measurement = Measure(list);
+
+        return IsShortCall(list)
+            ? IsOverlong(list, measurement, model, source, cancellationToken)
+                && HoldsBreak(list, model, source, cancellationToken)
+            : EndsPastLimit(list, measurement, source) && !ChainLayout.BreaksLineOf(list, model, source, cancellationToken);
     }
 
     // A line break stands between a short call's parentheses and arguments, outside any comment.

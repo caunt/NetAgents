@@ -15,7 +15,8 @@ public sealed class OperatorLayoutTests
 
     /// <summary>
     /// Verifies expressions stay as written when they fit on one line, are already split with their operators in
-    /// front, sit in a condition, which NETAGENTS0019 keeps on one line, or have a comment beside an operator.
+    /// front, sit in a condition, which NETAGENTS0019 keeps on one line, have a comment beside an operator, or stand
+    /// whole on one line in a call's argument, however long.
     /// </summary>
     /// <param name="statements">A method body that must report nothing.</param>
     [Theory]
@@ -23,6 +24,7 @@ public sealed class OperatorLayoutTests
     [InlineData("return first\n    && name.StartsWith(value: \"a rather long prefix that has to be compared\", StringComparison.Ordinal)\n    && fallback.EndsWith(value: \"and a suffix\", StringComparison.Ordinal);")]
     [InlineData("if (first && name.StartsWith(value: \"a rather long prefix that has to be compared\", StringComparison.Ordinal) && fallback.EndsWith(value: \"and a suffix\", StringComparison.Ordinal))\n    return true;\n\nreturn false;")]
     [InlineData("bool both = first // The first flag gates everything.\n    && second;\n\nreturn both;")]
+    [InlineData("return fallback.Contains(first ? name.Replace(oldValue: \"a placeholder in the name\", newValue: \"its value\", StringComparison.Ordinal) : fallback.Trim(), StringComparison.Ordinal);")]
     public async Task KeepsOtherExpressions(string statements)
     {
         Assert.Empty(await AnalyzerTestHarness.Analyze(new OperatorLayoutAnalyzer(), Wrap(statements)));
@@ -30,7 +32,8 @@ public sealed class OperatorLayoutTests
 
     /// <summary>
     /// Verifies the fix joins an expression that fits, wherever its operators were written, and splits one that does
-    /// not before every operator: a logical sequence, a conditional expression, and a coalescing sequence.
+    /// not before every operator: a logical sequence, a conditional expression, and a coalescing sequence. One in a
+    /// call's argument comes back onto one line whole.
     /// </summary>
     /// <param name="written">The statements as written.</param>
     /// <param name="expected">The statements after the fix.</param>
@@ -43,6 +46,8 @@ public sealed class OperatorLayoutTests
         "string chosen = first\n    ? name.Replace(oldValue: \"a placeholder in the name\", newValue: \"its value\", StringComparison.Ordinal)\n    : fallback.Trim();\n\nreturn chosen.Length > 0;")]
     [InlineData("string chosen = Environment.GetEnvironmentVariable(variable: \"FIRST_CHOICE\") ?? Environment.GetEnvironmentVariable(variable: \"SECOND_CHOICE\") ?? fallback;\n\nreturn chosen.Length > 0;",
         "string chosen = Environment.GetEnvironmentVariable(variable: \"FIRST_CHOICE\")\n    ?? Environment.GetEnvironmentVariable(variable: \"SECOND_CHOICE\")\n    ?? fallback;\n\nreturn chosen.Length > 0;")]
+    [InlineData("return fallback.Contains(first\n    ? name.Replace(oldValue: \"a placeholder in the name\", newValue: \"its value\", StringComparison.Ordinal)\n    : fallback.Trim(), StringComparison.Ordinal);",
+        "return fallback.Contains(first ? name.Replace(oldValue: \"a placeholder in the name\", newValue: \"its value\", StringComparison.Ordinal) : fallback.Trim(), StringComparison.Ordinal);")]
     public async Task LaysOutOperators(string written, string expected)
     {
         Assert.Equal(Wrap(expected), await CodeFixTestHarness.FixOperators(Wrap(written), fixAll: true));

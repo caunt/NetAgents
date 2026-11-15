@@ -39,7 +39,8 @@ public sealed class StatementGroupingCodeFixProvider : CodeFixProvider
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Group statements with blank lines",
                     cancellationToken => Regroup(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(StatementGroupingCodeFixProvider)), diagnostic);
+                    nameof(StatementGroupingCodeFixProvider)),
+                diagnostic);
         }
 
         return Task.CompletedTask;

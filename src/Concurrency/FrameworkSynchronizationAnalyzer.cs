@@ -33,7 +33,8 @@ public sealed class FrameworkSynchronizationAnalyzer() : PolicyAnalyzer(Rule, an
         isEnabledByDefault: true,
         customTags: [WellKnownDiagnosticTags.NotConfigurable]);
 
-    private static readonly ImmutableHashSet<string> ForbiddenTypes = ImmutableHashSet.Create(StringComparer.Ordinal, items:
+    private static readonly ImmutableHashSet<string> ForbiddenTypes = ImmutableHashSet.Create(StringComparer.Ordinal,
+        items:
         [
             "Lock",
             "Monitor",

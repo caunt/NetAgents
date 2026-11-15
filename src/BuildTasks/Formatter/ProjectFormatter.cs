@@ -27,8 +27,8 @@ internal static class ProjectFormatter
 
         await using (projectLock.ConfigureAwait(continueOnCapturedContext: false))
         {
-            FormattingProgress progress = new(inputs.AssemblyName, message => inputs.Log
-                .LogMessage(MessageImportance.High, message));
+            FormattingProgress progress = new(inputs.AssemblyName,
+                message => inputs.Log.LogMessage(MessageImportance.High, message));
 
             progress.Report(activity: "checking formatting inputs");
 
@@ -77,7 +77,8 @@ internal static class ProjectFormatter
         string aliases = item.GetMetadata(metadataName: "Aliases");
         ImmutableArray<string> referenceAliases = string.IsNullOrEmpty(aliases) ? [] : [.. aliases.Split(separator: ',')];
 
-        MetadataReferenceProperties properties = new(aliases: referenceAliases, embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"),
+        MetadataReferenceProperties properties = new(aliases: referenceAliases,
+            embedInteropTypes: string.Equals(item.GetMetadata(metadataName: "EmbedInteropTypes"),
                 b: "true",
                 StringComparison.OrdinalIgnoreCase));
 
@@ -351,10 +352,11 @@ internal static class ProjectFormatter
         // A withheld run rewrote nothing, so this has to be said before the guard below.
         if (!codeFixes.Introduced.IsEmpty)
         {
-            string introduced = string.Join(separator: ", ", codeFixes.Introduced
-                .Select(static diagnostic => diagnostic.Id)
-                .Distinct(StringComparer.Ordinal)
-                .Order(StringComparer.Ordinal));
+            string introduced = string.Join(separator: ", ",
+                codeFixes.Introduced
+                    .Select(static diagnostic => diagnostic.Id)
+                    .Distinct(StringComparer.Ordinal)
+                    .Order(StringComparer.Ordinal));
 
             inputs.Log
                 .LogMessage(MessageImportance.High, $"NetAgents made no change because formatting would have introduced {introduced}");

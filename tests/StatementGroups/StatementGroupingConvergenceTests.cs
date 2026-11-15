@@ -151,9 +151,9 @@ public sealed class StatementGroupingConvergenceTests
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
 
-            context.RegisterSyntaxNodeAction(static node => node.ReportDiagnostic(Diagnostic.Create(Rule, node.Node
-                .GetFirstToken()
-                .GetLocation())), SyntaxKind.IfStatement);
+            context.RegisterSyntaxNodeAction(static node => node.ReportDiagnostic(Diagnostic.Create(Rule,
+                    node.Node.GetFirstToken().GetLocation())),
+                SyntaxKind.IfStatement);
         }
     }
 
@@ -175,12 +175,13 @@ public sealed class StatementGroupingConvergenceTests
             if (root?.FindToken(context.Span.Start).Parent is not IfStatementSyntax statement)
                 return;
 
-            SyntaxNode unwrapped = root.ReplaceNode(statement, statement.Statement
-                .WithLeadingTrivia(statement.GetLeadingTrivia()));
+            SyntaxNode unwrapped = root.ReplaceNode(statement,
+                statement.Statement.WithLeadingTrivia(statement.GetLeadingTrivia()));
 
             context.RegisterCodeFix(CodeAction.Create(title: "Unwrap",
                     cancellationToken => Task.FromResult(context.Document.WithSyntaxRoot(unwrapped)),
-                    equivalenceKey: "Unwrap"), context.Diagnostics);
+                    equivalenceKey: "Unwrap"),
+                context.Diagnostics);
         }
     }
 }

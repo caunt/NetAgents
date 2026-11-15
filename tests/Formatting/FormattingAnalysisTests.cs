@@ -101,8 +101,8 @@ public sealed class FormattingAnalysisTests
 
         Assert.True(validation.IntroducedErrors.IsEmpty);
 
-        Assert.DoesNotContain(validation.Diagnostics.ToArray(), static diagnostic => diagnostic.Id == "CS0219"
-            && !diagnostic.IsSuppressed);
+        Assert.DoesNotContain(validation.Diagnostics.ToArray(),
+            static diagnostic => diagnostic.Id == "CS0219" && !diagnostic.IsSuppressed);
     }
 
     /// <summary>An error already present in today's baseline no longer justifies rejecting the action.</summary>

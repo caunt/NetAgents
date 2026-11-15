@@ -200,10 +200,7 @@ internal static class LiteralConcatenation
     private static ExpressionSyntax? MergeInterpolated(List<ExpressionSyntax> pieces)
     {
         // A literal moving into an interpolated string doubles its braces, which would otherwise open holes.
-        IEnumerable<string> contents = pieces.Select(static piece => piece is LiteralExpressionSyntax
-            ? GetWrittenContents(piece).Replace(oldValue: "{", newValue: "{{").Replace(oldValue: "}", newValue: "}}")
-            : GetWrittenContents(piece));
-
+        IEnumerable<string> contents = pieces.Select(static piece => piece is LiteralExpressionSyntax ? GetWrittenContents(piece).Replace(oldValue: "{", newValue: "{{").Replace(oldValue: "}", newValue: "}}") : GetWrittenContents(piece));
         ExpressionSyntax merged = SyntaxFactory.ParseExpression("$\"" + string.Concat(contents) + "\"");
 
         return merged is not InterpolatedStringExpressionSyntax || merged.ContainsDiagnostics

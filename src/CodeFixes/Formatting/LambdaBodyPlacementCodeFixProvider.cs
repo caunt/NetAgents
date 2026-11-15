@@ -58,7 +58,8 @@ public sealed class LambdaBodyPlacementCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Start the body on the arrow's line",
                     cancellationToken => Join(context.Document, root, lambda, cancellationToken),
-                    nameof(LambdaBodyPlacementCodeFixProvider)), diagnostic);
+                    nameof(LambdaBodyPlacementCodeFixProvider)),
+                diagnostic);
         }
     }
 

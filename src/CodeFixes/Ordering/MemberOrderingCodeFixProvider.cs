@@ -37,7 +37,8 @@ public sealed class MemberOrderingCodeFixProvider : CodeFixProvider
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Sort type members",
                     cancellationToken => SortMembers(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(MemberOrderingCodeFixProvider)), diagnostic);
+                    nameof(MemberOrderingCodeFixProvider)),
+                diagnostic);
         }
 
         return Task.CompletedTask;

@@ -49,9 +49,8 @@ internal static class WhenClausePlacement
     {
         SyntaxToken previous = keyword.GetPreviousToken();
 
-        return root.ReplaceTokens(tokens: [previous, keyword], (original, rewritten) => original == previous
-            ? rewritten.WithTrailingTrivia(SyntaxFactory.Space)
-            : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
+        return root.ReplaceTokens(tokens: [previous, keyword],
+            (original, rewritten) => original == previous ? rewritten.WithTrailingTrivia(SyntaxFactory.Space) : rewritten.WithLeadingTrivia(SyntaxTriviaList.Empty));
     }
 
     private static bool IsWhitespace(SyntaxTriviaList trivia)

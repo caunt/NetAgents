@@ -293,9 +293,8 @@ public sealed class CodeFixPerformanceTests
                 {
                     SyntaxTree suggestion = trees.Single(static tree => tree.FilePath == "Suggestion.cs");
 
-                    compilation.ReportDiagnostic(Diagnostic.Create(SuggestionRule, suggestion.GetRoot()
-                        .GetFirstToken()
-                        .GetLocation()));
+                    compilation.ReportDiagnostic(Diagnostic.Create(SuggestionRule,
+                        suggestion.GetRoot().GetFirstToken().GetLocation()));
                 }
             });
         }

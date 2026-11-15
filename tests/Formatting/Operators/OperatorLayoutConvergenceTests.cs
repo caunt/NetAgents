@@ -18,8 +18,9 @@ using NetAgents.BuildTasks;
 namespace NetAgents.Analyzers.Tests.Formatting.Operators;
 
 /// <summary>
-/// Runs the formatter on a call whose arguments were wrapped in the middle of a logical sequence or a conditional
-/// expression, and checks the line breaks at the operators instead, whichever rule runs first.
+/// Runs the formatter on statements that broke in the middle of a call, and checks each line breaks at its outermost
+/// place instead, whichever rule runs first: at the operators of a statement's value, then at a call's arguments,
+/// and only then inside an argument.
 /// </summary>
 public sealed class OperatorLayoutConvergenceTests
 {
@@ -31,7 +32,9 @@ public sealed class OperatorLayoutConvergenceTests
 
     /// <summary>
     /// Verifies the sequence splits before each operator and the call inside it gets its arguments back on one line,
-    /// and a conditional expression splits before its question mark and colon.
+    /// and a conditional expression splits before its question mark and colon. A call with two arguments wraps them
+    /// before a chain inside one breaks and stays on one line when nothing inside has to break, and an operator
+    /// sequence in an argument comes back onto one line while the call around it wraps.
     /// </summary>
     /// <param name="first">The rule that runs first: the one for operators or the one for arguments.</param>
     /// <param name="written">The statements as written.</param>
@@ -49,6 +52,30 @@ public sealed class OperatorLayoutConvergenceTests
     [InlineData("arguments",
         "string chosen = _tableIdsByFile.ContainsKey(file) ? original : string.Concat(file,\n    name,\n    \"a suffix long enough that the whole expression cannot stay on one line\");\n\nreturn TryResolveRow(chosen.Length, out reference);",
         "string chosen = _tableIdsByFile.ContainsKey(file)\n    ? original\n    : string.Concat(file, name, \"a suffix long enough that the whole expression cannot stay on one line\");\n\nreturn TryResolveRow(chosen.Length, out reference);")]
+    [InlineData("operators",
+        "return string.Equals(file.Trim().ToUpperInvariant().Normalize(), string.Concat(name, original)\n    .Trim()\n    .ToUpperInvariant()\n    .TrimEnd());",
+        "return string.Equals(file.Trim().ToUpperInvariant().Normalize(),\n    string.Concat(name, original).Trim().ToUpperInvariant().TrimEnd());")]
+    [InlineData("arguments",
+        "return string.Equals(file.Trim().ToUpperInvariant().Normalize(), string.Concat(name, original)\n    .Trim()\n    .ToUpperInvariant()\n    .TrimEnd());",
+        "return string.Equals(file.Trim().ToUpperInvariant().Normalize(),\n    string.Concat(name, original).Trim().ToUpperInvariant().TrimEnd());")]
+    [InlineData("operators",
+        "return TryResolveRow(file.Length + \"a text long enough to push the whole call well past the limit of one hundred and twenty-eight characters\".Length,\n    out reference);",
+        "return TryResolveRow(file.Length + \"a text long enough to push the whole call well past the limit of one hundred and twenty-eight characters\".Length, out reference);")]
+    [InlineData("arguments",
+        "return TryResolveRow(file.Length + \"a text long enough to push the whole call well past the limit of one hundred and twenty-eight characters\".Length,\n    out reference);",
+        "return TryResolveRow(file.Length + \"a text long enough to push the whole call well past the limit of one hundred and twenty-eight characters\".Length, out reference);")]
+    [InlineData("operators",
+        "string chosen = string.Concat(file, name, _tableIdsByFile.ContainsKey(file)\n    ? original\n    : \"a fallback long enough that the whole call cannot stay on one line where it stands\");\n\nreturn TryResolveRow(chosen.Length, out reference);",
+        "string chosen = string.Concat(file,\n    name,\n    _tableIdsByFile.ContainsKey(file) ? original : \"a fallback long enough that the whole call cannot stay on one line where it stands\");\n\nreturn TryResolveRow(chosen.Length, out reference);")]
+    [InlineData("arguments",
+        "string chosen = string.Concat(file, name, _tableIdsByFile.ContainsKey(file)\n    ? original\n    : \"a fallback long enough that the whole call cannot stay on one line where it stands\");\n\nreturn TryResolveRow(chosen.Length, out reference);",
+        "string chosen = string.Concat(file,\n    name,\n    _tableIdsByFile.ContainsKey(file) ? original : \"a fallback long enough that the whole call cannot stay on one line where it stands\");\n\nreturn TryResolveRow(chosen.Length, out reference);")]
+    [InlineData("operators",
+        "return TryResolveRow(ResolveTable(file.Length)?.Length\n    ?? \"a fallback long enough to push the argument past the limit of its line all by itself\".Length, out reference);",
+        "return TryResolveRow(ResolveTable(file.Length)?.Length ?? \"a fallback long enough to push the argument past the limit of its line all by itself\".Length,\n    out reference);")]
+    [InlineData("arguments",
+        "return TryResolveRow(ResolveTable(file.Length)?.Length\n    ?? \"a fallback long enough to push the argument past the limit of its line all by itself\".Length, out reference);",
+        "return TryResolveRow(ResolveTable(file.Length)?.Length ?? \"a fallback long enough to push the argument past the limit of its line all by itself\".Length,\n    out reference);")]
     public async Task BreaksAtOperatorsBeforeArguments(string first, string written, string expected)
     {
         DiagnosticAnalyzer[] analyzers =

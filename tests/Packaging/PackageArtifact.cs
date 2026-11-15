@@ -62,8 +62,8 @@ internal static class PackageArtifact
             using StreamReader packagedReader = new(await configurationEntry.OpenAsync()
                 .ConfigureAwait(continueOnCapturedContext: false));
 
-            Assert.Equal(embeddedConfiguration, await packagedReader.ReadToEndAsync()
-                .ConfigureAwait(continueOnCapturedContext: false));
+            Assert.Equal(embeddedConfiguration,
+                await packagedReader.ReadToEndAsync().ConfigureAwait(continueOnCapturedContext: false));
         }
 
         AnalyzerConfig[] generatedConfigurations = [
@@ -114,9 +114,9 @@ internal static class PackageArtifact
         foreach (string requiredFile in requiredFiles)
             Assert.NotNull(package.GetEntry(requiredFile));
 
-        Assert.Equal(expected: 2, package.Entries
-            .Count(static entry => entry.FullName.StartsWith(value: "analyzers/", StringComparison.Ordinal)
-                && entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal)));
+        Assert.Equal(expected: 2,
+            package.Entries
+                .Count(static entry => entry.FullName.StartsWith(value: "analyzers/", StringComparison.Ordinal) && entry.FullName.EndsWith(value: ".dll", StringComparison.Ordinal)));
 
         Assert.NotNull(package.GetEntry(entryName: "tools/tasks/NetAgents.BuildTasks.dll"));
         Assert.NotNull(package.GetEntry(entryName: "tools/tasks/NetAgents.Formatter.dll"));

@@ -58,7 +58,8 @@ public sealed class DelegateCreationCodeFixProvider : CodeFixProvider
             context.RegisterCodeFix(CodeAction.Create(title: "Assign the lambda or method group directly",
                     cancellationToken => Task.FromResult(context.Document
                         .WithSyntaxRoot(root.ReplaceNode(creation, wrapped.WithTriviaFrom(creation)))),
-                    nameof(DelegateCreationCodeFixProvider)), diagnostic);
+                    nameof(DelegateCreationCodeFixProvider)),
+                diagnostic);
         }
     }
 }

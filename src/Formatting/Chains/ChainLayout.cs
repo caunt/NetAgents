@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 using NetAgents.Analyzers.Formatting.Collections;
+using NetAgents.Analyzers.Formatting.Operators;
 
 namespace NetAgents.Analyzers.Formatting.Chains;
 
@@ -51,10 +52,7 @@ internal static class ChainLayout
             if (ancestor is StatementSyntax or MemberDeclarationSyntax)
                 break;
 
-            if (IsCondition(ancestor) || ancestor is InterpolationSyntax or AttributeSyntax)
-                return true;
-
-            if (CollectionLayout.CanLayOut(ancestor) && !ArgumentLayout.RequiresMultipleLines(ancestor))
+            if (HoldsLine(ancestor))
                 return true;
 
             if (ancestor is ExpressionSyntax chain && IsTop(chain) && Splits(chain, model, text, cancellationToken))
@@ -64,55 +62,29 @@ internal static class ChainLayout
         return false;
     }
 
+    // The members a chain that ends at this expression reaches after its receiver, with the namespace and type
+    // qualifiers in front left out, or none when it is no chain.
+    public static int CountMembers(ExpressionSyntax top, SemanticModel model, CancellationToken cancellationToken)
+    {
+        List<ChainLink>? links = Collect(top);
+        int qualifiers = 0;
+
+        if (links is null)
+            return 0;
+
+        while (qualifiers < links.Count && IsQualifier(links[qualifiers], model, cancellationToken))
+            qualifiers++;
+
+        return links.Count - qualifiers;
+    }
+
     // The links of the chain that ends at this expression, or nothing when it is no chain the rule lays out. Leading
     // namespace and type qualifiers are bound only when they could change the count.
     public static List<ChainLink>? GetLinks(ExpressionSyntax top, SemanticModel model, SourceText text, CancellationToken cancellationToken)
     {
-        List<ChainLink> links = [];
-        ExpressionSyntax node = top;
+        List<ChainLink>? links = Collect(top);
 
-        while (ContinuesChain(node))
-        {
-            switch (node)
-            {
-                case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax called } when called.IsKind(SyntaxKind.SimpleMemberAccessExpression):
-                    {
-                        links.Add(new ChainLink(called, qualifier: false));
-
-                        node = called.Expression;
-
-                        break;
-                    }
-                case InvocationExpressionSyntax { Expression: MemberBindingExpressionSyntax }:
-                    return null;
-                case InvocationExpressionSyntax:
-                    return Finish(top, links, model, text, cancellationToken);
-                case MemberAccessExpressionSyntax access when access.IsKind(SyntaxKind.SimpleMemberAccessExpression):
-                    {
-                        links.Add(new ChainLink(access, qualifier: false));
-
-                        node = access.Expression;
-
-                        break;
-                    }
-                case ElementAccessExpressionSyntax element:
-                    {
-                        node = element.Expression;
-
-                        break;
-                    }
-                case PostfixUnaryExpressionSyntax suppressed when suppressed.IsKind(SyntaxKind.SuppressNullableWarningExpression):
-                    {
-                        node = suppressed.Operand;
-
-                        break;
-                    }
-                default:
-                    return null;
-            }
-        }
-
-        return node is ConditionalAccessExpressionSyntax ? null : Finish(top, links, model, text, cancellationToken);
+        return links is null ? null : Finish(top, links, model, text, cancellationToken);
     }
 
     // The layout the chain must take, or nothing where the rule leaves it as written.
@@ -125,8 +97,29 @@ internal static class ChainLayout
             : members > MaximumLinks || !Fits(top, links, text);
     }
 
+    // Whether something around a node keeps the line it sits on whole: a condition, the node itself included, an
+    // interpolation, an attribute, a collection NETAGENTS0020 writes on one line, or an operator sequence
+    // NETAGENTS0055 keeps whole in an argument.
+    public static bool IsHeld(SyntaxNode node)
+    {
+        if (IsCondition(node))
+            return true;
+
+        foreach (SyntaxNode ancestor in node.Ancestors())
+        {
+            if (ancestor is StatementSyntax or MemberDeclarationSyntax)
+                break;
+
+            if (HoldsLine(ancestor))
+                return true;
+        }
+
+        return false;
+    }
+
     // Whether something around an expression keeps it on one line: a condition, which NETAGENTS0019 keeps there, an
-    // interpolation, an attribute argument, or a list NETAGENTS0020 writes on one line.
+    // interpolation, an attribute argument, a list NETAGENTS0020 writes on one line, or an operator sequence
+    // NETAGENTS0055 keeps whole in an argument.
     public static bool IsHeldOnOneLine(ExpressionSyntax top, SemanticModel model, SourceText text, CancellationToken cancellationToken)
     {
         // The search for conditions stops at the statement holding the expression, since one beyond it is another
@@ -136,6 +129,10 @@ internal static class ChainLayout
         foreach (SyntaxNode ancestor in top.AncestorsAndSelf())
         {
             if (inStatement && (IsCondition(ancestor) || ancestor is InterpolationSyntax or AttributeArgumentSyntax))
+                return true;
+
+            // An operator sequence kept whole in an argument takes everything inside it onto its line.
+            if (inStatement && ancestor != top && OperatorLayout.IsWhole(ancestor))
                 return true;
 
             if (IsJoinedList(ancestor, model, text, cancellationToken))
@@ -231,6 +228,57 @@ internal static class ChainLayout
         return root.ReplaceTokens(replacements.Keys, (original, rewritten) => replacements[original]);
     }
 
+    // The links of the chain that ends at this expression in the order written, or nothing when it is no chain the
+    // rule lays out.
+    private static List<ChainLink>? Collect(ExpressionSyntax top)
+    {
+        List<ChainLink> links = [];
+        ExpressionSyntax node = top;
+
+        while (ContinuesChain(node))
+        {
+            switch (node)
+            {
+                case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax called } when called.IsKind(SyntaxKind.SimpleMemberAccessExpression):
+                    {
+                        links.Add(new ChainLink(called, qualifier: false));
+
+                        node = called.Expression;
+
+                        break;
+                    }
+                case InvocationExpressionSyntax { Expression: MemberBindingExpressionSyntax }:
+                    return null;
+                case InvocationExpressionSyntax:
+                    return Reversed(links);
+                case MemberAccessExpressionSyntax access when access.IsKind(SyntaxKind.SimpleMemberAccessExpression):
+                    {
+                        links.Add(new ChainLink(access, qualifier: false));
+
+                        node = access.Expression;
+
+                        break;
+                    }
+                case ElementAccessExpressionSyntax element:
+                    {
+                        node = element.Expression;
+
+                        break;
+                    }
+                case PostfixUnaryExpressionSyntax suppressed when suppressed.IsKind(SyntaxKind.SuppressNullableWarningExpression):
+                    {
+                        node = suppressed.Operand;
+
+                        break;
+                    }
+                default:
+                    return null;
+            }
+        }
+
+        return node is ConditionalAccessExpressionSyntax ? null : Reversed(links);
+    }
+
     // The expressions a chain is built from: calls, member and element accesses, and null-forgiving operators.
     private static bool ContinuesChain(ExpressionSyntax node)
     {
@@ -253,8 +301,6 @@ internal static class ChainLayout
     // could split, since one that stays on one line joins every dot anyway.
     private static List<ChainLink> Finish(ExpressionSyntax top, List<ChainLink> links, SemanticModel model, SourceText text, CancellationToken cancellationToken)
     {
-        links.Reverse();
-
         if (links.Count <= MaximumLinks && Fits(top, links, text))
             return links;
 
@@ -318,6 +364,15 @@ internal static class ChainLayout
         return indentation + (indentation.IndexOf(value: '\t') >= 0 ? "\t" : "    ");
     }
 
+    // What keeps the line it sits on whole, so nothing inside it breaks for width.
+    private static bool HoldsLine(SyntaxNode node)
+    {
+        return IsCondition(node)
+            || node is InterpolationSyntax or AttributeSyntax
+            || (CollectionLayout.CanLayOut(node) && !ArgumentLayout.RequiresMultipleLines(node))
+            || OperatorLayout.IsWhole(node);
+    }
+
     private static bool IsCondition(SyntaxNode node)
     {
         return node.Parent switch
@@ -379,6 +434,13 @@ internal static class ChainLayout
         }
 
         return true;
+    }
+
+    private static List<ChainLink> Reversed(List<ChainLink> links)
+    {
+        links.Reverse();
+
+        return links;
     }
 
     private static bool Splits(ExpressionSyntax top, SemanticModel model, SourceText text, CancellationToken cancellationToken)

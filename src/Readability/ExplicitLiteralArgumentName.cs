@@ -251,8 +251,7 @@ internal static class ExplicitLiteralArgumentName
     private static bool HasComments(BaseArgumentListSyntax list, TextSpan range)
     {
         return list.DescendantTrivia()
-            .Any(trivia => range.Contains(trivia.SpanStart)
-                && trivia.Kind() is SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia);
+            .Any(trivia => range.Contains(trivia.SpanStart) && trivia.Kind() is SyntaxKind.SingleLineCommentTrivia or SyntaxKind.MultiLineCommentTrivia);
     }
 
     private static bool IsCallable(BaseArgumentListSyntax list,
@@ -382,9 +381,8 @@ internal static class ExplicitLiteralArgumentName
 
     private static BaseArgumentListSyntax? Replace(BaseArgumentListSyntax list, List<ArgumentSyntax> rewritten)
     {
-        SeparatedSyntaxList<ArgumentSyntax> updated = SyntaxFactory.SeparatedList(rewritten, list.Arguments
-            .GetSeparators()
-            .Take(rewritten.Count - 1));
+        SeparatedSyntaxList<ArgumentSyntax> updated = SyntaxFactory.SeparatedList(rewritten,
+            list.Arguments.GetSeparators().Take(rewritten.Count - 1));
 
         return list switch
         {

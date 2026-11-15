@@ -51,7 +51,8 @@ public sealed class SummaryOpeningCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Open the summary as the .NET documentation does",
                     cancellationToken => Open(context.Document, diagnostic.Location.SourceSpan, opening, cancellationToken),
-                    nameof(SummaryOpeningCodeFixProvider)), diagnostic);
+                    nameof(SummaryOpeningCodeFixProvider)),
+                diagnostic);
         }
 
         return Task.CompletedTask;

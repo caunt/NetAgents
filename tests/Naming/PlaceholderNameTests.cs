@@ -23,9 +23,8 @@ public sealed class PlaceholderNameTests
     [InlineData("_result = result;")]
     public async Task AcceptsDescriptiveNames(string body)
     {
-        Assert.Empty(await AnalyzerTestHarness.Analyze(new PlaceholderNameAnalyzer(), Type.Replace(oldValue: "BODY",
-                body,
-                StringComparison.Ordinal)));
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new PlaceholderNameAnalyzer(),
+            Type.Replace(oldValue: "BODY", body, StringComparison.Ordinal)));
     }
 
     /// <summary>
@@ -49,7 +48,7 @@ public sealed class PlaceholderNameTests
     {
         string source = Type.Replace(oldValue: "BODY", body, StringComparison.Ordinal);
 
-        Assert.Equal(PlaceholderNameAnalyzer.RuleIdentifier, Assert.Single(await AnalyzerTestHarness.Analyze(new PlaceholderNameAnalyzer(), source))
-            .Id);
+        Assert.Equal(PlaceholderNameAnalyzer.RuleIdentifier,
+            Assert.Single(await AnalyzerTestHarness.Analyze(new PlaceholderNameAnalyzer(), source)).Id);
     }
 }

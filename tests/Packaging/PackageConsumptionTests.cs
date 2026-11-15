@@ -509,9 +509,8 @@ public sealed class PackageConsumptionTests
 
             string currentSource = await File.ReadAllTextAsync(sourcePath);
 
-            await File.WriteAllTextAsync(sourcePath, currentSource.Replace(oldValue: "return greeting;",
-                    newValue: "return  greeting;",
-                    StringComparison.Ordinal));
+            await File.WriteAllTextAsync(sourcePath,
+                currentSource.Replace(oldValue: "return greeting;", newValue: "return  greeting;", StringComparison.Ordinal));
 
             File.SetLastWriteTimeUtc(sourcePath, formattedTime);
 
@@ -574,8 +573,8 @@ public sealed class PackageConsumptionTests
 
             string multiTargetSource = await File.ReadAllTextAsync(sourcePath);
 
-            Assert.Equal(expected: 3, multiTargetSource.Split(separator: "string.Concat(recipientName, string.Empty)", StringSplitOptions.None)
-                .Length);
+            Assert.Equal(expected: 3,
+                multiTargetSource.Split(separator: "string.Concat(recipientName, string.Empty)", StringSplitOptions.None).Length);
 
             Assert.True(File.Exists(Path.Combine(workspace.FullName, $"bin/Debug/{ConsumerBuild.Framework}/Consumer.dll")));
             Assert.True(File.Exists(Path.Combine(workspace.FullName, $"bin/Debug/{ConsumerBuild.Framework}-windows/Consumer.dll")));
@@ -589,10 +588,12 @@ public sealed class PackageConsumptionTests
                 forbiddenOutput: ["analyzing project"],
                 withoutShell: true);
 
-            Assert.Equal(expected: 2, Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories)
-                .Length);
+            Assert.Equal(expected: 2,
+                Directory.GetFiles(workspace.FullName, searchPattern: "*.NetAgents.formatting.cache", SearchOption.AllDirectories)
+                    .Length);
 
-            await File.WriteAllTextAsync(sourcePath, ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
+            await File.WriteAllTextAsync(sourcePath,
+                ValidSource.Replace(oldValue: "string CreateGreeting(string recipientName)",
                     newValue: "System.IComparable CreateGreeting(int recipientName)",
                     StringComparison.Ordinal));
 
@@ -756,7 +757,8 @@ public sealed class PackageConsumptionTests
                 expectedDiagnosticIdentifier: "NETAGENTS0025");
 
             // Without any summary, the compiler's own CS1591 fails the build instead.
-            await File.WriteAllTextAsync(sourcePath, ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n",
+            await File.WriteAllTextAsync(sourcePath,
+                ValidSource.Replace(oldValue: "/// <summary>Provides the consumer entry point.</summary>\n",
                     string.Empty,
                     StringComparison.Ordinal));
 
@@ -865,7 +867,8 @@ public sealed class PackageConsumptionTests
 
             foreach (string conflictingSetting in conflictingProjectSettings)
             {
-                await File.WriteAllTextAsync(projectPath, projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
+                await File.WriteAllTextAsync(projectPath,
+                    projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
                         $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}",
                         StringComparison.Ordinal));
 

@@ -39,10 +39,11 @@ public sealed class WhenClausePlacementTests
     {
         string source = Wrap(statements: "try\n{\n    return 1;\n}\ncatch (System.InvalidOperationException exception) // Only the retried kind.\n    when (exception.Data.Count > 0)\n{\n    return 0;\n}");
 
-        Assert.Equal(WhenClausePlacementAnalyzer.RuleIdentifier, Assert.Single(await AnalyzerTestHarness.Analyze(new WhenClausePlacementAnalyzer(), source))
-            .Id);
+        Assert.Equal(WhenClausePlacementAnalyzer.RuleIdentifier,
+            Assert.Single(await AnalyzerTestHarness.Analyze(new WhenClausePlacementAnalyzer(), source)).Id);
 
-        Assert.Equal(expected: 0, await CodeFixTestHarness.CountFixes(source,
+        Assert.Equal(expected: 0,
+            await CodeFixTestHarness.CountFixes(source,
                 new WhenClausePlacementAnalyzer(),
                 new WhenClausePlacementCodeFixProvider()));
     }

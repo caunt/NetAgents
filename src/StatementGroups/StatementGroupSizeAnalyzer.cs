@@ -73,9 +73,8 @@ public sealed class StatementGroupSizeAnalyzer() : PolicyAnalyzer(Rule)
     {
         foreach (MemberGroup group in MemberSpacing.GetLargeGroups((TypeDeclarationSyntax)context.Node))
         {
-            Location location = Location.Create(context.Node.SyntaxTree, TextSpan.FromBounds(group.First.SpanStart, group.Last
-                .Span
-                .End));
+            Location location = Location.Create(context.Node.SyntaxTree,
+                TextSpan.FromBounds(group.First.SpanStart, group.Last.Span.End));
 
             string count = group.Count.ToString(CultureInfo.InvariantCulture);
 

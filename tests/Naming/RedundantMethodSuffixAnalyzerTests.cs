@@ -86,11 +86,13 @@ public sealed class RedundantMethodSuffixAnalyzerTests
 
         Assert.Equal(expected: 2, diagnostics.Length);
 
-        Assert.Contains(diagnostics, static diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture)
-            .Contains(value: "'UpdateValue'", StringComparison.Ordinal));
+        Assert.Contains(diagnostics,
+            static diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture)
+                .Contains(value: "'UpdateValue'", StringComparison.Ordinal));
 
-        Assert.Contains(diagnostics, static diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture)
-            .Contains(value: "'SetName'", StringComparison.Ordinal));
+        Assert.Contains(diagnostics,
+            static diagnostic => diagnostic.GetMessage(CultureInfo.InvariantCulture)
+                .Contains(value: "'SetName'", StringComparison.Ordinal));
     }
 
     /// <summary>

@@ -65,7 +65,8 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Fix argument parameter names",
                     cancellationToken => FixNames(context.Document, requestedSpans: [span], fixAll: false, cancellationToken),
-                    nameof(ExplicitLiteralArgumentNameCodeFixProvider)), diagnostic);
+                    nameof(ExplicitLiteralArgumentNameCodeFixProvider)),
+                diagnostic);
         }
     }
 
@@ -88,7 +89,8 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
 
             ExplicitLiteralArgumentName.ArgumentNaming[] selected = SelectOutermost(ExplicitLiteralArgumentName.GetChanges(root,
                     model,
-                    cancellationToken), requestedSpans);
+                    cancellationToken),
+                requestedSpans);
 
             if (selected.Length == 0)
                 return document;
@@ -123,7 +125,6 @@ public sealed class ExplicitLiteralArgumentNameCodeFixProvider : CodeFixProvider
             .Distinct()];
 
         // Replacements are built from the original lists, so a nested list waits for the next pass.
-        return [.. candidates.Where(naming => !candidates.Any(other => other.List.Span != naming.List.Span
-            && other.List.Span.Contains(naming.List.Span)))];
+        return [.. candidates.Where(naming => !candidates.Any(other => other.List.Span != naming.List.Span && other.List.Span.Contains(naming.List.Span)))];
     }
 }

@@ -32,9 +32,11 @@ namespace NetAgents.Analyzers.Formatting.Operators;
 /// <para>
 /// Operators of one kind written in a row are one sequence, and a different operator or a <c>?:</c> inside an operand
 /// is laid out on its own, from the line its operand starts on. The width is measured from where the expression starts
-/// to where it ends, so what follows it on the line never decides. An expression in a condition, which NETAGENTS0019
-/// keeps on one line, in an interpolation, in an attribute, in a list NETAGENTS0020 writes on one line, or beside a
-/// comment keeps its layout.
+/// to where it ends, so what follows it on the line never decides. An expression in a call's argument stays on one
+/// line whole, however long it is and with everything inside it, since the call wraps its arguments to give it room;
+/// it splits there only when something inside it cannot be written on one line. An expression in a condition, which
+/// NETAGENTS0019 keeps on one line, in an interpolation, in an attribute, in a list NETAGENTS0020 writes on one line,
+/// or beside a comment keeps its layout.
 /// </para>
 /// </remarks>
 internal static class OperatorLayout
@@ -82,11 +84,19 @@ internal static class OperatorLayout
                 return null;
         }
 
-        return !Fits(node, text);
+        // Inside a call's argument the expression stays whole, and the call wraps its arguments instead.
+        return !StaysWhole(node) && !Fits(node, text);
     }
 
     public static bool IsSettled(ExpressionSyntax node, List<SyntaxToken> operators, bool split, SourceText text)
     {
+        if (!split && StaysWhole(node))
+        {
+            return text.Lines.GetLineFromPosition(node.SpanStart).LineNumber == text.Lines
+                .GetLineFromPosition(node.Span.End)
+                .LineNumber;
+        }
+
         string deeper = GetOperandIndentation(node, text);
 
         foreach (SyntaxToken token in operators)
@@ -105,10 +115,21 @@ internal static class OperatorLayout
         return true;
     }
 
+    // An expression written in a call's argument that can stand on one line: it stays there whole, however long, with
+    // everything inside it, so nothing inside an argument breaks before the call around it wraps.
+    public static bool IsWhole(SyntaxNode node)
+    {
+        return node is ExpressionSyntax expression && GetOperators(expression) is not null && StaysWhole(expression);
+    }
+
     // Only the white space around the operators changes: a line break and one level of indentation in front of each
-    // when the expression splits, and one space on each side when it does not.
+    // when the expression splits, and one space on each side when it does not. An expression that stays whole loses
+    // every line break inside it.
     public static SyntaxNode Rewrite(SyntaxNode root, ExpressionSyntax node, List<SyntaxToken> operators, bool split, SourceText text)
     {
+        if (!split && StaysWhole(node))
+            return Join(root, node);
+
         Dictionary<SyntaxToken, SyntaxTriviaList> leading = [];
         Dictionary<SyntaxToken, SyntaxTriviaList> trailing = [];
         SyntaxTriviaList space = SyntaxFactory.TriviaList(SyntaxFactory.Space);
@@ -128,6 +149,36 @@ internal static class OperatorLayout
         HashSet<SyntaxToken> changed = [.. leading.Keys, .. trailing.Keys];
 
         return root.ReplaceTokens(changed, (original, rewritten) => Respace(original, leading, trailing));
+    }
+
+    // Whether the expression can be written on one line: nothing inside it has to spread over lines, and no comment
+    // inside it needs a line of its own.
+    private static bool CanJoin(ExpressionSyntax node)
+    {
+        foreach (SyntaxNode inner in node.DescendantNodes())
+        {
+            if (inner is BlockSyntax or SwitchExpressionSyntax || CollectionLayout.AlwaysExpands(inner))
+                return false;
+
+            if ((ArgumentLayout.IsList(inner) || CollectionLayout.CanLayOut(inner)) && ArgumentLayout.RequiresMultipleLines(inner))
+                return false;
+        }
+
+        foreach (SyntaxToken token in node.DescendantTokens())
+        {
+            if (token.Text.IndexOf(value: '\n') >= 0)
+                return false;
+        }
+
+        foreach (SyntaxTrivia trivia in node.DescendantTrivia())
+        {
+            bool blank = trivia.IsKind(SyntaxKind.WhitespaceTrivia) || trivia.IsKind(SyntaxKind.EndOfLineTrivia);
+
+            if (!blank && node.Span.Contains(trivia.Span))
+                return false;
+        }
+
+        return true;
     }
 
     // A longer sequence of the same operator continues through this expression, on the side that operator groups to.
@@ -190,6 +241,33 @@ internal static class OperatorLayout
         return indentation + (indentation.IndexOf(value: '\t') >= 0 ? "\t" : "    ");
     }
 
+    // The expression is written in a call's argument, with no statement of its own in between and no initializer
+    // that gives each of its values a line of its own.
+    private static bool IsArgument(ExpressionSyntax node)
+    {
+        foreach (SyntaxNode ancestor in node.Ancestors())
+        {
+            if (ancestor is StatementSyntax or MemberDeclarationSyntax || CollectionLayout.AlwaysExpands(ancestor))
+                return false;
+
+            if (ancestor is ArgumentSyntax)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsOnOneLine(SyntaxTriviaList trivia)
+    {
+        foreach (SyntaxTrivia piece in trivia)
+        {
+            if (piece.IsKind(SyntaxKind.EndOfLineTrivia))
+                return false;
+        }
+
+        return true;
+    }
+
     private static bool IsSequence(BinaryExpressionSyntax node)
     {
         return node.Kind() is SyntaxKind.LogicalAndExpression or SyntaxKind.LogicalOrExpression or SyntaxKind.CoalesceExpression;
@@ -206,10 +284,54 @@ internal static class OperatorLayout
         return true;
     }
 
+    // Every line break inside the expression goes; the formatter then spaces the tokens it brought together.
+    private static SyntaxNode Join(SyntaxNode root, ExpressionSyntax node)
+    {
+        Dictionary<SyntaxToken, SyntaxTriviaList> leading = [];
+        Dictionary<SyntaxToken, SyntaxTriviaList> trailing = [];
+        SyntaxToken first = node.GetFirstToken();
+
+        foreach (SyntaxToken token in node.DescendantTokens())
+        {
+            SyntaxToken previous = token.GetPreviousToken();
+
+            if (token == first || (IsOnOneLine(previous.TrailingTrivia) && IsOnOneLine(token.LeadingTrivia)))
+                continue;
+
+            trailing[previous] = Separates(previous, token)
+                ? SyntaxFactory.TriviaList(SyntaxFactory.Space)
+                : SyntaxTriviaList.Empty;
+
+            leading[token] = SyntaxTriviaList.Empty;
+        }
+
+        HashSet<SyntaxToken> changed = [.. leading.Keys, .. trailing.Keys];
+
+        return root.ReplaceTokens(changed, (original, rewritten) => Respace(original, leading, trailing));
+    }
+
     private static SyntaxToken Respace(SyntaxToken token, Dictionary<SyntaxToken, SyntaxTriviaList> leading, Dictionary<SyntaxToken, SyntaxTriviaList> trailing)
     {
         SyntaxToken respaced = leading.TryGetValue(token, out SyntaxTriviaList before) ? token.WithLeadingTrivia(before) : token;
 
         return trailing.TryGetValue(token, out SyntaxTriviaList after) ? respaced.WithTrailingTrivia(after) : respaced;
+    }
+
+    // Two tokens brought onto one line take a space between them, except beside a dot, after an opening bracket, and
+    // before a closing one or a comma.
+    private static bool Separates(SyntaxToken previous, SyntaxToken token)
+    {
+        bool opens = previous.Kind() is SyntaxKind.OpenParenToken or SyntaxKind.OpenBracketToken or SyntaxKind.DotToken;
+
+        bool closes = token.Kind() is SyntaxKind.CloseParenToken or SyntaxKind.CloseBracketToken or SyntaxKind.DotToken
+            or SyntaxKind.CommaToken;
+
+        return !opens && !closes;
+    }
+
+    // The expression is in a call's argument and nothing inside it has to spread over lines.
+    private static bool StaysWhole(ExpressionSyntax node)
+    {
+        return IsArgument(node) && CanJoin(node);
     }
 }

@@ -35,8 +35,7 @@ internal sealed class FormattingCache(string path)
 
         try
         {
-            DirectoryInfo directory = new(Path.GetDirectoryName(Path.GetFullPath(path))
-                ?? throw new InvalidOperationException(message: "The formatting cache directory is unavailable."));
+            DirectoryInfo directory = new(Path.GetDirectoryName(Path.GetFullPath(path)) ?? throw new InvalidOperationException(message: "The formatting cache directory is unavailable."));
 
             directory.Create();
 

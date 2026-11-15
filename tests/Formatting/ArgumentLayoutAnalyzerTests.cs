@@ -128,15 +128,15 @@ public sealed class ArgumentLayoutAnalyzerTests
         string compact = $"public class ExampleType {{ public void Execute(string value = {literal}, int count = 0) {{ }} }}";
         string expanded = $"public class ExampleType {{ public void Execute(string value = {literal},\n    int count = 0) {{ }} }}";
 
-        Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), compact))
-            .Id);
+        Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier,
+            Assert.Single(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), compact)).Id);
 
         Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), expanded));
     }
 
     /// <summary>
-    /// Keeps a call's one or two arguments together however long the line or the arguments are, and reports them
-    /// once a line break separates them.
+    /// Keeps a call's one or two arguments together however long the line or the arguments are while nothing inside
+    /// them has to break, and reports them once a line break separates them.
     /// </summary>
     /// <param name="arguments">The arguments of the call, written on one line.</param>
     /// <exception cref="ArgumentNullException">Thrown when a data row supplies no <paramref name="arguments"/> to place in the call.</exception>
@@ -156,8 +156,8 @@ public sealed class ArgumentLayoutAnalyzerTests
             newValue: "string.Concat(\n            \"",
             StringComparison.Ordinal);
 
-        Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), separated))
-            .Id);
+        Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier,
+            Assert.Single(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), separated)).Id);
     }
 
     /// <summary>
@@ -263,6 +263,31 @@ public sealed class ArgumentLayoutAnalyzerTests
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), source);
 
         Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
+    /// Wraps a call's two arguments once something inside them would otherwise have to break: a chain, a call with
+    /// three arguments, or an operator sequence that would end past the limit with the call on one line.
+    /// </summary>
+    /// <param name="second">The second argument of the call.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a data row supplies no <paramref name="second"/> argument to place in the call.</exception>
+    [Theory]
+    [InlineData("string.Concat(name, \"a suffix that makes this argument long enough\").Trim().ToUpperInvariant().TrimEnd()")]
+    [InlineData("string.Concat(name, \"a first piece of text for this call\", \"and a second piece long enough to pass the limit\")")]
+    [InlineData("name.Length > 3 ? name : \"a replacement long enough that this argument ends past the limit of its line\"")]
+    public async Task WrapsShortCallsBeforeTheirArgumentsBreak(string second)
+    {
+        ArgumentNullException.ThrowIfNull(second);
+
+        string wrapped = "public class ExampleType\n{\n    public bool Execute(string name)\n    {\n        return string.Equals(name.Trim().ToUpperInvariant().Normalize(),\n            "
+            + second + ");\n    }\n}\n";
+
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), wrapped));
+
+        string together = wrapped.Replace(oldValue: ",\n            ", newValue: ", ", StringComparison.Ordinal);
+
+        // A call with three arguments inside reports as well until the call around it has wrapped.
+        Assert.Contains(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), together), static diagnostic => diagnostic.Id == ArgumentLayoutAnalyzer.RuleIdentifier);
     }
 
     // What the analyzer decided before the bound existed: normalize the list and measure the result.

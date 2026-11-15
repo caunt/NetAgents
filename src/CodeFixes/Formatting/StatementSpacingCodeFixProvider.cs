@@ -35,7 +35,8 @@ public sealed class StatementSpacingCodeFixProvider : CodeFixProvider
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Insert blank line between statements",
                     cancellationToken => InsertBlankLine(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-                    nameof(StatementSpacingCodeFixProvider)), diagnostic);
+                    nameof(StatementSpacingCodeFixProvider)),
+                diagnostic);
         }
 
         return Task.CompletedTask;

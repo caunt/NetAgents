@@ -74,7 +74,8 @@ public sealed class ChainLayoutCodeFixProvider : CodeFixProvider
                         top,
                         new ChainRewrite(links, required, text),
                         cancellationToken),
-                    nameof(ChainLayoutCodeFixProvider)), diagnostic);
+                    nameof(ChainLayoutCodeFixProvider)),
+                diagnostic);
         }
     }
 

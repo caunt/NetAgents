@@ -73,7 +73,8 @@ public sealed class OperatorLayoutCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Lay out the operators",
                     cancellationToken => Format(context.Document, root, rewritten, node, cancellationToken),
-                    nameof(OperatorLayoutCodeFixProvider)), diagnostic);
+                    nameof(OperatorLayoutCodeFixProvider)),
+                diagnostic);
         }
     }
 

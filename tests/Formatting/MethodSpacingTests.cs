@@ -46,7 +46,8 @@ public sealed class MethodSpacingTests
     [InlineData("\r\n")]
     public async Task SeparatesMethods(string newline)
     {
-        string source = string.Join(newline, value:
+        string source = string.Join(newline,
+            value:
             [
                 "class ExampleType",
                 "{",

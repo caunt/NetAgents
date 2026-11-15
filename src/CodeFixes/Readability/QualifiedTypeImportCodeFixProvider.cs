@@ -62,7 +62,8 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Import the type's namespace",
                     cancellationToken => Import(context.Document, span, cancellationToken),
-                    nameof(QualifiedTypeImportCodeFixProvider)), diagnostic);
+                    nameof(QualifiedTypeImportCodeFixProvider)),
+                diagnostic);
         }
     }
 
@@ -214,8 +215,8 @@ public sealed class QualifiedTypeImportCodeFixProvider : CodeFixProvider
 
         // A reference can hold another, such as a type argument, so each shortens what is left of it
         // after the ones inside it were shortened.
-        CompilationUnitSyntax rewritten = unit.ReplaceNodes(references, static (original, current) => Shorten(current)
-            ?? current);
+        CompilationUnitSyntax rewritten = unit.ReplaceNodes(references,
+            static (original, current) => Shorten(current) ?? current);
 
         SyntaxTrivia lineEnding = GetLineEnding(unit);
 

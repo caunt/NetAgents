@@ -97,9 +97,8 @@ internal static class CollectionLayout
                 .NormalizeWhitespace(indentation: "", eol: " ")
                 .ToFullString();
 
-            return [new TextChange(TextSpan.FromBounds(value ? previous.Span.End : opening.SpanStart, closing.Span.End), (value
-                ? " "
-                : "") + compact)];
+            return [new TextChange(TextSpan.FromBounds(value ? previous.Span.End : opening.SpanStart, closing.Span.End),
+                (value ? " " : "") + compact)];
         }
 
         // New lines reuse the file's line break, and elements sit one level deeper than the delimiters around them.

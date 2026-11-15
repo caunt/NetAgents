@@ -41,7 +41,8 @@ public sealed class NumericConversionCodeFixProvider : CodeFixProvider
         {
             context.RegisterCodeFix(CodeAction.Create(title: "Convert with a numeric factory method",
                     cancellationToken => Convert(context.Document, diagnostics: [diagnostic], cancellationToken),
-                    nameof(NumericConversionCodeFixProvider)), diagnostic);
+                    nameof(NumericConversionCodeFixProvider)),
+                diagnostic);
         }
 
         return Task.CompletedTask;

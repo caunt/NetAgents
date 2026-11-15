@@ -252,7 +252,8 @@ public sealed class ExplicitLiteralArgumentNameCodeFixTests
     [InlineData("\r\n")]
     public async Task PreservesLayoutAndComments(string lineEnding)
     {
-        string source = string.Join(lineEnding, value:
+        string source = string.Join(lineEnding,
+            value:
             [
                 "class ExampleType",
                 "{",

@@ -62,7 +62,8 @@ public sealed class LiteralConcatenationCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(CodeAction.Create(title: "Write the strings as one",
                     cancellationToken => Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceNode(addition, merged))),
-                    nameof(LiteralConcatenationCodeFixProvider)), diagnostic);
+                    nameof(LiteralConcatenationCodeFixProvider)),
+                diagnostic);
         }
     }
 }

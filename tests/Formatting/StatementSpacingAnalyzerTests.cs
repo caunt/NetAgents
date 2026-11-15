@@ -77,10 +77,9 @@ public sealed class StatementSpacingAnalyzerTests
 
         Assert.Equal(StatementSpacingAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
 
-        Assert.Equal(expected: "numbers", source.Substring(Assert.Single(diagnostics).Location.SourceSpan.Start, Assert.Single(diagnostics)
-            .Location
-            .SourceSpan
-            .Length));
+        Assert.Equal(expected: "numbers",
+            source.Substring(Assert.Single(diagnostics).Location.SourceSpan.Start,
+                Assert.Single(diagnostics).Location.SourceSpan.Length));
     }
 
     /// <summary>

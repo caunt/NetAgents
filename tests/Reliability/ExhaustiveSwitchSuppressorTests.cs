@@ -145,9 +145,8 @@ public sealed class ExhaustiveSwitchSuppressorTests
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
 
-            context.RegisterSyntaxNodeAction(Report, identifier == "IDE0010"
-                ? SyntaxKind.SwitchStatement
-                : SyntaxKind.SwitchExpression);
+            context.RegisterSyntaxNodeAction(Report,
+                identifier == "IDE0010" ? SyntaxKind.SwitchStatement : SyntaxKind.SwitchExpression);
         }
 
         private void Report(SyntaxNodeAnalysisContext context)
