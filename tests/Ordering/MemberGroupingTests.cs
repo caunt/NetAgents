@@ -88,7 +88,8 @@ public sealed class MemberGroupingTests
     {
         string source = $"public sealed class ExampleType\n{{\n{members}\n}}\n";
 
-        Assert.Equal($"public sealed class ExampleType\n{{\n{expected}\n}}\n", await CodeFixTestHarness.FixMemberOrdering(source, fixAll: true));
+        Assert.Equal($"public sealed class ExampleType\n{{\n{expected}\n}}\n",
+            await CodeFixTestHarness.FixMemberOrdering(source, fixAll: true));
     }
 
     /// <summary>
@@ -120,6 +121,7 @@ public sealed class MemberGroupingTests
     {
         string source = $"public sealed class ExampleType\n{{\n{members}\n}}\n";
 
-        Assert.Equal($"public sealed class ExampleType\n{{\n{expected}\n}}\n", await CodeFixTestHarness.FixMemberOrdering(source, fixAll: true));
+        Assert.Equal($"public sealed class ExampleType\n{{\n{expected}\n}}\n",
+            await CodeFixTestHarness.FixMemberOrdering(source, fixAll: true));
     }
 }

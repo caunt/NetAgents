@@ -16,7 +16,8 @@ public sealed class DescriptiveNameAnalyzerTests
     [Fact]
     public async Task AllowsDescriptiveGenericAndInterfacePrefixes()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), source: "public interface IMessageHandler<TMessage> { void Handle(TMessage message); }");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(),
+            source: "public interface IMessageHandler<TMessage> { void Handle(TMessage message); }");
 
         Assert.Empty(diagnostics);
     }
@@ -37,7 +38,8 @@ public sealed class DescriptiveNameAnalyzerTests
     [InlineData("httpsRedirect")]
     public async Task AllowsProtocolAndFormatNames(string parameterName)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), $"public class ExampleType {{ public void Execute(string {parameterName}) {{ }} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(),
+            $"public class ExampleType {{ public void Execute(string {parameterName}) {{ }} }}");
 
         Assert.Empty(diagnostics);
     }
@@ -69,7 +71,8 @@ public sealed class DescriptiveNameAnalyzerTests
     [InlineData("dbConnection")]
     public async Task RejectsAbbreviatedNames(string parameterName)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(), $"public class ExampleType {{ public void Execute(string {parameterName}) {{ }} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DescriptiveNameAnalyzer(),
+            $"public class ExampleType {{ public void Execute(string {parameterName}) {{ }} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == DescriptiveNameAnalyzer.RuleIdentifier);
     }

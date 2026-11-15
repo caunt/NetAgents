@@ -20,7 +20,8 @@ public sealed class BoxingConversionAnalyzerTests
     [InlineData("public static string FormatValue<TValue>(TValue value) where TValue : System.IFormattable => value.ToString(null, null);")]
     public async Task AllowsTypedAndConstrainedGenericOperations(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new BoxingConversionAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new BoxingConversionAnalyzer(),
+            $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }
@@ -38,7 +39,8 @@ public sealed class BoxingConversionAnalyzerTests
     [InlineData("public static string FormatValue(int value) => string.Format(\"{0}\", value);")]
     public async Task ReportsExplicitAndImplicitBoxing(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new BoxingConversionAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new BoxingConversionAnalyzer(),
+            $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == BoxingConversionAnalyzer.RuleIdentifier);
     }

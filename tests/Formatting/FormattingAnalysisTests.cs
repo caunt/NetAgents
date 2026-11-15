@@ -41,8 +41,11 @@ public sealed class FormattingAnalysisTests
         Assert.Equal(expected: 4, analyzer.Runs);
 
         // The rejected candidate is validated once, and the accepted one lands.
-        Assert.Equal(expected: 1, messages.Count(static message => message.Contains(value: "rejected PERF0004", StringComparison.Ordinal)));
-        Assert.DoesNotContain(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
+        Assert.Equal(expected: 1,
+            messages.Count(static message => message.Contains(value: "rejected PERF0004", StringComparison.Ordinal)));
+
+        Assert.DoesNotContain(messages,
+            static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
 
         Assert.Contains(expectedSubstring: "=> 4;",
             await DocumentText.Read(run.Project.Documents.First()),
@@ -182,7 +185,9 @@ public sealed class FormattingAnalysisTests
         Assert.Equal(expected: "PERF0003", Assert.Single(first.IntroducedErrors.ToArray()).Id);
         Assert.Equal(expected: "PERF0003", Assert.Single(repeated.IntroducedErrors.ToArray()).Id);
         Assert.Equal(expected: 2, analyzer.Runs);
-        Assert.Contains(messages, static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
+
+        Assert.Contains(messages,
+            static message => message.Contains(value: "unchanged rejected action", StringComparison.Ordinal));
 
         Project changed = Change(before,
             name: "Dependency.cs",
@@ -209,7 +214,8 @@ public sealed class FormattingAnalysisTests
     {
         List<string> messages = await ValidateBrokenCandidate(suppressedDiagnosticIdentifier: "IDE0072");
 
-        Assert.Contains(messages, static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
+        Assert.Contains(messages,
+            static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
     }
 
     /// <summary>Runs the full analysis when a suppressor could change the effective compiler errors.</summary>
@@ -218,7 +224,8 @@ public sealed class FormattingAnalysisTests
     {
         List<string> messages = await ValidateBrokenCandidate(suppressedDiagnosticIdentifier: "CS0219");
 
-        Assert.DoesNotContain(messages, static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
+        Assert.DoesNotContain(messages,
+            static message => message.Contains(value: "checking candidate compiler diagnostics", StringComparison.Ordinal));
     }
 
     private static Project Change(Project project, string name, string source)

@@ -26,7 +26,8 @@ public sealed class TupleReturnTypeAnalyzerTests
     [InlineData("public static System.Threading.Tasks.Task<NamedResult> Execute() => System.Threading.Tasks.Task.FromResult(new NamedResult(1, 2)); public sealed record NamedResult(int First, int Second);")]
     public async Task AllowsTuplesOutsideResultContracts(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(),
+            $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }

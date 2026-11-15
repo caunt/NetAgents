@@ -49,7 +49,8 @@ public sealed class ArgumentLayoutCodeFixTests
         const string method = "public class ExampleType\n{\n    public void Execute()\n    {\n        STATEMENT\n    }\n}";
         string source = method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal);
 
-        Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal), await CodeFixTestHarness.FixArguments(source, fixAll: true));
+        Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal),
+            await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
 
     /// <summary>
@@ -122,12 +123,15 @@ public sealed class ArgumentLayoutCodeFixTests
         "string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n            \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n            \"x\");")]
     [InlineData("string.Concat(string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\", \"x\"), \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\", \"y\"), \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"z\");",
         "string.Concat(string.Concat(string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n                    \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n                    \"x\"),\n                \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\n                \"y\"),\n            \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n            \"z\");")]
+    [InlineData("string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\");",
+        "string.Concat(\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n            \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\");")]
     public async Task IndentsLaterItems(string statement, string expected)
     {
         const string method = "public class ExampleType\n{\n    public void Execute()\n    {\n        STATEMENT\n    }\n}";
         string source = method.Replace(oldValue: "STATEMENT", statement, StringComparison.Ordinal);
 
-        Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal), await CodeFixTestHarness.FixArguments(source, fixAll: true));
+        Assert.Equal(method.Replace(oldValue: "STATEMENT", expected, StringComparison.Ordinal),
+            await CodeFixTestHarness.FixArguments(source, fixAll: true));
     }
 
     /// <summary>

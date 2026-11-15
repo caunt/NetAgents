@@ -135,15 +135,17 @@ public sealed class ArgumentLayoutAnalyzerTests
     }
 
     /// <summary>
-    /// Keeps a call's one or two arguments together however long the line or the arguments are while nothing inside
-    /// them has to break, and reports them once a line break separates them.
+    /// Keeps a call's single argument, or two whose second is a name, a member access, a <c>nameof</c>, or a literal
+    /// other than a string, together however long the line or the arguments are while nothing inside them has to
+    /// break, and reports them once a line break separates them.
     /// </summary>
     /// <param name="arguments">The arguments of the call, written on one line.</param>
     /// <exception cref="ArgumentNullException">Thrown when a data row supplies no <paramref name="arguments"/> to place in the call.</exception>
     [Theory]
     [InlineData("\"an argument long enough that this call ends well past the one hundred and twenty-eight character limit of its line\"")]
-    [InlineData("\"a first argument long enough to push the call past the limit of its line\", \"and a second one that finishes the job\"")]
-    [InlineData("\"a first argument that alone is long enough to pass the limit on the contents of a list\", \"and a second one so long that the two together pass one hundred and twenty-eight characters\"")]
+    [InlineData("\"a first argument long enough to push the call well past the one hundred and twenty-eight character limit of its line\", string.Empty")]
+    [InlineData("\"a first argument long enough to push the call well past the one hundred and twenty-eight character limit of its line\", nameof(Execute)")]
+    [InlineData("\"a first argument that alone is long enough to pass the limit of one hundred and twenty-eight characters on the contents of a list\", 0")]
     public async Task KeepsShortCallsTogether(string arguments)
     {
         ArgumentNullException.ThrowIfNull(arguments);
@@ -243,7 +245,8 @@ public sealed class ArgumentLayoutAnalyzerTests
         string parameters = layout.Replace(oldValue: "FIRST", "string " + new string(c: 'a', count: 70), StringComparison.Ordinal)
             .Replace(oldValue: "SECOND", "string " + new string(c: 'b', count: 70), StringComparison.Ordinal);
 
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), $"public record ExampleType({parameters});");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(),
+            $"public record ExampleType({parameters});");
 
         Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -287,7 +290,35 @@ public sealed class ArgumentLayoutAnalyzerTests
         string together = wrapped.Replace(oldValue: ",\n            ", newValue: ", ", StringComparison.Ordinal);
 
         // A call with three arguments inside reports as well until the call around it has wrapped.
-        Assert.Contains(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), together), static diagnostic => diagnostic.Id == ArgumentLayoutAnalyzer.RuleIdentifier);
+        Assert.Contains(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), together),
+            static diagnostic => diagnostic.Id == ArgumentLayoutAnalyzer.RuleIdentifier);
+    }
+
+    /// <summary>
+    /// Wraps a call's two arguments like three when the second is a lambda, a string, or a call, which is large
+    /// enough for a line of its own, and the line they are on would pass the limit.
+    /// </summary>
+    /// <param name="second">The second argument of the call.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a data row supplies no <paramref name="second"/> argument to place in the call.</exception>
+    [Theory]
+    [InlineData("\"and a second string\"")]
+    [InlineData("$\"and a second string holding {first}\"")]
+    [InlineData("static (string value) => value")]
+    [InlineData("string.Concat(first, second)")]
+    [InlineData("new object()")]
+    public async Task WrapsTwoArgumentsWhoseSecondTakesALine(string second)
+    {
+        ArgumentNullException.ThrowIfNull(second);
+
+        string wrapped = "public class ExampleType\n{\n    public void Execute(object first, object second)\n    {\n        Execute(\"a first argument long enough that this call ends past the one hundred and twenty-eight character limit of its line\",\n            "
+            + second + ");\n    }\n}\n";
+
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), wrapped));
+
+        string together = wrapped.Replace(oldValue: ",\n            ", newValue: ", ", StringComparison.Ordinal);
+
+        Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier,
+            Assert.Single(await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(), together)).Id);
     }
 
     // What the analyzer decided before the bound existed: normalize the list and measure the result.

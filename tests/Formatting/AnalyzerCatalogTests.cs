@@ -28,7 +28,8 @@ public sealed class AnalyzerCatalogTests
         Assert.Empty(hosting.Unavailable);
 
         // The hosted copy comes from a separate load context, so only the name identifies it.
-        Assert.Contains(collection: [.. hosting.Analyzers], static analyzer => analyzer.GetType().FullName == typeof(ExhaustiveSwitchSuppressor).FullName);
+        Assert.Contains(collection: [.. hosting.Analyzers],
+            static analyzer => analyzer.GetType().FullName == typeof(ExhaustiveSwitchSuppressor).FullName);
     }
 
     /// <summary>Constructs the same analyzers the compiler's loader does, without its version gate.</summary>

@@ -33,8 +33,9 @@ public sealed class OperatorLayoutConvergenceTests
     /// <summary>
     /// Verifies the sequence splits before each operator and the call inside it gets its arguments back on one line,
     /// and a conditional expression splits before its question mark and colon. A call with two arguments wraps them
-    /// before a chain inside one breaks and stays on one line when nothing inside has to break, and an operator
-    /// sequence in an argument comes back onto one line while the call around it wraps.
+    /// before a chain inside one breaks, or when its second argument is a string, and stays on one line when nothing
+    /// inside has to break; an operator sequence in an argument comes back onto one line while the call around it
+    /// wraps.
     /// </summary>
     /// <param name="first">The rule that runs first: the one for operators or the one for arguments.</param>
     /// <param name="written">The statements as written.</param>
@@ -76,6 +77,12 @@ public sealed class OperatorLayoutConvergenceTests
     [InlineData("arguments",
         "return TryResolveRow(ResolveTable(file.Length)?.Length\n    ?? \"a fallback long enough to push the argument past the limit of its line all by itself\".Length, out reference);",
         "return TryResolveRow(ResolveTable(file.Length)?.Length ?? \"a fallback long enough to push the argument past the limit of its line all by itself\".Length,\n    out reference);")]
+    [InlineData("operators",
+        "string chosen = string.Concat(\"a first text long enough to bring this call close to the limit of the line it stands on\", \"and a second text that takes it well past\");\n\nreturn TryResolveRow(chosen.Length, out reference);",
+        "string chosen = string.Concat(\"a first text long enough to bring this call close to the limit of the line it stands on\",\n    \"and a second text that takes it well past\");\n\nreturn TryResolveRow(chosen.Length, out reference);")]
+    [InlineData("arguments",
+        "string chosen = string.Concat(\"a first text long enough to bring this call close to the limit of the line it stands on\", \"and a second text that takes it well past\");\n\nreturn TryResolveRow(chosen.Length, out reference);",
+        "string chosen = string.Concat(\"a first text long enough to bring this call close to the limit of the line it stands on\",\n    \"and a second text that takes it well past\");\n\nreturn TryResolveRow(chosen.Length, out reference);")]
     public async Task BreaksAtOperatorsBeforeArguments(string first, string written, string expected)
     {
         DiagnosticAnalyzer[] analyzers =

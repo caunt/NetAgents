@@ -78,7 +78,8 @@ public sealed class NumericConversionCodeFixProvider : CodeFixProvider
             return document;
 
         // Nested casts are rewritten inside out, so an outer one wraps the call its operand became.
-        SyntaxNode rewritten = root.ReplaceNodes(replacements.Keys, (original, current) => Rewrite(current, replacements[original]));
+        SyntaxNode rewritten = root.ReplaceNodes(replacements.Keys,
+            (original, current) => Rewrite(current, replacements[original]));
 
         return document.WithSyntaxRoot(rewritten);
     }

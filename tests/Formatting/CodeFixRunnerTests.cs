@@ -458,7 +458,9 @@ public sealed class CodeFixRunnerTests
         Assert.Contains(expectedSubstring: "namespace Consumer;", formatted, StringComparison.Ordinal);
         Assert.DoesNotContain(expectedSubstring: "namespace Consumer.Nested;", formatted, StringComparison.Ordinal);
         Assert.Contains(expectedSubstring: "private static int Value;", formatted, StringComparison.Ordinal);
-        Assert.Contains(messages, static message => message.Contains(value: "other projects can name", StringComparison.Ordinal));
+
+        Assert.Contains(messages,
+            static message => message.Contains(value: "other projects can name", StringComparison.Ordinal));
     }
 
     /// <summary>Rejects new compiler errors before accepting an automatic fix.</summary>

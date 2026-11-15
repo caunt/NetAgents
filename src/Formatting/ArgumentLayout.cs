@@ -199,9 +199,9 @@ internal static class ArgumentLayout
             or SyntaxKind.AttributeArgumentList or SyntaxKind.ParameterList or SyntaxKind.BracketedParameterList;
     }
 
-    // A call with one or two arguments that are too long for their line, by their contents or by where the list stands,
-    // keeps them together all the same while nothing inside them would have to break: nothing separates them from
-    // each other or from the parentheses, and what they hold keeps the layout its own rules give it.
+    // A short call whose arguments are too long for their line, by their contents or by where the list stands, keeps
+    // them together all the same while nothing inside them would have to break: nothing separates them from each
+    // other or from the parentheses, and what they hold keeps the layout its own rules give it.
     internal static bool KeepsTogether(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
     {
         LineFitMeasurement measurement = Measure(list);
@@ -214,8 +214,8 @@ internal static class ArgumentLayout
     }
 
     // Whether the list's own contents keep it off one line: a comment, a statement that spreads, a line break inside a
-    // token, or, for anything but a call with one or two arguments, their width. Where the list stands on its line
-    // plays no part, so a call with one or two arguments is never kept off one line by its width here.
+    // token, or, for anything but a short call, their width. Where the list stands on its line plays no part, so a
+    // short call is never kept off one line by its width here.
     internal static bool RequiresMultipleLines(SyntaxNode list)
     {
         LineFitMeasurement measurement = Measure(list);
@@ -358,10 +358,20 @@ internal static class ArgumentLayout
         }
     }
 
+    private static ExpressionSyntax? GetWrapped(ExpressionSyntax? value)
+    {
+        return value switch
+        {
+            ParenthesizedExpressionSyntax parenthesized => parenthesized.Expression,
+            AwaitExpressionSyntax awaited => awaited.Expression,
+            _ => null,
+        };
+    }
+
     // Whether something inside a short call would have to break with the call written on one line where it opens: a
-    // list or collection whose own contents keep it off one line, or a chain, a call with three arguments or more, or
-    // an operator sequence that would end past the limit there with nothing holding it on its line. The sequence
-    // itself stays whole inside an argument, so the call wrapping is what gives it room.
+    // list or collection whose own contents keep it off one line, or a chain, a call that wraps by its width, or an
+    // operator sequence that would end past the limit there with nothing holding it on its line. The sequence itself
+    // stays whole inside an argument, so the call wrapping is what gives it room.
     private static bool HoldsBreak(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
     {
         Dictionary<SyntaxToken, int>? ends = null;
@@ -411,12 +421,13 @@ internal static class ArgumentLayout
         };
     }
 
-    // A call's argument list holding three arguments or more, which wraps where its line passes the limit.
+    // A call's argument list that wraps where its line passes the limit: three arguments or more, or two whose second
+    // is large enough for a line of its own.
     private static bool IsLongCall(SyntaxNode list)
     {
         bool call = list.Kind() is SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList;
 
-        return call && list.ChildNodes().Skip(count: 2).Any();
+        return call && list.ChildNodes().Any() && !IsShortCall(list);
     }
 
     // A short call's arguments are too long for their line: by their contents alone, or by where the list stands on a
@@ -427,12 +438,16 @@ internal static class ArgumentLayout
             || (EndsPastLimit(list, measurement, source) && !ChainLayout.BreaksLineOf(list, model, source, cancellationToken));
     }
 
-    // A call's argument list holding one or two arguments, which their own width never puts on lines of their own.
+    // A call's argument list that its own width never puts on several lines: one argument, or two where the second
+    // is too slight for a line of its own.
     private static bool IsShortCall(SyntaxNode list)
     {
-        bool call = list.Kind() is SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList;
+        if (list.Kind() is not (SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList))
+            return false;
 
-        return call && list.ChildNodes().Any() && !list.ChildNodes().Skip(count: 2).Any();
+        SyntaxNode[] items = [.. list.ChildNodes().Take(count: 3)];
+
+        return items.Length == 1 || (items.Length == 2 && !TakesLine(items[1]));
     }
 
     // The contents written on one line pass the limit, or cannot be written on one line at all.
@@ -532,8 +547,9 @@ internal static class ArgumentLayout
     // A call's arguments written on one line end past the limit, measured from where the list opens, so what follows
     // the list never decides. The line is the list's to break only where nothing else breaks it: a chain that splits
     // breaks at its links, and a condition, an interpolation, an attribute, and a one-line collection stay whole.
-    // One or two arguments stay together however long the line gets, unless something inside them would have to break
-    // instead; then the call wraps first, so a line breaks at its outermost call before it breaks inside an argument.
+    // A short call keeps its arguments together however long the line gets, unless something inside them would have
+    // to break instead; then the call wraps first, so a line breaks at its outermost call before it breaks inside an
+    // argument.
     private static bool PassesLine(SyntaxNode list, SemanticModel model, SourceText source, CancellationToken cancellationToken)
     {
         if (list.Kind() is not (SyntaxKind.ArgumentList or SyntaxKind.BracketedArgumentList))
@@ -585,6 +601,27 @@ internal static class ArgumentLayout
     private static bool StartsLine(SourceText source, int previousEnd, int start, string indentation)
     {
         return GetLine(source, start) > GetLine(source, previousEnd) && GetIndentation(source, start) == indentation;
+    }
+
+    // A second argument large enough for a line of its own: a lambda, a string, or a call. A name, a member access, or
+    // any other literal stays beside the first however long the line gets, as does nameof, which only names.
+    private static bool TakesLine(SyntaxNode argument)
+    {
+        ExpressionSyntax? value = (argument as ArgumentSyntax)?.Expression;
+
+        // Parentheses and an await only wrap the value that decides.
+        while (GetWrapped(value) is ExpressionSyntax inner)
+            value = inner;
+
+        return value switch
+        {
+            AnonymousFunctionExpressionSyntax or InterpolatedStringExpressionSyntax or BaseObjectCreationExpressionSyntax => true,
+            LiteralExpressionSyntax literal => literal.Kind() is SyntaxKind.StringLiteralExpression or SyntaxKind.Utf8StringLiteralExpression,
+            InvocationExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.ValueText: "nameof" } } => false,
+            InvocationExpressionSyntax => true,
+            ConditionalAccessExpressionSyntax access => access.WhenNotNull is InvocationExpressionSyntax,
+            _ => false,
+        };
     }
 
     private readonly struct LineFitMeasurement(bool blockComment, bool inlineComment, bool lineBreak, bool spreadStatement, int tokens, int width)

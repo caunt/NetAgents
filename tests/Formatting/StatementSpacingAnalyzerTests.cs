@@ -27,7 +27,8 @@ public sealed class StatementSpacingAnalyzerTests
     [InlineData("public static void Execute(int count) {\nusing var stream = new System.IO.MemoryStream();\n}")]
     public async Task PreservesBlockEdgesAndExistingSeparators(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(),
+            $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }
@@ -109,7 +110,8 @@ public sealed class StatementSpacingAnalyzerTests
     [InlineData("public static void Execute(int count) { switch (count) { case 0: count++;\nbreak; } }")]
     public async Task RequiresBlankLinesBetweenStatements(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(), $"public static class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(),
+            $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Equal(StatementSpacingAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

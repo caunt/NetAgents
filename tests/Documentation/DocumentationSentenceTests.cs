@@ -57,7 +57,8 @@ public sealed class DocumentationSentenceTests
     [Fact]
     public async Task ReportsEachElement()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DocumentationSentenceAnalyzer(), Wrap(members: "/// <summary>Raises the lamp</summary>\n/// <param name=\"step\">How far to raise it</param>\npublic void Raise(int step) { }"));
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new DocumentationSentenceAnalyzer(),
+            Wrap(members: "/// <summary>Raises the lamp</summary>\n/// <param name=\"step\">How far to raise it</param>\npublic void Raise(int step) { }"));
 
         Assert.Equal(expected: 2, diagnostics.Length);
     }

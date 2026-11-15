@@ -164,7 +164,8 @@ public sealed class PackageConsumptionTests
             // Former path overrides must not redirect the task, policy, or Roslyn host.
             string ignoredHost = Directory.CreateDirectory(Path.Combine(workspace.FullName, path2: "ignored-host")).FullName;
 
-            await File.WriteAllTextAsync(Path.Combine(ignoredHost, path2: "Microsoft.CodeAnalysis.dll"), contents: "Not an assembly.");
+            await File.WriteAllTextAsync(Path.Combine(ignoredHost, path2: "Microsoft.CodeAnalysis.dll"),
+                contents: "Not an assembly.");
 
             string[] pathOverrideArguments =
             [
@@ -577,7 +578,9 @@ public sealed class PackageConsumptionTests
                 multiTargetSource.Split(separator: "string.Concat(recipientName, string.Empty)", StringSplitOptions.None).Length);
 
             Assert.True(File.Exists(Path.Combine(workspace.FullName, $"bin/Debug/{ConsumerBuild.Framework}/Consumer.dll")));
-            Assert.True(File.Exists(Path.Combine(workspace.FullName, $"bin/Debug/{ConsumerBuild.Framework}-windows/Consumer.dll")));
+
+            Assert.True(File.Exists(Path.Combine(workspace.FullName,
+                $"bin/Debug/{ConsumerBuild.Framework}-windows/Consumer.dll")));
 
             // The first target must observe the shared-source rewrite made by the second target.
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, withoutShell: true);
@@ -959,7 +962,9 @@ public sealed class PackageConsumptionTests
 
             await File.WriteAllTextAsync(projectPath, projectContent);
             await File.WriteAllTextAsync(Path.Combine(workspace.FullName, path2: "NuGet.Config"), sourceConfiguration);
-            await File.WriteAllTextAsync(sourcePath, contents: "var builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\napp.Run();\n");
+
+            await File.WriteAllTextAsync(sourcePath,
+                contents: "var builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\napp.Run();\n");
 
             // A packages folder of its own keeps the restore from reusing a cached copy of the analyzer package.
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, arguments: ["restore", projectPath, "--packages", Path.Combine(workspace.FullName, path2: "packages")]);

@@ -103,7 +103,8 @@ public sealed class FormattingFingerprintTests
                 }
             case "dependency-added":
                 {
-                    await File.WriteAllTextAsync(Path.Combine(fixture.Root.FullName, path2: "analyzers/New.dll"), contents: "before");
+                    await File.WriteAllTextAsync(Path.Combine(fixture.Root.FullName, path2: "analyzers/New.dll"),
+                        contents: "before");
 
                     break;
                 }

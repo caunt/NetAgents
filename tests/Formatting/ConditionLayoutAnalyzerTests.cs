@@ -106,6 +106,7 @@ public sealed class ConditionLayoutAnalyzerTests
 
     private static Task<Diagnostic[]> Analyze(string statement)
     {
-        return AnalyzerTestHarness.Analyze(new ConditionLayoutAnalyzer(), $"public static class ExampleType {{ public static void Execute(int value) {{ {statement} }} }}");
+        return AnalyzerTestHarness.Analyze(new ConditionLayoutAnalyzer(),
+            $"public static class ExampleType {{ public static void Execute(int value) {{ {statement} }} }}");
     }
 }

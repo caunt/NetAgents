@@ -98,7 +98,9 @@ internal static class ProjectFormatter
 
         // Paths read relative to the project, as MSBuild prints its own errors.
         string path = span.Path.Length == 0 ? "(unknown file)" : GetDisplayPath(projectDirectory, span.Path);
-        string position = string.Create(CultureInfo.InvariantCulture, $"{path}({line + 1},{span.StartLinePosition.Character + 1})");
+
+        string position = string.Create(CultureInfo.InvariantCulture,
+            $"{path}({line + 1},{span.StartLinePosition.Character + 1})");
 
         return $"  {position}: {diagnostic.Id}: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}{Environment.NewLine}    as formatted: {written}";
     }
@@ -112,7 +114,8 @@ internal static class ProjectFormatter
         if (languageVersion.Substituted)
         {
             inputs.Log
-                .LogMessage(MessageImportance.Normal, $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}");
+                .LogMessage(MessageImportance.Normal,
+                    $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}");
         }
 
         CSharpParseOptions parseOptions = new(languageVersion.Version,
@@ -403,7 +406,8 @@ internal static class ProjectFormatter
 
         // The identifiers are what this formatter could not repair; the compiler reports the full set.
         inputs.Log
-            .LogMessage(MessageImportance.High, $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}");
+            .LogMessage(MessageImportance.High,
+                $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}");
 
         foreach (string path in rewritten)
             inputs.Log.LogMessage(MessageImportance.High, "  " + path);

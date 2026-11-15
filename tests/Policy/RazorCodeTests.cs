@@ -152,8 +152,11 @@ public sealed class RazorCodeTests
             #nullable disable
             """;
 
-        Diagnostic caught = Assert.Single(await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), CreateComponent(members: string.Empty, render: handler)));
-        Diagnostic discarded = Assert.Single(await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), CreateComponent(members: string.Empty, render: statement)));
+        Diagnostic caught = Assert.Single(await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(),
+            CreateComponent(members: string.Empty, render: handler)));
+
+        Diagnostic discarded = Assert.Single(await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(),
+            CreateComponent(members: string.Empty, render: statement)));
 
         Assert.Equal(expected: "Sample.razor(1,57)", DescribeLocation(caught));
         Assert.Equal(expected: "Sample.razor(1,3)", DescribeLocation(discarded));
@@ -256,10 +259,14 @@ public sealed class RazorCodeTests
     public async Task LeavesFormattingRulesToCSharpFiles()
     {
         const string member = "public static string Pad(string text) => text.PadLeft(4);";
-        Diagnostic plain = Assert.Single(await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), $"public static class ExampleType {{ {member} }}"));
+
+        Diagnostic plain = Assert.Single(await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
+            $"public static class ExampleType {{ {member} }}"));
 
         Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, plain.Id);
-        Assert.Empty(await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), CreateComponent("\n    " + member)));
+
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
+            CreateComponent("\n    " + member)));
     }
 
     /// <summary>
@@ -268,8 +275,11 @@ public sealed class RazorCodeTests
     [Fact]
     public async Task ReportsCodeBlocksAtTheirRazorLines()
     {
-        Diagnostic discarded = Assert.Single(await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(), CreateComponent(IssueMembers)));
-        Diagnostic swallowed = Assert.Single(await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(), CreateComponent(IssueMembers)));
+        Diagnostic discarded = Assert.Single(await AnalyzerTestHarness.Analyze(new IgnoredReturnValueAnalyzer(),
+            CreateComponent(IssueMembers)));
+
+        Diagnostic swallowed = Assert.Single(await AnalyzerTestHarness.Analyze(new EmptyCatchBlockAnalyzer(),
+            CreateComponent(IssueMembers)));
 
         Assert.Equal(expected: "Sample.razor(9,9)", DescribeLocation(discarded));
         Assert.Equal(expected: "Sample.razor(15,9)", DescribeLocation(swallowed));

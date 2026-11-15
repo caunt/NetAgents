@@ -114,7 +114,9 @@ internal static class ExplicitLiteralArgumentName
         }
 
         SyntaxToken comma = CreateToken(SyntaxKind.CommaToken).WithTrailingTrivia(SyntaxFactory.Space);
-        SeparatedSyntaxList<CollectionElementSyntax> items = SyntaxFactory.SeparatedList(elements, Enumerable.Repeat(comma, elements.Count - 1));
+
+        SeparatedSyntaxList<CollectionElementSyntax> items = SyntaxFactory.SeparatedList(elements,
+            Enumerable.Repeat(comma, elements.Count - 1));
 
         CollectionExpressionSyntax collection = SyntaxFactory.CollectionExpression(CreateToken(SyntaxKind.OpenBracketToken),
             items,
@@ -141,7 +143,8 @@ internal static class ExplicitLiteralArgumentName
                 name,
                 SyntaxTriviaList.Empty);
 
-        return SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(identifier), CreateToken(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
+        return SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(identifier),
+            CreateToken(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
     }
 
     private static ArgumentNaming? CreateNaming(BaseArgumentListSyntax list, SemanticModel model, CancellationToken cancellationToken)

@@ -31,7 +31,8 @@ public sealed class UntypedValueAnalyzerTests
     [Fact]
     public async Task AllowsStronglyTypedGenericCollections()
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(), source: "public class ExampleType { public System.Collections.Generic.List<string> Values { get; } = new(); }");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(),
+            source: "public class ExampleType { public System.Collections.Generic.List<string> Values { get; } = new(); }");
 
         Assert.Empty(diagnostics);
     }
@@ -51,7 +52,8 @@ public sealed class UntypedValueAnalyzerTests
     [InlineData("public override bool Equals(object? other) { object copy = other!; return copy is null; }")]
     public async Task ReportsUntypedDeclarationsAndInferredValues(string memberSource)
     {
-        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(), $"public class ExampleType {{ {memberSource} }}");
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(),
+            $"public class ExampleType {{ {memberSource} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == UntypedValueAnalyzer.RuleIdentifier);
     }

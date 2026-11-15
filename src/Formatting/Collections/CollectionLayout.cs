@@ -260,14 +260,16 @@ internal static class CollectionLayout
                     SeparatedSyntaxList<CollectionElementSyntax> elements = expression.Elements;
                     List<CollectionElementSyntax> nodes = [.. elements];
 
-                    return expression.WithElements(SyntaxFactory.SeparatedList(nodes, TakeLeading(elements.GetSeparators(), elements.Count - 1)));
+                    return expression.WithElements(SyntaxFactory.SeparatedList(nodes,
+                        TakeLeading(elements.GetSeparators(), elements.Count - 1)));
                 }
             case InitializerExpressionSyntax initializer when initializer.Expressions.SeparatorCount == initializer.Expressions.Count:
                 {
                     SeparatedSyntaxList<ExpressionSyntax> expressions = initializer.Expressions;
                     List<ExpressionSyntax> nodes = [.. expressions];
 
-                    return initializer.WithExpressions(SyntaxFactory.SeparatedList(nodes, TakeLeading(expressions.GetSeparators(), expressions.Count - 1)));
+                    return initializer.WithExpressions(SyntaxFactory.SeparatedList(nodes,
+                        TakeLeading(expressions.GetSeparators(), expressions.Count - 1)));
                 }
             default:
                 return collection;
