@@ -50,6 +50,37 @@ internal static class LiteralConcatenation
             : merged.WithTriviaFrom(top);
     }
 
+    // An interpolated argument could bind to a method taking an interpolated string handler, so the call must still
+    // bind to the same method once the expression is replaced. Only calls and constructions written out with their type
+    // are checked; an argument anywhere else is left alone.
+    public static bool KeepsBinding(ExpressionSyntax top, ExpressionSyntax merged, SemanticModel model, CancellationToken cancellationToken)
+    {
+        SyntaxNode? parent = top.Parent;
+
+        while (parent is ParenthesizedExpressionSyntax)
+            parent = parent.Parent;
+
+        if (parent is AttributeArgumentSyntax)
+            return false;
+
+        if (parent is not ArgumentSyntax argument)
+            return true;
+
+        // A target-typed new or an element access cannot be bound on its own, so only these two calls are checked.
+        SyntaxNode? holder = argument.Parent?.Parent;
+
+        if (holder is not ExpressionSyntax call || call is not (InvocationExpressionSyntax or ObjectCreationExpressionSyntax))
+            return false;
+
+        ISymbol? before = model.GetSymbolInfo(call, cancellationToken).Symbol;
+        ExpressionSyntax rewritten = call.ReplaceNode(top, merged);
+
+        ISymbol? after = model.GetSpeculativeSymbolInfo(call.SpanStart, rewritten, SpeculativeBindingOption.BindAsExpression)
+            .Symbol;
+
+        return before is not null && SymbolEqualityComparer.Default.Equals(before, after);
+    }
+
     // A longer run continues through the addition this one is the left side of.
     private static bool ContinuesRun(BinaryExpressionSyntax top)
     {
@@ -164,37 +195,6 @@ internal static class LiteralConcatenation
                 .IsKind(SyntaxKind.InterpolatedStringStartToken),
             _ => false,
         };
-    }
-
-    // An interpolated argument could bind to a method taking an interpolated string handler, so the merged call must
-    // still bind to the method the addition did. Only calls and constructions written out with their type are checked;
-    // an argument anywhere else is left alone.
-    private static bool KeepsBinding(BinaryExpressionSyntax top, ExpressionSyntax merged, SemanticModel model, CancellationToken cancellationToken)
-    {
-        SyntaxNode? parent = top.Parent;
-
-        while (parent is ParenthesizedExpressionSyntax)
-            parent = parent.Parent;
-
-        if (parent is AttributeArgumentSyntax)
-            return false;
-
-        if (parent is not ArgumentSyntax argument)
-            return true;
-
-        // A target-typed new or an element access cannot be bound on its own, so only these two calls are checked.
-        SyntaxNode? holder = argument.Parent?.Parent;
-
-        if (holder is not ExpressionSyntax call || call is not (InvocationExpressionSyntax or ObjectCreationExpressionSyntax))
-            return false;
-
-        ISymbol? before = model.GetSymbolInfo(call, cancellationToken).Symbol;
-        ExpressionSyntax rewritten = call.ReplaceNode(top, merged);
-
-        ISymbol? after = model.GetSpeculativeSymbolInfo(call.SpanStart, rewritten, SpeculativeBindingOption.BindAsExpression)
-            .Symbol;
-
-        return before is not null && SymbolEqualityComparer.Default.Equals(before, after);
     }
 
     private static ExpressionSyntax? MergeInterpolated(List<ExpressionSyntax> pieces)

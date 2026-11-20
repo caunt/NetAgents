@@ -37,6 +37,7 @@
     <Compile Include="../Formatting/Operators/OperatorLayout.cs" Link="Formatting/Operators/OperatorLayout.cs" />
     <Compile Include="../Readability/NestedTry.cs" Link="Readability/NestedTry.cs" />
     <Compile Include="../Readability/LiteralConcatenation.cs" Link="Readability/LiteralConcatenation.cs" />
+    <Compile Include="../Readability/InvariantInterpolation.cs" Link="Readability/InvariantInterpolation.cs" />
     <Compile Include="../Readability/LiteralComparison.cs" Link="Readability/LiteralComparison.cs" />
     <Compile Include="../Readability/DelegateCreation.cs" Link="Readability/DelegateCreation.cs" />
     <Compile Include="../TypeSafety/NumericConversion.cs" Link="TypeSafety/NumericConversion.cs" />

@@ -116,6 +116,12 @@ internal static class CodeFixTestHarness
         return await Fix(source, new DocumentationTagFitAnalyzer(), new DocumentationTagFitCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
     }
 
+    public static async Task<string> FixInvariantInterpolations(string source, bool fixAll)
+    {
+        return await Fix(source, new InvariantInterpolationAnalyzer(), new InvariantInterpolationCodeFixProvider(), fixAll)
+            .ConfigureAwait(continueOnCapturedContext: false);
+    }
+
     public static async Task<string> FixLambdaBodies(string source, bool fixAll)
     {
         return await Fix(source, new LambdaBodyPlacementAnalyzer(), new LambdaBodyPlacementCodeFixProvider(), fixAll).ConfigureAwait(continueOnCapturedContext: false);
