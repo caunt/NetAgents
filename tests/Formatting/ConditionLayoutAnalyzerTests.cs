@@ -46,7 +46,7 @@ public sealed class ConditionLayoutAnalyzerTests
         int length = int.Parse(conditionLength, CultureInfo.InvariantCulture);
         string paddedTest = "value > 0" + new string(c: ' ', length - "value > 0".Length);
 
-        Diagnostic[] diagnostics = await Analyze($"if ({paddedTest}) return;");
+        Diagnostic[] diagnostics = await Analyze(statement: $"if ({paddedTest}) return;");
 
         Assert.Equal(length > 128 ? 1 : 0, diagnostics.Length);
     }
@@ -107,6 +107,6 @@ public sealed class ConditionLayoutAnalyzerTests
     private static Task<Diagnostic[]> Analyze(string statement)
     {
         return AnalyzerTestHarness.Analyze(new ConditionLayoutAnalyzer(),
-            $"public static class ExampleType {{ public static void Execute(int value) {{ {statement} }} }}");
+            source: $"public static class ExampleType {{ public static void Execute(int value) {{ {statement} }} }}");
     }
 }

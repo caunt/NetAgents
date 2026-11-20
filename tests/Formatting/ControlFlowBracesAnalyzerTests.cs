@@ -28,7 +28,7 @@ public sealed class ControlFlowBracesAnalyzerTests
     public async Task IgnoresOneLineFunctionBodies(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(),
-            $"public static class ExampleType {{ {memberSource} }}");
+            source: $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }
@@ -47,7 +47,7 @@ public sealed class ControlFlowBracesAnalyzerTests
     public async Task KeepsConditionalChainsConsistent(string statements, string expectedCount)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(),
-            $"public static class ExampleType {{ public static void Execute(int count) {{ {statements} }} }}");
+            source: $"public static class ExampleType {{ public static void Execute(int count) {{ {statements} }} }}");
 
         Assert.Equal(int.Parse(expectedCount, CultureInfo.InvariantCulture), diagnostics.Length);
         Assert.All(diagnostics, static diagnostic => Assert.Equal(ControlFlowBracesAnalyzer.RuleIdentifier, diagnostic.Id));
@@ -85,7 +85,7 @@ public sealed class ControlFlowBracesAnalyzerTests
     public async Task PreservesRequiredBracesAndScopes(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(),
-            $"public static class ExampleType {{ {memberSource} }}",
+            source: $"public static class ExampleType {{ {memberSource} }}",
             allowUnsafeCode: true);
 
         Assert.Empty(diagnostics);
@@ -115,7 +115,7 @@ public sealed class ControlFlowBracesAnalyzerTests
     public async Task ReportsOneLineStatementBlocks(string memberSource, string expectedCount)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(),
-            $"public static class ExampleType {{ {memberSource} }}",
+            source: $"public static class ExampleType {{ {memberSource} }}",
             allowUnsafeCode: true);
 
         Assert.Equal(int.Parse(expectedCount, CultureInfo.InvariantCulture), diagnostics.Length);
@@ -159,7 +159,7 @@ public sealed class ControlFlowBracesAnalyzerTests
     public async Task RequiresMatchingBodyBraces(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ControlFlowBracesAnalyzer(),
-            $"public static class ExampleType {{ {memberSource} }}",
+            source: $"public static class ExampleType {{ {memberSource} }}",
             allowUnsafeCode: true);
 
         Assert.Equal(ControlFlowBracesAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);

@@ -53,7 +53,7 @@ public sealed class UntypedValueAnalyzerTests
     public async Task ReportsUntypedDeclarationsAndInferredValues(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UntypedValueAnalyzer(),
-            $"public class ExampleType {{ {memberSource} }}");
+            source: $"public class ExampleType {{ {memberSource} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == UntypedValueAnalyzer.RuleIdentifier);
     }

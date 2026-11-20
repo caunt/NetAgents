@@ -213,7 +213,7 @@ internal static class CodeFixRunner
 
                     CodeAction preferred = selected;
 
-                    progress.Report($"preparing {diagnostic.Id} action '{selected.Title}' ({provider.GetType().Name})");
+                    progress.Report(activity: $"preparing {diagnostic.Id} action '{selected.Title}' ({provider.GetType().Name})");
 
                     if (canFixProject && fixAllProvider is not null)
                     {
@@ -254,7 +254,7 @@ internal static class CodeFixRunner
                         if (fixAllKey is not null && !rejectedFixAllActions.Add(fixAllKey))
                             throw new InvalidOperationException(message: "The rejected formatting action was already recorded.");
 
-                        progress.Report($"rejected {diagnostic.Id} action '{preferred.Title}' because it moves a type other projects can name");
+                        progress.Report(activity: $"rejected {diagnostic.Id} action '{preferred.Title}' because it moves a type other projects can name");
 
                         continue;
                     }
@@ -281,7 +281,7 @@ internal static class CodeFixRunner
 
                     string actionKey = fixAllKey ?? $"{provider.GetType().FullName}|{selected.EquivalenceKey ?? selected.Title}";
 
-                    progress.Report($"validating {diagnostic.Id} action '{preferred.Title}'");
+                    progress.Report(activity: $"validating {diagnostic.Id} action '{preferred.Title}'");
 
                     FormattingAnalysis.ValidationResult validation = await analysis.Validate(updated, diagnostics, actionKey, optional, cancellationToken)
                         .ConfigureAwait(continueOnCapturedContext: false);
@@ -307,7 +307,7 @@ internal static class CodeFixRunner
 
                         if (settled.Project is not null)
                         {
-                            progress.Report($"accepted {diagnostic.Id} action '{preferred.Title}' with the layout it disturbed settled");
+                            progress.Report(activity: $"accepted {diagnostic.Id} action '{preferred.Title}' with the layout it disturbed settled");
 
                             return new(settled.Project, description, settled.Diagnostics);
                         }
@@ -315,12 +315,12 @@ internal static class CodeFixRunner
                         if (fixAllKey is not null && !rejectedFixAllActions.Add(fixAllKey))
                             throw new InvalidOperationException(message: "The rejected formatting action was already recorded.");
 
-                        progress.Report($"rejected {diagnostic.Id} action '{preferred.Title}' because it introduces errors");
+                        progress.Report(activity: $"rejected {diagnostic.Id} action '{preferred.Title}' because it introduces errors");
 
                         continue;
                     }
 
-                    progress.Report($"accepted {diagnostic.Id} action '{preferred.Title}'");
+                    progress.Report(activity: $"accepted {diagnostic.Id} action '{preferred.Title}'");
 
                     return new(updated, description, validation.Diagnostics);
                 }
@@ -455,7 +455,7 @@ internal static class CodeFixRunner
 
         return first is null
             ? new(Project: null, Attempt: null)
-            : new(updated, $"{first} — rename colliding locals before applying naming-style fixes");
+            : new(updated, Attempt: $"{first} — rename colliding locals before applying naming-style fixes");
     }
 
     private static bool CanFixDiagnostic(CodeFixProvider provider, Diagnostic diagnostic)

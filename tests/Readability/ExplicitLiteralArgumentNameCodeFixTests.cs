@@ -97,6 +97,41 @@ public sealed class ExplicitLiteralArgumentNameCodeFixTests
     }
 
     /// <summary>
+    /// Verifies that interpolated string arguments gain the name of the parameter that receives them, as
+    /// literals do, and keep a name they already carry.
+    /// </summary>
+    /// <param name="invocation">The invocation to fix.</param>
+    /// <param name="expected">The expected normalized invocation.</param>
+    [Theory]
+    [InlineData("Write($\"{count} items\")", "Write(text: $\"{count} items\")")]
+    [InlineData("Write($\"{Write($\"{count}\")} items\")", "Write(text: $\"{Write(text: $\"{count}\")} items\")")]
+    [InlineData("Pair(label, $\"{count} items\")", "Pair(label, second: $\"{count} items\")")]
+    [InlineData("Pair(first: label, second: $\"{count} items\")", "Pair(label, second: $\"{count} items\")")]
+    [InlineData("Log($\"{count} items\", label)", "Log(entries: [$\"{count} items\", label])")]
+    [InlineData("string.Create(CultureInfo.InvariantCulture, $\"{count} items\")",
+        "string.Create(CultureInfo.InvariantCulture, handler: $\"{count} items\")")]
+    [InlineData("new StringBuilder().Append($\"{count} items\")", "new StringBuilder().Append(handler: $\"{count} items\")")]
+    public async Task NamesInterpolatedArguments(string invocation, string expected)
+    {
+        string source = $$"""
+            using System.Globalization;
+            using System.Text;
+
+            class ExampleType
+            {
+                object Run(int count, string label) => {{invocation}};
+                string Write(string text) => text;
+                string Pair(string first, string second) => first + second;
+                string Log(params string[] entries) => entries[0];
+            }
+            """;
+
+        string fixedSource = await CodeFixTestHarness.FixLiteralArgumentNames(source, fixAll: true);
+
+        Assert.Equal(source.Replace(invocation, expected, StringComparison.Ordinal), fixedSource);
+    }
+
+    /// <summary>
     /// Verifies that a parameter named after a keyword is escaped.
     /// </summary>
     [Fact]

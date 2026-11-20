@@ -299,7 +299,7 @@ public sealed class PackageConsumptionTests
                     """));
 
             string manyTupleSource = ValidSource.Replace(oldValue: "    }\n}\n",
-                $"    }}\n\n{manyTupleMethods}\n}}\n",
+                newValue: $"    }}\n\n{manyTupleMethods}\n}}\n",
                 StringComparison.Ordinal);
 
             await File.WriteAllTextAsync(sourcePath, manyTupleSource);
@@ -559,8 +559,8 @@ public sealed class PackageConsumptionTests
 
             Assert.Equal(source, await File.ReadAllTextAsync(sourcePath));
 
-            string multiTargetProject = projectContent.Replace($"<TargetFramework>{ConsumerBuild.Framework}</TargetFramework>",
-                $"<TargetFrameworks>{ConsumerBuild.Framework};{ConsumerBuild.Framework}-windows</TargetFrameworks>",
+            string multiTargetProject = projectContent.Replace(oldValue: $"<TargetFramework>{ConsumerBuild.Framework}</TargetFramework>",
+                newValue: $"<TargetFrameworks>{ConsumerBuild.Framework};{ConsumerBuild.Framework}-windows</TargetFrameworks>",
                 StringComparison.Ordinal);
 
             string conditionalSource = ValidSource.Replace(oldValue: "return recipientName;",
@@ -577,10 +577,10 @@ public sealed class PackageConsumptionTests
             Assert.Equal(expected: 3,
                 multiTargetSource.Split(separator: "string.Concat(recipientName, string.Empty)", StringSplitOptions.None).Length);
 
-            Assert.True(File.Exists(Path.Combine(workspace.FullName, $"bin/Debug/{ConsumerBuild.Framework}/Consumer.dll")));
+            Assert.True(File.Exists(Path.Combine(workspace.FullName, path2: $"bin/Debug/{ConsumerBuild.Framework}/Consumer.dll")));
 
             Assert.True(File.Exists(Path.Combine(workspace.FullName,
-                $"bin/Debug/{ConsumerBuild.Framework}-windows/Consumer.dll")));
+                path2: $"bin/Debug/{ConsumerBuild.Framework}-windows/Consumer.dll")));
 
             // The first target must observe the shared-source rewrite made by the second target.
             await ConsumerBuild.RunDevelopmentKit(workspace.FullName, reportingArguments, withoutShell: true);
@@ -842,7 +842,7 @@ public sealed class PackageConsumptionTests
 
             foreach (string conflictingSetting in conflictingEditorSettings)
             {
-                await File.WriteAllTextAsync(editorConfigurationPath, $"root = true\n[*.cs]\n{conflictingSetting}\n");
+                await File.WriteAllTextAsync(editorConfigurationPath, contents: $"root = true\n[*.cs]\n{conflictingSetting}\n");
 
                 await ConsumerBuild.RunDevelopmentKit(workspace.FullName,
                     buildArguments,
@@ -872,7 +872,7 @@ public sealed class PackageConsumptionTests
             {
                 await File.WriteAllTextAsync(projectPath,
                     projectContent.Replace(oldValue: "<ImplicitUsings>enable</ImplicitUsings>",
-                        $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}",
+                        newValue: $"<ImplicitUsings>enable</ImplicitUsings>{conflictingSetting}",
                         StringComparison.Ordinal));
 
                 await ConsumerBuild.RunDevelopmentKit(workspace.FullName,

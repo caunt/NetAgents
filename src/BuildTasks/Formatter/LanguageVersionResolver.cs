@@ -22,7 +22,7 @@ internal static class LanguageVersionResolver
         // compiler rejects it as CS1617 immediately afterwards.
         return IsNewerThanSupported(requested)
             ? new(LanguageVersion.Preview, Substituted: true)
-            : throw new InvalidOperationException($"The LangVersion value '{requested}' in {projectPath} is not a C# language version.");
+            : throw new InvalidOperationException(message: $"The LangVersion value '{requested}' in {projectPath} is not a C# language version.");
     }
 
     private static bool IsNewerThanSupported(string requested)

@@ -283,11 +283,15 @@ internal static class ExplicitLiteralArgumentName
         return !parameters.IsEmpty;
     }
 
-    // A value written out in place, which says nothing about the parameter it fills: a literal, a
-    // default, or a collection expression such as [first, second].
+    // A value written out in place, which says nothing about the parameter it fills: a literal, an
+    // interpolated string, a default, or a collection expression such as [first, second].
     private static bool IsInlineValue(ExpressionSyntax expression)
     {
-        return Unwrap(expression) is LiteralExpressionSyntax or DefaultExpressionSyntax or CollectionExpressionSyntax;
+        return Unwrap(expression)
+            is LiteralExpressionSyntax
+            or InterpolatedStringExpressionSyntax
+            or DefaultExpressionSyntax
+            or CollectionExpressionSyntax;
     }
 
     private static bool IsInsideExpressionTree(SyntaxNode node, SemanticModel model, CancellationToken cancellationToken)

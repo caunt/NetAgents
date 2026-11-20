@@ -481,7 +481,7 @@ public sealed class CodeFixRunnerTests
 
         project = document.WithText(SourceText.From(source)).Project;
 
-        ReplacementFix provider = new($"class Example {{ void Run() {{ {after} }} }}");
+        ReplacementFix provider = new(source: $"class Example {{ void Run() {{ {after} }} }}");
 
         InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => CodeFixRunner.Fix(project,
             analyzers: [],
@@ -843,7 +843,7 @@ public sealed class CodeFixRunnerTests
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            context.RegisterCodeFix(CodeAction.Create($"Replace {replaced} with {replacement}",
+            context.RegisterCodeFix(CodeAction.Create(title: $"Replace {replaced} with {replacement}",
                     async cancellationToken =>
                     {
                         SourceText text = await context.Document

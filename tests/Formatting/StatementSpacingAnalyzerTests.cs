@@ -28,7 +28,7 @@ public sealed class StatementSpacingAnalyzerTests
     public async Task PreservesBlockEdgesAndExistingSeparators(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(),
-            $"public static class ExampleType {{ {memberSource} }}");
+            source: $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }
@@ -111,7 +111,7 @@ public sealed class StatementSpacingAnalyzerTests
     public async Task RequiresBlankLinesBetweenStatements(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new StatementSpacingAnalyzer(),
-            $"public static class ExampleType {{ {memberSource} }}");
+            source: $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Equal(StatementSpacingAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

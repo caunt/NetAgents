@@ -89,7 +89,7 @@ public sealed class ExhaustiveSwitchSuppressorTests
         {
             project = project
                 .AddAnalyzerConfigDocument(name: ".globalconfig",
-                    SourceText.From($"is_global = true\ndotnet_diagnostic.{diagnosticIdentifier}.severity = {severity}\n"),
+                    SourceText.From(text: $"is_global = true\ndotnet_diagnostic.{diagnosticIdentifier}.severity = {severity}\n"),
                     filePath: "/.globalconfig")
                 .Project;
         }

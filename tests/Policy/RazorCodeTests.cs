@@ -261,7 +261,7 @@ public sealed class RazorCodeTests
         const string member = "public static string Pad(string text) => text.PadLeft(4);";
 
         Diagnostic plain = Assert.Single(await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
-            $"public static class ExampleType {{ {member} }}"));
+            source: $"public static class ExampleType {{ {member} }}"));
 
         Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, plain.Id);
 

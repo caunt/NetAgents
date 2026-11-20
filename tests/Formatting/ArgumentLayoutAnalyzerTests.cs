@@ -246,7 +246,7 @@ public sealed class ArgumentLayoutAnalyzerTests
             .Replace(oldValue: "SECOND", "string " + new string(c: 'b', count: 70), StringComparison.Ordinal);
 
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ArgumentLayoutAnalyzer(),
-            $"public record ExampleType({parameters});");
+            source: $"public record ExampleType({parameters});");
 
         Assert.Equal(ArgumentLayoutAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

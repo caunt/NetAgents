@@ -24,6 +24,6 @@ internal sealed class FormattingProgress(string projectName, Action<string>? rep
         string seconds = _elapsed.Elapsed.TotalSeconds.ToString(format: "F1", CultureInfo.InvariantCulture);
         string pass = _pass.ToString(CultureInfo.InvariantCulture);
 
-        report($"NetAgents formatting {projectName}: pass {pass}, elapsed {seconds}s — {activity}");
+        report(obj: $"NetAgents formatting {projectName}: pass {pass}, elapsed {seconds}s — {activity}");
     }
 }

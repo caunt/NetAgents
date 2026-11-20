@@ -21,7 +21,7 @@ public sealed class BoxingConversionAnalyzerTests
     public async Task AllowsTypedAndConstrainedGenericOperations(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new BoxingConversionAnalyzer(),
-            $"public static class ExampleType {{ {memberSource} }}");
+            source: $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }
@@ -40,7 +40,7 @@ public sealed class BoxingConversionAnalyzerTests
     public async Task ReportsExplicitAndImplicitBoxing(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new BoxingConversionAnalyzer(),
-            $"public static class ExampleType {{ {memberSource} }}");
+            source: $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == BoxingConversionAnalyzer.RuleIdentifier);
     }

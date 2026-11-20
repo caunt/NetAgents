@@ -95,7 +95,7 @@ public sealed class EditableDocumentsTests
 
         Project project = CreateProject(workspace, name, source)
             .AddAnalyzerConfigDocument(name: ".editorconfig",
-                SourceText.From($"root = true\n\n[*.cs]\ngenerated_code = {generated}\n"),
+                SourceText.From(text: $"root = true\n\n[*.cs]\ngenerated_code = {generated}\n"),
                 filePath: "/workspace/.editorconfig")
             .Project;
 

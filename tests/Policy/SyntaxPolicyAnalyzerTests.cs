@@ -109,7 +109,7 @@ public sealed class SyntaxPolicyAnalyzerTests
     public async Task RejectsUnconditionalLoops(string loop)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new UnconditionalLoopAnalyzer(),
-            $"public class ExampleType {{ public void Execute() {{ {loop} }} }}");
+            source: $"public class ExampleType {{ public void Execute() {{ {loop} }} }}");
 
         Assert.Equal(UnconditionalLoopAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }

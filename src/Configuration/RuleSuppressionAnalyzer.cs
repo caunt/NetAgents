@@ -75,7 +75,11 @@ public sealed class RuleSuppressionAnalyzer() : PolicyAnalyzer(Rule)
             : ReadCheckId(attribute, checkId, context.SemanticModel, context.CancellationToken);
 
         if (IsRequired(value))
-            context.ReportDiagnostic(Diagnostic.Create(Rule, attribute.GetLocation(), $"'{GetIdentifier(value)}'"));
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Rule,
+                attribute.GetLocation(),
+                messageArgs: [$"'{GetIdentifier(value)}'"]));
+        }
     }
 
     private static void AnalyzePragmas(SyntaxTreeAnalysisContext context)
@@ -99,7 +103,7 @@ public sealed class RuleSuppressionAnalyzer() : PolicyAnalyzer(Rule)
                 string value = code.ToString();
 
                 if (IsRequired(value))
-                    context.ReportDiagnostic(Diagnostic.Create(Rule, code.GetLocation(), $"'{value}'"));
+                    context.ReportDiagnostic(Diagnostic.Create(Rule, code.GetLocation(), messageArgs: [$"'{value}'"]));
             }
         }
     }

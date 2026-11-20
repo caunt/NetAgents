@@ -100,7 +100,7 @@ internal static class ProjectFormatter
         string path = span.Path.Length == 0 ? "(unknown file)" : GetDisplayPath(projectDirectory, span.Path);
 
         string position = string.Create(CultureInfo.InvariantCulture,
-            $"{path}({line + 1},{span.StartLinePosition.Character + 1})");
+            handler: $"{path}({line + 1},{span.StartLinePosition.Character + 1})");
 
         return $"  {position}: {diagnostic.Id}: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}{Environment.NewLine}    as formatted: {written}";
     }
@@ -115,7 +115,7 @@ internal static class ProjectFormatter
         {
             inputs.Log
                 .LogMessage(MessageImportance.Normal,
-                    $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}");
+                    message: $"NetAgents formats {inputs.ProjectPath} with C# preview because this package cannot parse LangVersion {inputs.LanguageVersion}");
         }
 
         CSharpParseOptions parseOptions = new(languageVersion.Version,
@@ -181,7 +181,7 @@ internal static class ProjectFormatter
         foreach (string part in compositionParts.Skipped)
         {
             inputs.Log
-                .LogMessage(MessageImportance.Normal, $"NetAgents skips the {part} export because this build cannot load every type it declares");
+                .LogMessage(MessageImportance.Normal, message: $"NetAgents skips the {part} export because this build cannot load every type it declares");
         }
 
         using CompositionHost composition = new ContainerConfiguration().WithParts(compositionParts.Types).CreateContainer();
@@ -362,7 +362,7 @@ internal static class ProjectFormatter
                     .Order(StringComparer.Ordinal));
 
             inputs.Log
-                .LogMessage(MessageImportance.High, $"NetAgents made no change because formatting would have introduced {introduced}");
+                .LogMessage(MessageImportance.High, message: $"NetAgents made no change because formatting would have introduced {introduced}");
 
             // Each one is named where formatting would have put it, so it can be found without rebuilding
             // with the formatter off. A run that broke many lines at once names enough to show the pattern.
@@ -381,7 +381,7 @@ internal static class ProjectFormatter
             if (located.Count > IntroducedShown)
             {
                 inputs.Log
-                    .LogMessage(MessageImportance.High, string.Create(CultureInfo.InvariantCulture, $"  and {located.Count - IntroducedShown} more"));
+                    .LogMessage(MessageImportance.High, string.Create(CultureInfo.InvariantCulture, handler: $"  and {located.Count - IntroducedShown} more"));
             }
 
             if (codeFixes.IntroducedBy is not null)
@@ -407,7 +407,7 @@ internal static class ProjectFormatter
         // The identifiers are what this formatter could not repair; the compiler reports the full set.
         inputs.Log
             .LogMessage(MessageImportance.High,
-                $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}");
+                message: $"NetAgents rewrote {rewriteCount} {files} before this build failed on diagnostics no fix repairs: {string.Join(separator: ", ", identifiers)}");
 
         foreach (string path in rewritten)
             inputs.Log.LogMessage(MessageImportance.High, "  " + path);

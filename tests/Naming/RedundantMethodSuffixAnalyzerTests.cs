@@ -116,7 +116,7 @@ public sealed class RedundantMethodSuffixAnalyzerTests
 
     private static async Task<Diagnostic[]> Analyze(string members)
     {
-        return await AnalyzerTestHarness.Analyze(new RedundantMethodSuffixAnalyzer(), $"public sealed class Item; public sealed class ExampleType {{ {members} }}")
+        return await AnalyzerTestHarness.Analyze(new RedundantMethodSuffixAnalyzer(), source: $"public sealed class Item; public sealed class ExampleType {{ {members} }}")
             .ConfigureAwait(continueOnCapturedContext: false);
     }
 }

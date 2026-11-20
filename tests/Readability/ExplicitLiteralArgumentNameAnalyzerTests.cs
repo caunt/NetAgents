@@ -46,6 +46,19 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     }
 
     /// <summary>
+    /// Verifies that a named interpolated string argument is accepted, whichever parameter receives it.
+    /// </summary>
+    /// <param name="invocation">The invocation carrying a named interpolated string.</param>
+    [Theory]
+    [InlineData("Execute(text: $\"{count} items\")")]
+    [InlineData("Execute(text: $\"items\")")]
+    [InlineData("string.Create(System.Globalization.CultureInfo.InvariantCulture, handler: $\"{count} items\")")]
+    public async Task AllowsNamedInterpolatedArguments(string invocation)
+    {
+        Assert.Empty(await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(), CreateTextSource(invocation)));
+    }
+
+    /// <summary>
     /// Verifies that a name whose removal would change binding or evaluation order is accepted.
     /// </summary>
     /// <param name="invocation">The invocation carrying an unremovable name.</param>
@@ -126,7 +139,25 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     public async Task ReportsUnnamedCollectionArguments(string invocation)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
-            $"public class ExampleType {{ public void Run(int[] values) => {invocation}; private void Execute(int[] counts) {{ }} private void Log(params int[] entries) {{ }} }}");
+            source: $"public class ExampleType {{ public void Run(int[] values) => {invocation}; private void Execute(int[] counts) {{ }} private void Log(params int[] entries) {{ }} }}");
+
+        Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
+    }
+
+    /// <summary>
+    /// Verifies that interpolated string arguments without parameter names are reported, as literals are.
+    /// </summary>
+    /// <param name="invocation">The invocation containing an unnamed interpolated string.</param>
+    [Theory]
+    [InlineData("Execute($\"{count} items\")")]
+    [InlineData("Execute($\"items\")")]
+    [InlineData("Execute(($\"{count} items\"))")]
+    [InlineData("Execute($\"\"\"{count} items\"\"\")")]
+    [InlineData("string.Create(System.Globalization.CultureInfo.InvariantCulture, $\"{count} items\")")]
+    public async Task ReportsUnnamedInterpolatedArguments(string invocation)
+    {
+        Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
+            CreateTextSource(invocation));
 
         Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -144,7 +175,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
     public async Task ReportsUnnamedLiteralArguments(string invocation)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new ExplicitLiteralArgumentNameAnalyzer(),
-            $"public class ExampleType {{ public void Run() => {invocation}; private void Execute(int count) {{ }} }}");
+            source: $"public class ExampleType {{ public void Run() => {invocation}; private void Execute(int count) {{ }} }}");
 
         Assert.Equal(ExplicitLiteralArgumentNameAnalyzer.RuleIdentifier, Assert.Single(diagnostics).Id);
     }
@@ -158,6 +189,17 @@ public sealed class ExplicitLiteralArgumentNameAnalyzerTests
                 (int First, int Second) StateTargetCoordinate => (1, 2);
                 void Execute(ExampleType boy) => boy.GameObject.MoveTo({{arguments}});
                 void MoveTo(int horizontalCoordinate, int verticalCoordinate) { }
+            }
+            """;
+    }
+
+    private static string CreateTextSource(string invocation)
+    {
+        return $$"""
+            class ExampleType
+            {
+                object Run(int count) => {{invocation}};
+                string Execute(string text) => text;
             }
             """;
     }

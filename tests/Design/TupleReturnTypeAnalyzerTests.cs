@@ -27,7 +27,7 @@ public sealed class TupleReturnTypeAnalyzerTests
     public async Task AllowsTuplesOutsideResultContracts(string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new TupleReturnTypeAnalyzer(),
-            $"public static class ExampleType {{ {memberSource} }}");
+            source: $"public static class ExampleType {{ {memberSource} }}");
 
         Assert.Empty(diagnostics);
     }

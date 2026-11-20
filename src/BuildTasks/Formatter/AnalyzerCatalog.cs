@@ -50,7 +50,7 @@ internal static class AnalyzerCatalog
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
-                unavailable.Add($"NetAgents cannot create the {type.FullName} analyzer from {file}: {exception.Message}");
+                unavailable.Add(item: $"NetAgents cannot create the {type.FullName} analyzer from {file}: {exception.Message}");
             }
         }
 
@@ -163,7 +163,7 @@ internal static class AnalyzerCatalog
         string reasons = string.Join(separator: ", ", rejections.Select(Explain));
 
         return new(new HostedAnalyzerReference(path, hosting.Analyzers),
-            $"NetAgents hosts {count} {rules} from {Path.GetFileName(path)} that this formatter's Roslyn refused: {reasons}",
+            Hosted: $"NetAgents hosts {count} {rules} from {Path.GetFileName(path)} that this formatter's Roslyn refused: {reasons}",
             hosting.Unavailable);
     }
 

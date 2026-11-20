@@ -8,7 +8,7 @@ using NetAgents.Analyzers.Diagnostics;
 namespace NetAgents.Analyzers.Readability;
 
 /// <summary>
-/// Requires named arguments for inline literals and default values, and positional arguments elsewhere.
+/// Requires named arguments for inline literals, interpolated strings, and default values, and positional arguments elsewhere.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
@@ -20,7 +20,7 @@ public sealed class ExplicitLiteralArgumentNameAnalyzer() : PolicyAnalyzer(Rule)
 
     private static readonly DiagnosticDescriptor Rule = new(RuleIdentifier,
         title: "Literal arguments need explicit parameter names",
-        messageFormat: "Name inline literal, default, and collection expression arguments, and pass every other argument positionally",
+        messageFormat: "Name inline literal, interpolated string, default, and collection expression arguments, and pass every other argument positionally",
         category: "Readability",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

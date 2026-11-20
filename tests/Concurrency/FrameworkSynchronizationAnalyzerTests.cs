@@ -36,7 +36,7 @@ public sealed class FrameworkSynchronizationAnalyzerTests
     public async Task ReportsDirectAliasedAndStaticSynchronization(string imports, string memberSource)
     {
         Diagnostic[] diagnostics = await AnalyzerTestHarness.Analyze(new FrameworkSynchronizationAnalyzer(),
-            $"{imports} public class ExampleType {{ {memberSource} }}");
+            source: $"{imports} public class ExampleType {{ {memberSource} }}");
 
         Assert.Contains(diagnostics, static diagnostic => diagnostic.Id == FrameworkSynchronizationAnalyzer.RuleIdentifier);
     }

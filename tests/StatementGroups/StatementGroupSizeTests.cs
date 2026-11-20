@@ -116,7 +116,7 @@ public sealed class StatementGroupSizeTests
 
         Assert.Equal(StatementGroupSizeAnalyzer.RuleIdentifier, diagnostic.Id);
 
-        Assert.StartsWith($"These 5 {kind} run together",
+        Assert.StartsWith(expectedStartString: $"These 5 {kind} run together",
             diagnostic.GetMessage(CultureInfo.InvariantCulture),
             StringComparison.Ordinal);
     }

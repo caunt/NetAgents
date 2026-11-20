@@ -161,6 +161,6 @@ public sealed class DocumentationTagFitAnalyzer() : PolicyAnalyzer(Rule)
         Report(context,
             misordered,
             DocumentationTags.Order,
-            $"List the <{element}> elements in the order the declaration lists them");
+            message: $"List the <{element}> elements in the order the declaration lists them");
     }
 }
