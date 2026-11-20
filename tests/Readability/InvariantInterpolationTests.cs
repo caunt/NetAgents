@@ -52,7 +52,7 @@ public sealed class InvariantInterpolationTests
         "throw new InvalidOperationException($\"{name} failed\");")]
     [InlineData("return string.Create(CultureInfo.InvariantCulture,\n    $\"{name} is ready\");", "return $\"{name} is ready\";")]
     [InlineData("return string.Create(CultureInfo.InvariantCulture, handler: $\"{name} is ready\");", "return $\"{name} is ready\";")]
-    [InlineData("return string.Create(handler: $\"{name} is ready\", provider: CultureInfo.InvariantCulture);", "return $\"{name} is ready\";")]
+    [InlineData("return string.Create(provider: CultureInfo.InvariantCulture, handler: $\"{name} is ready\");", "return $\"{name} is ready\";")]
     public async Task WritesTheStringAlone(string written, string expected)
     {
         Assert.Equal(Wrap(expected), await CodeFixTestHarness.FixInvariantInterpolations(Wrap(written), fixAll: true));
